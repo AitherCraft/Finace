@@ -65,6 +65,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   background: var(--bg);
   color: var(--fg);
@@ -293,6 +294,30 @@ input, select {
   .g-act { grid-column: 2 / -1; }
   h1 { font-size: 32px; }
 }
+/* Phones: the two columns dissolve into one stack in this order. */
+.cols, .col { display: contents; }
+section[aria-labelledby="h-split"] { order: 1; }
+section[aria-labelledby="h-afford"] { order: 2; }
+section[aria-labelledby="h-add"] { order: 3; }
+section[aria-labelledby="h-start"] { order: 4; }
+section[aria-labelledby="h-pct"] { order: 5; }
+section[aria-labelledby="h-games"] { order: 6; }
+.wrap > .status { order: 7; }
+
+/* Computer screens: use the full width with two columns that stack independently. */
+@media (min-width: 960px) {
+  body {
+    padding-left: max(32px, env(safe-area-inset-left, 0px));
+    padding-right: max(32px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: none; margin: 0; gap: 20px; }
+  .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+  .col { display: grid; gap: 20px; align-content: start; min-width: 0; }
+  section[aria-labelledby] { order: 0; }
+  .board { grid-template-columns: minmax(0, auto) minmax(0, 1fr); column-gap: 32px; align-items: center; }
+  .board .kicker, .board .sub, .board .big { grid-column: 1; }
+  .board .bar { grid-column: 2; grid-row: 1 / span 3; height: 22px; margin: 0; }
+}
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -306,6 +331,8 @@ input, select {
 
   <section class="board" id="board" aria-live="polite"></section>
 
+  <div class="cols">
+  <div class="col">
   <section class="card" aria-labelledby="h-split">
     <div class="card-head">
       <h2 id="h-split">Where it goes</h2>
@@ -313,7 +340,6 @@ input, select {
     </div>
     <ul class="buckets" id="buckets"></ul>
   </section>
-
   <section class="card" aria-labelledby="h-afford">
     <div class="card-head">
       <h2 id="h-afford">Can I afford it?</h2>
@@ -337,7 +363,15 @@ input, select {
       <p class="msg" id="a-msg" role="status"></p>
     </div>
   </section>
-
+  <section class="card" aria-labelledby="h-games">
+    <div class="card-head">
+      <h2 id="h-games">Activity</h2>
+      <span class="chip" id="games-count"></span>
+    </div>
+    <ul class="games" id="games"></ul>
+  </section>
+  </div>
+  <div class="col">
   <section class="card" aria-labelledby="h-add">
     <h2 id="h-add">Add an entry</h2>
     <div class="tabs" id="tabs" role="tablist" aria-label="Entry type">
@@ -397,7 +431,6 @@ input, select {
     </form>
     <p class="msg" id="form-msg" role="status"></p>
   </section>
-
   <section class="card" aria-labelledby="h-start">
     <h2 id="h-start">Starting amount</h2>
     <div class="grid">
@@ -409,7 +442,6 @@ input, select {
     </div>
     <p class="note">Counted in the All time view. Your games, other income and spending are added on top of it.</p>
   </section>
-
   <section class="card" aria-labelledby="h-pct">
     <div class="card-head">
       <h2 id="h-pct">Your percentages</h2>
@@ -428,14 +460,8 @@ input, select {
     </div>
     <p class="msg" id="pct-msg" role="status"></p>
   </section>
-
-  <section class="card" aria-labelledby="h-games">
-    <div class="card-head">
-      <h2 id="h-games">Activity</h2>
-      <span class="chip" id="games-count"></span>
-    </div>
-    <ul class="games" id="games"></ul>
-  </section>
+  </div>
+  </div>
 
   <p class="status" id="status"></p>
 </main>
@@ -942,5 +968,4 @@ input, select {
   })();
 })();
 </script>
-
 </body></html>
