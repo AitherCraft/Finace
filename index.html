@@ -1,0 +1,946 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Match Fee Split</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow column laid out like a match card. A dark scoreboard with net pay sits on top, then the four buckets with how much of each is used, a "can I afford it" check, the settings, the entry forms and one activity list. */
+:root {
+  --bg: #f1f4ee;
+  --surface: #ffffff;
+  --fg: #15211b;
+  --muted: #5b6a61;
+  --line: #d8dfd5;
+  --board: #15211b;
+  --board-fg: #f1f4ee;
+  --board-muted: #a9b8ae;
+  --spend: #3a6ea5;
+  --save: #2e8b57;
+  --donate: #b5446e;
+  --invest: #e0a800;
+  --good: #2e8b57;
+  --warn: #a8480a;
+  --focus: #1f5fbf;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1612;
+    --surface: #17211b;
+    --fg: #e8efe9;
+    --muted: #9aaaa0;
+    --line: #28362d;
+    --board: #070b09;
+    --board-fg: #e8efe9;
+    --board-muted: #8fa196;
+    --spend: #6fa3de;
+    --save: #5dbb87;
+    --donate: #e07fa2;
+    --invest: #f2c230;
+    --good: #5dbb87;
+    --warn: #f2a14a;
+    --focus: #8db8f0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1612;
+  --surface: #17211b;
+  --fg: #e8efe9;
+  --muted: #9aaaa0;
+  --line: #28362d;
+  --board: #070b09;
+  --board-fg: #e8efe9;
+  --board-muted: #8fa196;
+  --spend: #6fa3de;
+  --save: #5dbb87;
+  --donate: #e07fa2;
+  --invest: #f2c230;
+  --good: #5dbb87;
+  --warn: #f2a14a;
+  --focus: #8db8f0;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.45 var(--body);
+  padding-block: 24px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 18px; }
+.wrap > * { min-width: 0; }
+
+h1 {
+  font: 700 38px/1 var(--display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 0;
+  text-wrap: balance;
+}
+.lede { margin: 8px 0 0; color: var(--muted); max-width: 52ch; }
+
+h2 {
+  font: 700 20px/1.1 var(--display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.kicker {
+  font: 600 13px/1 var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.periods, .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.periods button, .tabs button {
+  font: 600 14px/1 var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--fg);
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 14px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.periods button[aria-pressed="true"], .tabs button[aria-selected="true"] {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+.board {
+  background: var(--board);
+  color: var(--board-fg);
+  border-radius: 6px;
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+}
+.board .kicker { color: var(--board-muted); display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.tag {
+  background: var(--invest);
+  color: #1a1500;
+  padding: 3px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.1em;
+}
+.big {
+  font: 700 clamp(52px, 17vw, 84px)/0.95 var(--display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.board .sub { color: var(--board-muted); font-size: 15px; }
+
+.bar { display: flex; gap: 2px; height: 14px; margin-top: 6px; }
+.bar span { display: block; border-radius: 2px; min-width: 0; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+.card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.note { margin: 0; color: var(--muted); font-size: 14px; }
+
+.buckets { list-style: none; margin: 0; padding: 0; }
+.bucket {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 0 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.bucket:first-child { border-top: 0; padding-top: 0; }
+.bucket:last-child { padding-bottom: 0; }
+.sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-top: 5px; }
+.field .sw { margin-top: 0; }
+.b-body { display: grid; gap: 8px; min-width: 0; }
+.b-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.b-name { font: 700 22px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.b-pct { color: var(--muted); font-size: 14px; margin-left: 8px; font-family: var(--body); letter-spacing: 0; text-transform: none; font-weight: 500; }
+.b-amt { font: 700 30px/1 var(--display); font-variant-numeric: tabular-nums; }
+.meter { height: 8px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 2px; }
+.b-det { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 12px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.b-det .left { font-weight: 600; color: var(--fg); }
+.b-det .over { font-weight: 700; color: var(--warn); }
+.b-det .extra { font-weight: 600; color: var(--good); }
+.bucket.warn .b-name, .bucket.warn .b-amt { color: var(--warn); }
+
+.chip {
+  font: 600 13px/1 var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 9px;
+  border-radius: 3px;
+  border: 1.5px solid var(--line);
+  color: var(--muted);
+}
+.chip.ok { color: var(--good); border-color: var(--good); }
+.chip.bad { color: var(--warn); border-color: var(--warn); }
+
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > label {
+  font: 600 13px/1 var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+input, select {
+  font: 500 16px/1.2 var(--body);
+  color: var(--fg);
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  padding: 11px 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+}
+.pct-wrap, .money-wrap { position: relative; }
+.pct-wrap input { padding-right: 30px; font-variant-numeric: tabular-nums; }
+.pct-wrap::after { content: "%"; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.money-wrap input { padding-left: 24px; font-variant-numeric: tabular-nums; }
+.money-wrap::before { content: "$"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; }
+
+.btn {
+  font: 700 16px/1 var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--fg);
+  color: var(--bg);
+  border: 0;
+  border-radius: 4px;
+  padding: 14px 18px;
+  min-height: 46px;
+  cursor: pointer;
+}
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
+.row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.msg { color: var(--muted); font-size: 14px; min-height: 1.2em; margin: 0; }
+.msg.err { color: var(--warn); }
+.stack { display: grid; gap: 14px; }
+
+.verdict {
+  border-radius: 4px;
+  border: 1.5px solid var(--line);
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+}
+.verdict.ok { border-color: var(--good); }
+.verdict.bad { border-color: var(--warn); }
+.v-head { font: 700 24px/1.1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.verdict.ok .v-head { color: var(--good); }
+.verdict.bad .v-head { color: var(--warn); }
+.v-body { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+.v-empty { color: var(--muted); font-size: 15px; }
+
+.games { list-style: none; margin: 0; padding: 0; }
+.game {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.game:first-child { border-top: 0; padding-top: 0; }
+.g-date { font: 600 15px/1.1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.g-main { min-width: 0; overflow-wrap: anywhere; }
+.g-main strong { display: block; font-weight: 600; }
+.g-main span { color: var(--muted); font-size: 14px; }
+.g-kind { font: 600 12px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; margin-right: 6px; }
+.g-net { font: 700 22px/1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
+.g-net.in { color: var(--good); }
+.g-act { display: flex; gap: 6px; }
+.mini {
+  font: 600 12px/1 var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--muted);
+  border: 1.5px solid var(--line);
+  border-radius: 3px;
+  padding: 8px 9px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.mini.danger { color: var(--warn); border-color: var(--warn); }
+.empty { color: var(--muted); margin: 0; }
+.status { color: var(--muted); font-size: 13px; margin: 0; }
+
+@media (max-width: 480px) {
+  .game { grid-template-columns: 64px minmax(0, 1fr) auto; }
+  .g-act { grid-column: 2 / -1; }
+  h1 { font-size: 32px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+
+<main class="wrap">
+  <header>
+    <h1>Match Fee Split</h1>
+    <p class="lede">Log what you earn. See how much to give, save, invest and spend, and check a purchase before you make it.</p>
+  </header>
+
+  <div class="periods" id="periods" role="group" aria-label="Time period"></div>
+
+  <section class="board" id="board" aria-live="polite"></section>
+
+  <section class="card" aria-labelledby="h-split">
+    <div class="card-head">
+      <h2 id="h-split">Where it goes</h2>
+      <span class="chip" id="total-chip"></span>
+    </div>
+    <ul class="buckets" id="buckets"></ul>
+  </section>
+
+  <section class="card" aria-labelledby="h-afford">
+    <div class="card-head">
+      <h2 id="h-afford">Can I afford it?</h2>
+      <span class="note" id="afford-period"></span>
+    </div>
+    <div class="grid">
+      <div class="field"><label for="a-amt">Amount</label><div class="money-wrap"><input id="a-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+      <div class="field"><label for="a-bucket">From</label>
+        <select id="a-bucket">
+          <option value="spend">Spend</option>
+          <option value="donate">Give</option>
+          <option value="save">Save</option>
+          <option value="invest">Invest</option>
+        </select>
+      </div>
+      <div class="field"><label for="a-note">What for (optional)</label><input id="a-note" type="text" maxlength="80" placeholder="New cleats" autocomplete="off"></div>
+    </div>
+    <div id="verdict" aria-live="polite"></div>
+    <div class="row">
+      <button class="btn" type="button" id="a-log" disabled>Log it as spent</button>
+      <p class="msg" id="a-msg" role="status"></p>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-add">
+    <h2 id="h-add">Add an entry</h2>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Entry type">
+      <button type="button" role="tab" data-tab="game" aria-selected="true" aria-controls="form-game" id="tab-game">Game</button>
+      <button type="button" role="tab" data-tab="other" aria-selected="false" aria-controls="form-other" id="tab-other">Other income</button>
+      <button type="button" role="tab" data-tab="spent" aria-selected="false" aria-controls="form-spent" id="tab-spent">I spent</button>
+    </div>
+
+    <form id="form-game" role="tabpanel" aria-labelledby="tab-game" novalidate class="stack">
+      <div class="grid">
+        <div class="field"><label for="g-date">Date</label><input id="g-date" type="date"></div>
+        <div class="field"><label for="g-role">Role</label>
+          <select id="g-role">
+            <option>Center</option>
+            <option>Assistant (AR)</option>
+            <option>4th official</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label for="g-fee">Game fee</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+        <div class="field"><label for="g-exp">Expenses (gas, gear)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+      </div>
+      <div class="field">
+        <label for="g-match">Match</label>
+        <input id="g-match" type="text" maxlength="80" placeholder="U14 Boys, Field 3" autocomplete="off">
+      </div>
+      <div class="row"><button class="btn" type="submit">Add game</button></div>
+    </form>
+
+    <form id="form-other" role="tabpanel" aria-labelledby="tab-other" novalidate class="stack" hidden>
+      <div class="grid">
+        <div class="field"><label for="o-date">Date</label><input id="o-date" type="date"></div>
+        <div class="field"><label for="o-src">Where from</label><input id="o-src" type="text" maxlength="60" placeholder="Paycheck, gift, side job" autocomplete="off"></div>
+        <div class="field"><label for="o-amt">Amount</label><div class="money-wrap"><input id="o-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+      </div>
+      <div class="row"><button class="btn" type="submit">Add income</button></div>
+    </form>
+
+    <form id="form-spent" role="tabpanel" aria-labelledby="tab-spent" novalidate class="stack" hidden>
+      <div class="grid">
+        <div class="field"><label for="s-date">Date</label><input id="s-date" type="date"></div>
+        <div class="field"><label for="s-bucket">Came out of</label>
+          <select id="s-bucket">
+            <option value="spend">Spend</option>
+            <option value="donate">Give</option>
+            <option value="save">Save</option>
+            <option value="invest">Invest</option>
+          </select>
+        </div>
+        <div class="field"><label for="s-amt">Amount</label><div class="money-wrap"><input id="s-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+      </div>
+      <div class="field">
+        <label for="s-note">What for</label>
+        <input id="s-note" type="text" maxlength="80" placeholder="Lunch, shin guards, church offering" autocomplete="off">
+      </div>
+      <div class="row"><button class="btn" type="submit">Add spending</button></div>
+    </form>
+    <p class="msg" id="form-msg" role="status"></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-start">
+    <h2 id="h-start">Starting amount</h2>
+    <div class="grid">
+      <div class="field"><label for="start-amt">Money you start with</label><div class="money-wrap"><input id="start-amt" type="number" inputmode="decimal" min="0" step="0.01" value="715"></div></div>
+    </div>
+    <div class="row">
+      <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
+      <p class="msg" id="start-msg" role="status"></p>
+    </div>
+    <p class="note">Counted in the All time view. Your games, other income and spending are added on top of it.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-pct">
+    <div class="card-head">
+      <h2 id="h-pct">Your percentages</h2>
+      <span class="chip" id="pct-total"></span>
+    </div>
+    <div class="grid">
+      <div class="field"><label for="pct-donate"><i class="sw" style="background:var(--donate)"></i>Give</label><div class="pct-wrap"><input id="pct-donate" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div></div>
+      <div class="field"><label for="pct-save"><i class="sw" style="background:var(--save)"></i>Save</label><div class="pct-wrap"><input id="pct-save" type="number" inputmode="decimal" min="0" max="100" step="1" value="45"></div></div>
+      <div class="field"><label for="pct-invest"><i class="sw" style="background:var(--invest)"></i>Invest</label><div class="pct-wrap"><input id="pct-invest" type="number" inputmode="decimal" min="0" max="100" step="1" value="25"></div></div>
+      <div class="field"><label for="pct-spend"><i class="sw" style="background:var(--spend)"></i>Spend</label><div class="pct-wrap"><input id="pct-spend" type="number" inputmode="decimal" min="0" max="100" step="1" value="20"></div></div>
+    </div>
+    <div class="row">
+      <button class="btn" type="button" id="save-split" disabled>Save percentages</button>
+      <button class="btn ghost" type="button" id="discard-split" disabled>Discard changes</button>
+      <button class="mini" type="button" id="reset-split">Use 10 / 45 / 25 / 20</button>
+    </div>
+    <p class="msg" id="pct-msg" role="status"></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-games">
+    <div class="card-head">
+      <h2 id="h-games">Activity</h2>
+      <span class="chip" id="games-count"></span>
+    </div>
+    <ul class="games" id="games"></ul>
+  </section>
+
+  <p class="status" id="status"></p>
+</main>
+
+<script>
+(function () {
+  var BUCKETS = [
+    { k: "donate", name: "Give", verb: "Given", color: "var(--donate)" },
+    { k: "save", name: "Save", verb: "Saved", color: "var(--save)" },
+    { k: "invest", name: "Invest", verb: "Invested", color: "var(--invest)" },
+    { k: "spend", name: "Spend", verb: "Spent", color: "var(--spend)" }
+  ];
+  var BMAP = {};
+  BUCKETS.forEach(function (b) { BMAP[b.k] = b; });
+  var DEFAULT_SPLIT = { donate: 10, save: 45, invest: 25, spend: 20 };
+  var DEFAULT_START = 715;
+  var start = DEFAULT_START;
+  var LOCAL_KEY = "match-fee-split-v1";
+  var DEMO_CENTS = 20000;
+  var KINDS = ["games", "income", "spending"];
+
+  var data = { games: [], income: [], spending: [] };
+  var split = Object.assign({}, DEFAULT_SPLIT);
+  var period = "all";
+  var pendingRemove = null;
+  var store = null;
+  var saveTimer = null;
+  var loaded = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmt(cents) { return money.format(cents / 100); }
+  function toCents(v) { return Math.round((Number(v) || 0) * 100); }
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function trim(n) { return String(Math.round(n * 100) / 100); }
+
+  function periodRange(p) {
+    var now = new Date();
+    var t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (p === "week") {
+      var dow = (t.getDay() + 6) % 7;
+      var s = new Date(t); s.setDate(t.getDate() - dow);
+      var e = new Date(s); e.setDate(s.getDate() + 6);
+      return [ymd(s), ymd(e)];
+    }
+    if (p === "month") {
+      return [ymd(new Date(t.getFullYear(), t.getMonth(), 1)), ymd(new Date(t.getFullYear(), t.getMonth() + 1, 0))];
+    }
+    if (p === "year") return [t.getFullYear() + "-01-01", t.getFullYear() + "-12-31"];
+    return ["0000-01-01", "9999-12-31"];
+  }
+  function periodLabel(p) {
+    var now = new Date();
+    if (p === "week") return "This week";
+    if (p === "month") return now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    if (p === "year") return String(now.getFullYear());
+    return "All time";
+  }
+  function inView(date) {
+    var r = periodRange(period);
+    return date >= r[0] && date <= r[1];
+  }
+  function inPeriod(kind) {
+    return data[kind].filter(function (x) { return inView(x.date); });
+  }
+
+  function allocate(netCents, sp) {
+    var pcts = BUCKETS.map(function (b) { return Number(sp[b.k]) || 0; });
+    var sum = pcts.reduce(function (a, b) { return a + b; }, 0);
+    var raw = pcts.map(function (p) { return netCents * p / 100; });
+    var out;
+    if (Math.abs(sum - 100) < 1e-9) {
+      out = raw.map(Math.floor);
+      var left = netCents - out.reduce(function (a, b) { return a + b; }, 0);
+      var order = raw.map(function (r, i) { return [r - Math.floor(r), i]; }).sort(function (a, b) { return b[0] - a[0]; });
+      for (var j = 0; j < left; j++) out[order[j % order.length][1]]++;
+    } else {
+      out = raw.map(Math.round);
+    }
+    return { out: out, pcts: pcts, sum: sum };
+  }
+
+  /* Everything the page shows comes from this one summary. */
+  function summarize() {
+    var games = inPeriod("games"), income = inPeriod("income"), spending = inPeriod("spending");
+    var fee = 0, exp = 0, other = 0;
+    games.forEach(function (g) { fee += toCents(g.fee); exp += toCents(g.expenses); });
+    income.forEach(function (x) { other += toCents(x.amount); });
+    var used = { spend: 0, save: 0, donate: 0, invest: 0 };
+    spending.forEach(function (s) { if (used[s.bucket] !== undefined) used[s.bucket] += toCents(s.amount); });
+    var base = period === "all" ? toCents(start) : 0;
+    var demo = data.games.length === 0 && data.income.length === 0 && data.spending.length === 0 && base === 0;
+    var net = demo ? DEMO_CENTS : Math.max(0, base + fee - exp + other);
+    var a = allocate(net, split);
+    return { games: games, income: income, spending: spending, fee: fee, exp: exp, other: other, used: used, demo: demo, net: net, a: a, base: base };
+  }
+
+  function render() {
+    renderPeriods();
+    var S = summarize();
+    var a = S.a;
+
+    var sub;
+    if (S.demo) sub = "Example: 4 games at $50. Add your first entry to see your own numbers.";
+    else if (S.games.length + S.income.length === 0 && S.base === 0) sub = "No income logged in this period yet.";
+    else {
+      var parts = [];
+      if (S.base) parts.push("starting amount " + fmt(S.base));
+      if (S.games.length) parts.push(S.games.length + (S.games.length === 1 ? " game" : " games") + " " + fmt(S.fee - S.exp));
+      if (S.income.length) parts.push("other income " + fmt(S.other));
+      sub = parts.join(" · ");
+      if (S.exp > 0) sub += " (game expenses already taken out: " + fmt(S.exp) + ")";
+      if (S.base + S.fee - S.exp + S.other < 0) sub += " · expenses are higher than income, so nothing to split";
+    }
+    var denom = Math.max(a.sum, 100);
+    $("board").innerHTML =
+      '<div class="kicker"><span>Net income · ' + esc(periodLabel(period)) + '</span>' + (S.demo ? '<span class="tag">Example</span>' : "") + '</div>' +
+      '<div class="big">' + fmt(S.net) + '</div>' +
+      '<div class="sub">' + esc(sub) + '</div>' +
+      '<div class="bar" aria-hidden="true">' +
+      BUCKETS.map(function (b, i) {
+        return a.pcts[i] > 0 ? '<span style="flex:' + (a.pcts[i] / denom) + ' 1 0;background:' + b.color + '"></span>' : "";
+      }).join("") + '</div>';
+
+    var ok = Math.abs(a.sum - 100) < 1e-9;
+    var chip = $("total-chip");
+    chip.className = "chip " + (ok ? "ok" : "bad");
+    if (ok) chip.textContent = "Adds up to 100%";
+    else if (a.sum < 100) chip.textContent = "Total " + trim(a.sum) + "% · " + trim(100 - a.sum) + "% unassigned";
+    else chip.textContent = "Total " + trim(a.sum) + "% · over by " + trim(a.sum - 100) + "%";
+
+    var html = BUCKETS.map(function (b, i) {
+      var alloc = a.out[i], used = S.used[b.k], left = alloc - used;
+      var ratio = alloc > 0 ? Math.min(1, used / alloc) : (used > 0 ? 1 : 0);
+      var over = left < 0;
+      var soft = b.k === "save" || b.k === "invest";
+      var fill = over ? (soft ? "var(--good)" : "var(--warn)") : b.color;
+      var tail;
+      if (over && soft) tail = '<span class="extra">' + fmt(-left) + ' extra</span>';
+      else if (over) tail = '<span class="over">Over by ' + fmt(-left) + '</span>';
+      else tail = '<span class="left">' + fmt(left) + ' left</span>';
+      return '<li class="bucket"><i class="sw" style="background:' + b.color + '"></i><div class="b-body">' +
+        '<div class="b-top"><div class="b-name">' + b.name + '<span class="b-pct">' + trim(a.pcts[i]) + '%</span></div><div class="b-amt">' + fmt(alloc) + '</div></div>' +
+        '<div class="meter" role="img" aria-label="' + b.name + ': ' + Math.round(ratio * 100) + ' percent used"><span style="width:' + (ratio * 100) + '%;background:' + fill + '"></span></div>' +
+        '<div class="b-det"><span>' + b.verb + ' ' + fmt(used) + '</span>' + tail + '</div></div></li>';
+    }).join("");
+    if (!ok && a.sum < 100) {
+      var un = S.net - a.out.reduce(function (x, y) { return x + y; }, 0);
+      html += '<li class="bucket warn"><i class="sw" style="background:var(--warn)"></i><div class="b-body"><div class="b-top"><div class="b-name">Unassigned</div><div class="b-amt">' + fmt(un) + '</div></div></div></li>';
+    }
+    $("buckets").innerHTML = html;
+
+    renderAfford(S);
+    renderLedger(S);
+  }
+
+  function renderAfford(S) {
+    S = S || summarize();
+    $("afford-period").textContent = "Checked against " + periodLabel(period).toLowerCase();
+    var amt = toCents($("a-amt").value);
+    var k = $("a-bucket").value, b = BMAP[k];
+    var i = BUCKETS.indexOf(b);
+    var alloc = S.a.out[i], used = S.used[k], left = alloc - used;
+    var box = $("verdict");
+    $("a-log").disabled = !(amt > 0);
+    if (!(amt > 0)) {
+      box.innerHTML = '<div class="v-empty">Type an amount to see if it fits. You have ' + (left >= 0 ? fmt(left) + " left" : fmt(-left) + " over") + " in " + b.name + " " + (period === "all" ? "so far." : "for this period.") + '</div>';
+      return;
+    }
+    var after = left - amt;
+    var pctOfShare = alloc > 0 ? Math.round((used + amt) / alloc * 100) : null;
+    var soft = k === "save" || k === "invest";
+    if (after >= 0) {
+      box.innerHTML = '<div class="verdict ok"><div class="v-head">Fits</div><div class="v-body">' + fmt(amt) + ' leaves ' + fmt(after) + ' of your ' + fmt(alloc) + ' ' + b.name + ' share' + (pctOfShare !== null ? ' (' + pctOfShare + '% used)' : '') + '.</div></div>';
+    } else if (soft) {
+      box.innerHTML = '<div class="verdict ok"><div class="v-head">Above plan</div><div class="v-body">This puts ' + fmt(-after) + ' more into ' + b.name + ' than your ' + trim(S.a.pcts[i]) + '% plan. That is fine, but it reduces what is available for other buckets.</div></div>';
+    } else {
+      var why = alloc === 0
+        ? 'You have no ' + b.name + ' share ' + (period === "all" ? "yet." : "in this period yet.")
+        : 'Your ' + b.name + ' share is ' + fmt(alloc) + ' (' + trim(S.a.pcts[i]) + '%) and ' + fmt(used) + ' is already used.';
+      box.innerHTML = '<div class="verdict bad"><div class="v-head">Over by ' + fmt(-after) + '</div><div class="v-body">' + why + ' This would take ' + b.name + ' to ' + (pctOfShare !== null ? pctOfShare + '% of its share.' : 'over its share.') + '</div></div>';
+    }
+  }
+
+  function renderLedger(S) {
+    var items = [];
+    S.games.forEach(function (g) {
+      var fee = toCents(g.fee), ex = toCents(g.expenses);
+      items.push({ kind: "games", id: g.id, date: g.date, created: g.created || 0, label: "Game", color: "var(--good)",
+        title: g.match || "Game", detail: (g.role || "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
+        amt: Math.max(0, fee - ex), sign: "+" });
+    });
+    S.income.forEach(function (x) {
+      items.push({ kind: "income", id: x.id, date: x.date, created: x.created || 0, label: "Income", color: "var(--good)",
+        title: x.source || "Other income", detail: "Other income", amt: toCents(x.amount), sign: "+" });
+    });
+    S.spending.forEach(function (s) {
+      var b = BMAP[s.bucket] || BMAP.spend;
+      items.push({ kind: "spending", id: s.id, date: s.date, created: s.created || 0, label: b.verb, color: b.color,
+        title: s.note || b.verb, detail: "From " + b.name, amt: toCents(s.amount), sign: "−" });
+    });
+    items.sort(function (x, y) { return x.date < y.date ? 1 : x.date > y.date ? -1 : y.created - x.created; });
+    $("games-count").textContent = items.length + (items.length === 1 ? " entry" : " entries");
+    if (!items.length) {
+      $("games").innerHTML = '<li><p class="empty">Nothing here yet. Add a game, other income or spending above and it shows up in this list.</p></li>';
+      return;
+    }
+    $("games").innerHTML = items.map(function (it) {
+      var p = it.date.split("-");
+      var d = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+      var key = it.kind + ":" + it.id;
+      var act = pendingRemove === key
+        ? '<button class="mini danger" type="button" data-confirm="' + esc(key) + '">Remove</button><button class="mini" type="button" data-cancel="1">Keep</button>'
+        : '<button class="mini" type="button" data-remove="' + esc(key) + '" aria-label="Remove ' + esc(it.title) + ' on ' + esc(d) + '">Remove</button>';
+      return '<li class="game"><div class="g-date">' + esc(d) + '</div>' +
+        '<div class="g-main"><strong>' + esc(it.title) + '</strong><span><span class="g-kind" style="color:' + it.color + '">' + esc(it.label) + '</span>' + esc(it.detail) + '</span></div>' +
+        '<div class="g-net ' + (it.sign === "+" ? "in" : "") + '">' + it.sign + fmt(it.amt) + '</div><div class="g-act">' + act + '</div></li>';
+    }).join("");
+  }
+
+  function renderPeriods() {
+    var opts = [["week", "Week"], ["month", "Month"], ["year", "Year"], ["all", "All time"]];
+    $("periods").innerHTML = opts.map(function (o) {
+      return '<button type="button" data-period="' + o[0] + '" aria-pressed="' + (period === o[0]) + '">' + o[1] + "</button>";
+    }).join("");
+  }
+
+  /* The starting amount box is a draft too. Only its Save button changes `start`. */
+  function readStart() {
+    var v = parseFloat($("start-amt").value);
+    return isFinite(v) && v >= 0 ? Math.round(v * 100) / 100 : null;
+  }
+  function startDirty() { var v = readStart(); return v !== null && v !== start; }
+  function fillStartInput() { $("start-amt").value = start; $("save-start").disabled = true; }
+  function updateStartUI() {
+    var v = readStart(), dirty = startDirty(), m = $("start-msg");
+    $("save-start").disabled = !dirty;
+    if (v === null) { m.className = "msg err"; m.textContent = "Enter an amount of $0 or more."; }
+    else if (dirty) { m.className = "msg"; m.textContent = "Unsaved. Click Save starting amount to apply it."; }
+    else { m.className = "msg"; m.textContent = ""; }
+  }
+
+  /* The percentage boxes are a draft. Only the Save button changes `split`. */
+  function fillSplitInputs() {
+    BUCKETS.forEach(function (b) { $("pct-" + b.k).value = split[b.k]; });
+    updateDraftUI();
+  }
+  function readDraft() {
+    var d = {};
+    BUCKETS.forEach(function (b) {
+      var v = parseFloat($("pct-" + b.k).value);
+      d[b.k] = isFinite(v) ? Math.min(100, Math.max(0, v)) : 0;
+    });
+    return d;
+  }
+  function draftDirty() {
+    var d = readDraft();
+    return BUCKETS.some(function (b) { return d[b.k] !== split[b.k]; });
+  }
+  function updateDraftUI() {
+    var d = readDraft();
+    var sum = BUCKETS.reduce(function (t, b) { return t + d[b.k]; }, 0);
+    var ok = Math.abs(sum - 100) < 1e-9;
+    var dirty = draftDirty();
+    var chip = $("pct-total");
+    chip.className = "chip " + (ok ? "ok" : "bad");
+    if (ok) chip.textContent = "Total 100%";
+    else if (sum < 100) chip.textContent = "Total " + trim(sum) + "% · " + trim(100 - sum) + "% left to assign";
+    else chip.textContent = "Total " + trim(sum) + "% · over by " + trim(sum - 100) + "%";
+    $("save-split").disabled = !(dirty && ok);
+    $("discard-split").disabled = !dirty;
+    var m = $("pct-msg");
+    if (dirty) {
+      m.className = "msg";
+      m.textContent = ok ? "Unsaved changes. Nothing else changes until you click Save percentages." : "Unsaved changes. The four percentages must total 100% before you can save.";
+    }
+  }
+  function validSplit(s) {
+    return s && BUCKETS.every(function (b) { return typeof s[b.k] === "number" && isFinite(s[b.k]) && s[b.k] >= 0 && s[b.k] <= 100; });
+  }
+
+  /* Storage: a private store when the viewer has one, this browser otherwise. */
+  function saveLocal() {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start })); } catch (e) {}
+  }
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(LOCAL_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      KINDS.forEach(function (k) { if (d && Array.isArray(d[k])) data[k] = d[k]; });
+      if (d && validSplit(d.split)) split = d.split;
+      if (d && typeof d.start === "number" && isFinite(d.start) && d.start >= 0) start = d.start;
+    } catch (e) {}
+  }
+  function persistSplit() {
+    if (store) return store.profile.set({ split: split, start: start }).then(function () { return true; }, function () { return false; });
+    saveLocal();
+    return Promise.resolve(true);
+  }
+  function setStatus(t) { $("status").textContent = t; }
+  function uid(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function addEntry(kind, entry) {
+    if (store) {
+      return store[kind].doc(entry.id).set(entry).then(function () { return true; }, function () { return false; });
+    }
+    data[kind].push(entry); saveLocal(); render();
+    return Promise.resolve(true);
+  }
+  function removeEntry(kind, id) {
+    pendingRemove = null;
+    if (store) {
+      store[kind].doc(id).delete().catch(function () { setStatus("Could not remove that entry. Try again."); });
+      render();
+    } else {
+      data[kind] = data[kind].filter(function (x) { return x.id !== id; });
+      saveLocal(); render();
+    }
+  }
+  function formMsg(text, isErr) {
+    var m = $("form-msg"); m.textContent = text; m.className = "msg" + (isErr ? " err" : "");
+  }
+  function afterAdd(ok, date, what) {
+    if (!ok) { formMsg("Could not save that. Try again in a moment.", true); return false; }
+    formMsg(what + " added." + (inView(date) ? "" : " It is outside the period you are viewing. Switch to All time to see it."), false);
+    return true;
+  }
+
+  /* Events */
+  $("periods").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-period]");
+    if (!b) return;
+    period = b.getAttribute("data-period"); pendingRemove = null; render();
+  });
+  $("games").addEventListener("click", function (e) {
+    var t = e.target.closest("button");
+    if (!t) return;
+    if (t.hasAttribute("data-remove")) { pendingRemove = t.getAttribute("data-remove"); render(); }
+    else if (t.hasAttribute("data-confirm")) {
+      var p = t.getAttribute("data-confirm").split(":");
+      removeEntry(p[0], p.slice(1).join(":"));
+    } else if (t.hasAttribute("data-cancel")) { pendingRemove = null; render(); }
+  });
+  BUCKETS.forEach(function (b) {
+    $("pct-" + b.k).addEventListener("input", function () { updateDraftUI(); });
+  });
+  $("save-split").addEventListener("click", function () {
+    var d = readDraft();
+    var sum = BUCKETS.reduce(function (t, b) { return t + d[b.k]; }, 0);
+    if (Math.abs(sum - 100) > 1e-9) return;
+    split = d;
+    render(); fillSplitInputs();
+    persistSplit().then(function (ok) {
+      var m = $("pct-msg");
+      m.className = ok ? "msg" : "msg err";
+      m.textContent = ok ? "Saved. Your new percentages now apply everywhere." : "Applied here, but could not save to your account. Check your connection and save again.";
+    });
+  });
+  $("start-amt").addEventListener("input", updateStartUI);
+  $("save-start").addEventListener("click", function () {
+    var v = readStart();
+    if (v === null) return;
+    start = v;
+    render(); fillStartInput();
+    persistSplit().then(function (ok) {
+      var m = $("start-msg");
+      m.className = ok ? "msg" : "msg err";
+      m.textContent = ok ? "Saved." : "Applied here, but could not save to your account. Check your connection and save again.";
+    });
+  });
+  $("discard-split").addEventListener("click", function () {
+    fillSplitInputs();
+    $("pct-msg").className = "msg"; $("pct-msg").textContent = "Changes discarded.";
+  });
+  $("reset-split").addEventListener("click", function () {
+    BUCKETS.forEach(function (b) { $("pct-" + b.k).value = DEFAULT_SPLIT[b.k]; });
+    updateDraftUI();
+    if (!draftDirty()) { $("pct-msg").className = "msg"; $("pct-msg").textContent = "Already set to 10 / 45 / 25 / 20."; }
+  });
+
+  var today = ymd(new Date());
+  ["g-date", "o-date", "s-date"].forEach(function (id) { $(id).value = today; });
+
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-tab]");
+    if (!b) return;
+    var which = b.getAttribute("data-tab");
+    ["game", "other", "spent"].forEach(function (t) {
+      $("form-" + t).hidden = t !== which;
+      $("tab-" + t).setAttribute("aria-selected", String(t === which));
+    });
+    formMsg("", false);
+  });
+
+  $("form-game").addEventListener("submit", function (e) {
+    e.preventDefault(); formMsg("", false);
+    var date = $("g-date").value, fee = parseFloat($("g-fee").value), ex = parseFloat($("g-exp").value);
+    if (!date) return formMsg("Pick the date of the game.", true);
+    if (!isFinite(fee) || fee < 0) return formMsg("Enter the game fee, like 55 or 62.50.", true);
+    if ($("g-exp").value !== "" && (!isFinite(ex) || ex < 0)) return formMsg("Expenses must be zero or more.", true);
+    addEntry("games", {
+      id: uid("g"), date: date, match: $("g-match").value.trim(), role: $("g-role").value,
+      fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) ? Math.round(ex * 100) / 100 : 0, created: Date.now()
+    }).then(function (ok) {
+      if (afterAdd(ok, date, "Game")) { $("g-fee").value = ""; $("g-exp").value = ""; $("g-match").value = ""; $("g-fee").focus(); }
+    });
+  });
+
+  $("form-other").addEventListener("submit", function (e) {
+    e.preventDefault(); formMsg("", false);
+    var date = $("o-date").value, amt = parseFloat($("o-amt").value);
+    if (!date) return formMsg("Pick the date you got the money.", true);
+    if (!isFinite(amt) || amt <= 0) return formMsg("Enter how much you earned, like 120 or 45.50.", true);
+    addEntry("income", {
+      id: uid("i"), date: date, source: $("o-src").value.trim(), amount: Math.round(amt * 100) / 100, created: Date.now()
+    }).then(function (ok) {
+      if (afterAdd(ok, date, "Income")) { $("o-amt").value = ""; $("o-src").value = ""; $("o-src").focus(); }
+    });
+  });
+
+  $("form-spent").addEventListener("submit", function (e) {
+    e.preventDefault(); formMsg("", false);
+    var date = $("s-date").value, amt = parseFloat($("s-amt").value);
+    if (!date) return formMsg("Pick the date you spent it.", true);
+    if (!isFinite(amt) || amt <= 0) return formMsg("Enter how much you spent, like 18 or 32.75.", true);
+    addEntry("spending", {
+      id: uid("s"), date: date, bucket: $("s-bucket").value, note: $("s-note").value.trim(),
+      amount: Math.round(amt * 100) / 100, created: Date.now()
+    }).then(function (ok) {
+      if (afterAdd(ok, date, "Spending")) { $("s-amt").value = ""; $("s-note").value = ""; $("s-amt").focus(); }
+    });
+  });
+
+  ["a-amt", "a-bucket"].forEach(function (id) {
+    $(id).addEventListener("input", function () { $("a-msg").textContent = ""; renderAfford(); });
+  });
+  $("a-log").addEventListener("click", function () {
+    var amt = parseFloat($("a-amt").value);
+    if (!isFinite(amt) || amt <= 0) return;
+    var k = $("a-bucket").value;
+    addEntry("spending", {
+      id: uid("s"), date: today, bucket: k, note: $("a-note").value.trim(),
+      amount: Math.round(amt * 100) / 100, created: Date.now()
+    }).then(function (ok) {
+      var m = $("a-msg");
+      if (!ok) { m.textContent = "Could not save that. Try again in a moment."; m.className = "msg err"; return; }
+      $("a-amt").value = ""; $("a-note").value = "";
+      m.className = "msg"; m.textContent = "Logged under " + BMAP[k].name + " for today.";
+      renderAfford();
+    });
+  });
+
+  /* Start with this device's copy, then switch to the private store if the viewer has one. */
+  loadLocal(); fillSplitInputs(); fillStartInput(); render();
+  setStatus("Saved in this browser only.");
+
+  (async function () {
+    try {
+      var db = await window.claude.use("db");
+      var user = await window.claude.use("user");
+      if (!db || !user) return;
+      var id = await user.id();
+      if (!id) return;
+      var profile = db.doc("data/users/" + id + "/profile");
+      store = { profile: profile, games: profile.collection("games"), income: profile.collection("income"), spending: profile.collection("spending") };
+      data = { games: [], income: [], spending: [] }; split = Object.assign({}, DEFAULT_SPLIT); start = DEFAULT_START;
+      fillSplitInputs(); fillStartInput(); render();
+      setStatus("Loading your saved entries…");
+      var timer = setTimeout(function () {
+        if (!loaded) setStatus("Can't reach your saved entries yet. Anything you add will save once it connects.");
+      }, 10000);
+      profile.onSnapshot(function (snap) {
+        var d = snap.exists ? snap.data() : null;
+        if (d && typeof d.start === "number" && isFinite(d.start) && d.start >= 0) {
+          var editingStart = startDirty();
+          start = d.start;
+          if (editingStart) updateStartUI(); else fillStartInput();
+          render();
+        }
+        if (d && validSplit(d.split)) {
+          var editing = draftDirty();
+          split = d.split;
+          if (editing) updateDraftUI(); else fillSplitInputs();
+          render();
+        }
+      }, function () {});
+      KINDS.forEach(function (k) {
+        store[k].onSnapshot(function (snap) {
+          data[k] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+          if (!snap.metadata.fromCache) { loaded = true; clearTimeout(timer); }
+          if (loaded) setStatus("Saved privately to your account. Only you can see it.");
+          render();
+        }, function () { clearTimeout(timer); setStatus("Saved entries are unavailable right now."); });
+      });
+    } catch (e) { /* stay on the browser copy */ }
+  })();
+})();
+</script>
+
+</body></html>
