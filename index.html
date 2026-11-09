@@ -270,7 +270,6 @@ html[data-hide~="plan"][data-hide~="quick"] .grid2:has(.p-plan) { display: none;
 }
 .q-blue { color: var(--on-accent); }
 .hero-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
-.savebar { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 8px); z-index: 20; }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; }
 .preset[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--on-accent); }
 .colorrow { display: flex; align-items: center; gap: 10px; }
@@ -344,6 +343,35 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     </section>
   </div>
 
+  <div class="grid2 home-only">
+    <section class="panel p-start" aria-labelledby="h-start">
+        <h2 id="h-start">Starting amount</h2>
+        <div class="grid">
+          <div class="field"><label for="start-amt">Money you start with</label><div class="money-wrap"><input id="start-amt" type="number" inputmode="decimal" min="0" step="0.01" value="715"></div></div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
+          <p class="msg" id="start-msg" role="status"></p>
+        </div>
+        <p class="note">Counted in every view: week, month, year and all time. Your games and other income are added on top of it.</p>
+      </section>
+    <section class="panel p-pct" aria-labelledby="h-pct">
+        <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
+        <div class="grid">
+          <div class="field"><label for="pct-donate"><i class="dot" style="background:var(--c-give)"></i>Give</label><div class="pct-wrap"><input id="pct-donate" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div></div>
+          <div class="field"><label for="pct-save"><i class="dot" style="background:var(--c-save)"></i>Save</label><div class="pct-wrap"><input id="pct-save" type="number" inputmode="decimal" min="0" max="100" step="1" value="45"></div></div>
+          <div class="field"><label for="pct-invest"><i class="dot" style="background:var(--c-invest)"></i>Invest</label><div class="pct-wrap"><input id="pct-invest" type="number" inputmode="decimal" min="0" max="100" step="1" value="25"></div></div>
+          <div class="field"><label for="pct-spend"><i class="dot" style="background:var(--c-spend)"></i>Spend</label><div class="pct-wrap"><input id="pct-spend" type="number" inputmode="decimal" min="0" max="100" step="1" value="20"></div></div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="save-split" disabled>Save percentages</button>
+          <button class="btn ghost" type="button" id="discard-split" disabled>Discard changes</button>
+          <button class="mini" type="button" id="reset-split">Use 10 / 45 / 25 / 20</button>
+        </div>
+        <p class="msg" id="pct-msg" role="status"></p>
+      </section>
+  </div>
+
   <div class="pages" id="pages" hidden>
     <a class="back" href="#home">&larr; Back to dashboard</a>
 
@@ -412,36 +440,6 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         <label class="check" for="show-quick"><input id="show-quick" type="checkbox" data-ui>Quick actions</label>
       </div>
     </section>
-
-    <h2 class="sub-h" style="margin:4px 0 0">Money</h2>
-    <section class="panel p-start" data-page="app-settings" hidden aria-labelledby="h-start">
-        <h2 id="h-start">Starting amount</h2>
-        <div class="grid">
-          <div class="field"><label for="start-amt">Money you start with</label><div class="money-wrap"><input id="start-amt" type="number" inputmode="decimal" min="0" step="0.01" value="715"></div></div>
-        </div>
-        <div class="row">
-          <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
-          <p class="msg" id="start-msg" role="status"></p>
-        </div>
-        <p class="note">Counted in every view: week, month, year and all time. Your games and other income are added on top of it.</p>
-      </section>
-    <section class="panel p-pct" data-page="app-settings" hidden aria-labelledby="h-pct">
-        <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
-        <div class="grid">
-          <div class="field"><label for="pct-donate"><i class="dot" style="background:var(--c-give)"></i>Give</label><div class="pct-wrap"><input id="pct-donate" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div></div>
-          <div class="field"><label for="pct-save"><i class="dot" style="background:var(--c-save)"></i>Save</label><div class="pct-wrap"><input id="pct-save" type="number" inputmode="decimal" min="0" max="100" step="1" value="45"></div></div>
-          <div class="field"><label for="pct-invest"><i class="dot" style="background:var(--c-invest)"></i>Invest</label><div class="pct-wrap"><input id="pct-invest" type="number" inputmode="decimal" min="0" max="100" step="1" value="25"></div></div>
-          <div class="field"><label for="pct-spend"><i class="dot" style="background:var(--c-spend)"></i>Spend</label><div class="pct-wrap"><input id="pct-spend" type="number" inputmode="decimal" min="0" max="100" step="1" value="20"></div></div>
-        </div>
-        <div class="row">
-          <button class="btn" type="button" id="save-split" disabled>Save percentages</button>
-          <button class="btn ghost" type="button" id="discard-split" disabled>Discard changes</button>
-          <button class="mini" type="button" id="reset-split">Use 10 / 45 / 25 / 20</button>
-        </div>
-        <p class="msg" id="pct-msg" role="status"></p>
-      </section>
-
-
 
     <section class="panel" data-page="add-game" hidden aria-labelledby="h-game">
       <h2 id="h-game">Add a game</h2>
