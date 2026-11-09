@@ -120,12 +120,10 @@ h2 { margin: 0; font: 600 20px/1.15 var(--body); }
 .grid2, .stack { display: contents; }
 .p-plan { order: 1; }
 .p-quick { order: 2; }
-.p-afford { order: 3; }
-.p-add { order: 4; }
-.p-chart { order: 5; }
-.p-games { order: 6; }
-.p-start { order: 7; }
-.p-pct { order: 8; }
+.p-chart { order: 3; }
+.p-games { order: 4; }
+.p-start { order: 5; }
+.p-pct { order: 6; }
 .status { order: 9; }
 
 /* Chart */
@@ -154,7 +152,13 @@ h2 { margin: 0; font: 600 20px/1.15 var(--body); }
 .tag { background: var(--yellow); color: #231800; padding: 3px 8px; border-radius: 999px; font: 700 12px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
 
 /* Quick actions */
-.qa { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 12px; }
+.p-quick { grid-template-rows: auto 1fr; }
+.qa { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(92px, 1fr); gap: 12px; }
+a.qbtn, a.btn, a.back { text-decoration: none; }
+a.btn { display: inline-grid; place-items: center; }
+.back { display: inline-flex; align-items: center; width: fit-content; color: var(--fg); font: 700 14px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 16px; border: 1px solid var(--panel-line); border-radius: 999px; background: rgba(11, 22, 48, 0.8); }
+.pages { display: grid; gap: 16px; width: 100%; max-width: 760px; margin: 0 auto; }
+.page-sub { margin: 0; color: var(--muted); font-size: 15px; }
 .qbtn { display: grid; justify-items: center; align-content: center; gap: 8px; padding: 16px 8px; min-height: 92px; border: 0; border-radius: 12px; color: #fff; font: 700 15px/1.15 var(--body); text-align: center; cursor: pointer; }
 .qbtn svg { width: 26px; height: 26px; }
 .q-blue { background: var(--btn-blue); }
@@ -243,10 +247,10 @@ button.badge { cursor: pointer; min-height: 26px; }
         <p class="tagline">Track <b>&bull;</b> Plan <b>&bull;</b> Earn</p>
       </div>
     </div>
-    <div class="periods" id="periods" role="group" aria-label="Time period"></div>
+    <div class="periods home-only" id="periods" role="group" aria-label="Time period"></div>
   </header>
 
-  <section class="tiles" aria-label="Summary">
+  <section class="tiles home-only" aria-label="Summary">
     <div class="tile t-green">
       <div class="t-head"><span class="ic" aria-hidden="true">$</span><span class="t-label">Total Earnings</span></div>
       <div class="t-val" id="t-earn">$0.00</div>
@@ -269,7 +273,7 @@ button.badge { cursor: pointer; min-height: 26px; }
     </div>
   </section>
 
-  <div class="grid2">
+  <div class="grid2 home-only">
     <section class="panel p-chart" aria-labelledby="h-chart">
       <div class="panel-head"><h2 id="h-chart">Earnings Overview</h2><span class="note">Total earned, last 6 months</span></div>
       <div class="chart" id="chart"></div>
@@ -280,56 +284,60 @@ button.badge { cursor: pointer; min-height: 26px; }
     </section>
   </div>
 
-  <div class="grid2">
+  <div class="grid2 home-only">
     <section class="panel p-plan" aria-labelledby="h-split">
       <div class="panel-head"><h2 id="h-split">Money Plan</h2><span class="chip" id="total-chip"></span></div>
       <p class="note" id="plan-sub"></p>
       <div class="planbar" id="planbar" aria-hidden="true"></div>
       <div class="bk-grid" id="buckets"></div>
     </section>
-    <div class="stack">
-      <section class="panel p-quick" aria-labelledby="h-quick">
-        <h2 id="h-quick">Quick Actions</h2>
-        <div class="qa">
-          <button class="qbtn q-blue" type="button" data-quick="game"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Game</button>
-          <button class="qbtn q-green" type="button" data-quick="other"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>Other Income</button>
-          <button class="qbtn q-purple" type="button" data-quick="spent"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9m0 0l-4 4m4-4l4 4M5 4h14"/></svg>I Spent</button>
-          <button class="qbtn q-orange" type="button" data-quick="afford"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1.9-1.1 1.8M12 17h.01"/></svg>Can I Afford It?</button>
-        </div>
-      </section>
-      <section class="panel p-afford" aria-labelledby="h-afford">
-        <div class="panel-head"><h2 id="h-afford">Can I afford it?</h2><span class="note" id="afford-period"></span></div>
-        <div class="grid">
-          <div class="field"><label for="a-amt">Amount</label><div class="money-wrap"><input id="a-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
-          <div class="field"><label for="a-bucket">From</label>
-            <select id="a-bucket">
-              <option value="spend">Spend</option>
-              <option value="donate">Give</option>
-              <option value="save">Save</option>
-              <option value="invest">Invest</option>
-            </select>
-          </div>
-          <div class="field"><label for="a-note">What for (optional)</label><input id="a-note" type="text" maxlength="80" placeholder="New cleats" autocomplete="off"></div>
-        </div>
-        <div id="verdict" aria-live="polite"></div>
-        <div class="row">
-          <button class="btn" type="button" id="a-log" disabled>Log it as spent</button>
-          <p class="msg" id="a-msg" role="status"></p>
-        </div>
-      </section>
-    </div>
+    <section class="panel p-quick" aria-labelledby="h-quick">
+      <h2 id="h-quick">Quick Actions</h2>
+      <div class="qa">
+        <a class="qbtn q-blue" href="#add-game"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Game</a>
+        <a class="qbtn q-green" href="#other-income"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>Other Income</a>
+        <a class="qbtn q-purple" href="#i-spent"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9m0 0l-4 4m4-4l4 4M5 4h14"/></svg>I Spent</a>
+        <a class="qbtn q-orange" href="#can-i-afford"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1.9-1.1 1.8M12 17h.01"/></svg>Can I Afford It?</a>
+      </div>
+    </section>
   </div>
 
-  <div class="grid2">
-    <section class="panel p-add" aria-labelledby="h-add">
-      <h2 id="h-add">Add an entry</h2>
-      <div class="tabs" id="tabs" role="tablist" aria-label="Entry type">
-        <button type="button" role="tab" data-tab="game" aria-selected="true" aria-controls="form-game" id="tab-game">Game</button>
-        <button type="button" role="tab" data-tab="other" aria-selected="false" aria-controls="form-other" id="tab-other">Other income</button>
-        <button type="button" role="tab" data-tab="spent" aria-selected="false" aria-controls="form-spent" id="tab-spent">I spent</button>
-      </div>
+  <div class="grid2 home-only">
+    <section class="panel p-start" aria-labelledby="h-start">
+        <h2 id="h-start">Starting amount</h2>
+        <div class="grid">
+          <div class="field"><label for="start-amt">Money you start with</label><div class="money-wrap"><input id="start-amt" type="number" inputmode="decimal" min="0" step="0.01" value="715"></div></div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
+          <p class="msg" id="start-msg" role="status"></p>
+        </div>
+        <p class="note">Counted in the All time view. Your games, other income and spending are added on top of it.</p>
+      </section>
+    <section class="panel p-pct" aria-labelledby="h-pct">
+        <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
+        <div class="grid">
+          <div class="field"><label for="pct-donate"><i class="dot" style="background:var(--red)"></i>Give</label><div class="pct-wrap"><input id="pct-donate" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div></div>
+          <div class="field"><label for="pct-save"><i class="dot" style="background:var(--green)"></i>Save</label><div class="pct-wrap"><input id="pct-save" type="number" inputmode="decimal" min="0" max="100" step="1" value="45"></div></div>
+          <div class="field"><label for="pct-invest"><i class="dot" style="background:var(--blue)"></i>Invest</label><div class="pct-wrap"><input id="pct-invest" type="number" inputmode="decimal" min="0" max="100" step="1" value="25"></div></div>
+          <div class="field"><label for="pct-spend"><i class="dot" style="background:var(--yellow)"></i>Spend</label><div class="pct-wrap"><input id="pct-spend" type="number" inputmode="decimal" min="0" max="100" step="1" value="20"></div></div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="save-split" disabled>Save percentages</button>
+          <button class="btn ghost" type="button" id="discard-split" disabled>Discard changes</button>
+          <button class="mini" type="button" id="reset-split">Use 10 / 45 / 25 / 20</button>
+        </div>
+        <p class="msg" id="pct-msg" role="status"></p>
+      </section>
+  </div>
 
-      <form id="form-game" role="tabpanel" aria-labelledby="tab-game" novalidate class="fs">
+  <div class="pages" id="pages" hidden>
+    <a class="back" href="#home">&larr; Back to dashboard</a>
+
+    <section class="panel" data-page="add-game" hidden aria-labelledby="h-game">
+      <h2 id="h-game">Add a game</h2>
+      <p class="page-sub">Log a match fee and any gas or gear you paid for it.</p>
+      <form id="form-game" novalidate class="fs">
         <div class="grid">
           <div class="field"><label for="g-date">Date</label><input id="g-date" type="date"></div>
           <div class="field"><label for="g-role">Role</label>
@@ -348,19 +356,29 @@ button.badge { cursor: pointer; min-height: 26px; }
           <input id="g-match" type="text" maxlength="80" placeholder="U14 Boys, Field 3" autocomplete="off">
         </div>
         <label class="check" for="g-paid"><input id="g-paid" type="checkbox" checked>Already paid</label>
-        <div class="row"><button class="btn" type="submit">Add game</button></div>
+        <div class="row"><button class="btn" type="submit">Add game</button><a class="btn ghost" href="#home">Done</a></div>
+        <p class="msg" data-msg role="status"></p>
       </form>
+    </section>
 
-      <form id="form-other" role="tabpanel" aria-labelledby="tab-other" novalidate class="fs" hidden>
+    <section class="panel" data-page="other-income" hidden aria-labelledby="h-other">
+      <h2 id="h-other">Add other income</h2>
+      <p class="page-sub">Money that did not come from a game, like a paycheck, a gift or a side job.</p>
+      <form id="form-other" novalidate class="fs">
         <div class="grid">
           <div class="field"><label for="o-date">Date</label><input id="o-date" type="date"></div>
           <div class="field"><label for="o-src">Where from</label><input id="o-src" type="text" maxlength="60" placeholder="Paycheck, gift, side job" autocomplete="off"></div>
           <div class="field"><label for="o-amt">Amount</label><div class="money-wrap"><input id="o-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
         </div>
-        <div class="row"><button class="btn" type="submit">Add income</button></div>
+        <div class="row"><button class="btn" type="submit">Add income</button><a class="btn ghost" href="#home">Done</a></div>
+        <p class="msg" data-msg role="status"></p>
       </form>
+    </section>
 
-      <form id="form-spent" role="tabpanel" aria-labelledby="tab-spent" novalidate class="fs" hidden>
+    <section class="panel" data-page="i-spent" hidden aria-labelledby="h-spent">
+      <h2 id="h-spent">I spent</h2>
+      <p class="page-sub">Log money you spent, gave, saved or invested. It counts against that part of your plan.</p>
+      <form id="form-spent" novalidate class="fs">
         <div class="grid">
           <div class="field"><label for="s-date">Date</label><input id="s-date" type="date"></div>
           <div class="field"><label for="s-bucket">Came out of</label>
@@ -377,40 +395,32 @@ button.badge { cursor: pointer; min-height: 26px; }
           <label for="s-note">What for</label>
           <input id="s-note" type="text" maxlength="80" placeholder="Lunch, shin guards, church offering" autocomplete="off">
         </div>
-        <div class="row"><button class="btn" type="submit">Add spending</button></div>
+        <div class="row"><button class="btn" type="submit">Add spending</button><a class="btn ghost" href="#home">Done</a></div>
+        <p class="msg" data-msg role="status"></p>
       </form>
-      <p class="msg" id="form-msg" role="status"></p>
     </section>
 
-    <div class="stack">
-      <section class="panel p-start" aria-labelledby="h-start">
-        <h2 id="h-start">Starting amount</h2>
-        <div class="grid">
-          <div class="field"><label for="start-amt">Money you start with</label><div class="money-wrap"><input id="start-amt" type="number" inputmode="decimal" min="0" step="0.01" value="715"></div></div>
+    <section class="panel" data-page="can-i-afford" hidden aria-labelledby="h-afford">
+      <div class="panel-head"><h2 id="h-afford">Can I afford it?</h2><span class="note" id="afford-period"></span></div>
+      <div class="grid">
+        <div class="field"><label for="a-amt">Amount</label><div class="money-wrap"><input id="a-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+        <div class="field"><label for="a-bucket">From</label>
+          <select id="a-bucket">
+            <option value="spend">Spend</option>
+            <option value="donate">Give</option>
+            <option value="save">Save</option>
+            <option value="invest">Invest</option>
+          </select>
         </div>
-        <div class="row">
-          <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
-          <p class="msg" id="start-msg" role="status"></p>
-        </div>
-        <p class="note">Counted in the All time view. Your games, other income and spending are added on top of it.</p>
-      </section>
-
-      <section class="panel p-pct" aria-labelledby="h-pct">
-        <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
-        <div class="grid">
-          <div class="field"><label for="pct-donate"><i class="dot" style="background:var(--red)"></i>Give</label><div class="pct-wrap"><input id="pct-donate" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div></div>
-          <div class="field"><label for="pct-save"><i class="dot" style="background:var(--green)"></i>Save</label><div class="pct-wrap"><input id="pct-save" type="number" inputmode="decimal" min="0" max="100" step="1" value="45"></div></div>
-          <div class="field"><label for="pct-invest"><i class="dot" style="background:var(--blue)"></i>Invest</label><div class="pct-wrap"><input id="pct-invest" type="number" inputmode="decimal" min="0" max="100" step="1" value="25"></div></div>
-          <div class="field"><label for="pct-spend"><i class="dot" style="background:var(--yellow)"></i>Spend</label><div class="pct-wrap"><input id="pct-spend" type="number" inputmode="decimal" min="0" max="100" step="1" value="20"></div></div>
-        </div>
-        <div class="row">
-          <button class="btn" type="button" id="save-split" disabled>Save percentages</button>
-          <button class="btn ghost" type="button" id="discard-split" disabled>Discard changes</button>
-          <button class="mini" type="button" id="reset-split">Use 10 / 45 / 25 / 20</button>
-        </div>
-        <p class="msg" id="pct-msg" role="status"></p>
-      </section>
-    </div>
+        <div class="field"><label for="a-note">What for (optional)</label><input id="a-note" type="text" maxlength="80" placeholder="New cleats" autocomplete="off"></div>
+      </div>
+      <div id="verdict" aria-live="polite"></div>
+      <div class="row">
+        <button class="btn" type="button" id="a-log" disabled>Log it as spent</button>
+        <a class="btn ghost" href="#home">Done</a>
+        <p class="msg" id="a-msg" role="status"></p>
+      </div>
+    </section>
   </div>
 
   <p class="status" id="status"></p>
@@ -841,25 +851,29 @@ button.badge { cursor: pointer; min-height: 26px; }
       render();
     } else { saveLocal(); render(); }
   }
-  function formMsg(text, isErr) {
-    var m = $("form-msg"); m.textContent = text; m.className = "msg" + (isErr ? " err" : "");
+  function formMsg(formId, text, isErr) {
+    var m = $(formId).querySelector("[data-msg]");
+    m.textContent = text; m.className = "msg" + (isErr ? " err" : "");
   }
-  function afterAdd(ok, date, what) {
-    if (!ok) { formMsg("Could not save that. Try again in a moment.", true); return false; }
-    formMsg(what + " added." + (inView(date) ? "" : " It is outside the period you are viewing. Switch to All time to see it."), false);
+  function afterAdd(formId, ok, date, what) {
+    if (!ok) { formMsg(formId, "Could not save that. Try again in a moment.", true); return false; }
+    formMsg(formId, what + " added." + (inView(date) ? "" : " It is outside the period you are viewing. Switch to All time to see it."), false);
     return true;
   }
-  function setTab(which) {
-    ["game", "other", "spent"].forEach(function (t) {
-      $("form-" + t).hidden = t !== which;
-      $("tab-" + t).setAttribute("aria-selected", String(t === which));
-    });
-  }
-  function goTo(id) {
-    var el = $(id);
-    if (!el) return;
-    el.focus({ preventScroll: true });
-    el.scrollIntoView({ block: "center" });
+
+  /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
+  var PAGES = { "add-game": "g-fee", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt" };
+  function route(first) {
+    var h = (location.hash || "").replace(/^#/, "");
+    var view = PAGES[h] ? h : "home";
+    Array.prototype.forEach.call(document.querySelectorAll(".home-only"), function (el) { el.hidden = view !== "home"; });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-page]"), function (el) { el.hidden = el.getAttribute("data-page") !== view; });
+    $("pages").hidden = view === "home";
+    if (view === "can-i-afford") renderAfford();
+    if (!first) {
+      window.scrollTo(0, 0);
+      if (view !== "home") { var f = $(PAGES[view]); if (f) f.focus({ preventScroll: true }); }
+    }
   }
 
   /* Events */
@@ -877,21 +891,6 @@ button.badge { cursor: pointer; min-height: 26px; }
       var p = t.getAttribute("data-confirm").split(":");
       removeEntry(p[0], p.slice(1).join(":"));
     } else if (t.hasAttribute("data-cancel")) { pendingRemove = null; render(); }
-  });
-  document.querySelector(".qa").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-quick]");
-    if (!b) return;
-    var q = b.getAttribute("data-quick");
-    formMsg("", false);
-    if (q === "afford") return goTo("a-amt");
-    setTab(q);
-    goTo(q === "game" ? "g-fee" : q === "other" ? "o-amt" : "s-amt");
-  });
-  $("tabs").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-tab]");
-    if (!b) return;
-    setTab(b.getAttribute("data-tab"));
-    formMsg("", false);
   });
 
   BUCKETS.forEach(function (b) {
@@ -935,40 +934,40 @@ button.badge { cursor: pointer; min-height: 26px; }
   ["g-date", "o-date", "s-date"].forEach(function (id) { $(id).value = today; });
 
   $("form-game").addEventListener("submit", function (e) {
-    e.preventDefault(); formMsg("", false);
+    e.preventDefault(); formMsg("form-game", "", false);
     var date = $("g-date").value, fee = parseFloat($("g-fee").value), ex = parseFloat($("g-exp").value);
-    if (!date) return formMsg("Pick the date of the game.", true);
-    if (!isFinite(fee) || fee < 0) return formMsg("Enter the game fee, like 55 or 62.50.", true);
-    if ($("g-exp").value !== "" && (!isFinite(ex) || ex < 0)) return formMsg("Expenses must be zero or more.", true);
+    if (!date) return formMsg("form-game", "Pick the date of the game.", true);
+    if (!isFinite(fee) || fee < 0) return formMsg("form-game", "Enter the game fee, like 55 or 62.50.", true);
+    if ($("g-exp").value !== "" && (!isFinite(ex) || ex < 0)) return formMsg("form-game", "Expenses must be zero or more.", true);
     addEntry("games", {
       id: uid("g"), date: date, match: $("g-match").value.trim(), role: $("g-role").value,
       fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) ? Math.round(ex * 100) / 100 : 0,
       paid: $("g-paid").checked, created: Date.now()
     }).then(function (ok) {
-      if (afterAdd(ok, date, "Game")) { $("g-fee").value = ""; $("g-exp").value = ""; $("g-match").value = ""; $("g-fee").focus(); }
+      if (afterAdd("form-game", ok, date, "Game")) { $("g-fee").value = ""; $("g-exp").value = ""; $("g-match").value = ""; $("g-fee").focus(); }
     });
   });
   $("form-other").addEventListener("submit", function (e) {
-    e.preventDefault(); formMsg("", false);
+    e.preventDefault(); formMsg("form-other", "", false);
     var date = $("o-date").value, amt = parseFloat($("o-amt").value);
-    if (!date) return formMsg("Pick the date you got the money.", true);
-    if (!isFinite(amt) || amt <= 0) return formMsg("Enter how much you earned, like 120 or 45.50.", true);
+    if (!date) return formMsg("form-other", "Pick the date you got the money.", true);
+    if (!isFinite(amt) || amt <= 0) return formMsg("form-other", "Enter how much you earned, like 120 or 45.50.", true);
     addEntry("income", {
       id: uid("i"), date: date, source: $("o-src").value.trim(), amount: Math.round(amt * 100) / 100, created: Date.now()
     }).then(function (ok) {
-      if (afterAdd(ok, date, "Income")) { $("o-amt").value = ""; $("o-src").value = ""; $("o-src").focus(); }
+      if (afterAdd("form-other", ok, date, "Income")) { $("o-amt").value = ""; $("o-src").value = ""; $("o-src").focus(); }
     });
   });
   $("form-spent").addEventListener("submit", function (e) {
-    e.preventDefault(); formMsg("", false);
+    e.preventDefault(); formMsg("form-spent", "", false);
     var date = $("s-date").value, amt = parseFloat($("s-amt").value);
-    if (!date) return formMsg("Pick the date you spent it.", true);
-    if (!isFinite(amt) || amt <= 0) return formMsg("Enter how much you spent, like 18 or 32.75.", true);
+    if (!date) return formMsg("form-spent", "Pick the date you spent it.", true);
+    if (!isFinite(amt) || amt <= 0) return formMsg("form-spent", "Enter how much you spent, like 18 or 32.75.", true);
     addEntry("spending", {
       id: uid("s"), date: date, bucket: $("s-bucket").value, note: $("s-note").value.trim(),
       amount: Math.round(amt * 100) / 100, created: Date.now()
     }).then(function (ok) {
-      if (afterAdd(ok, date, "Spending")) { $("s-amt").value = ""; $("s-note").value = ""; $("s-amt").focus(); }
+      if (afterAdd("form-spent", ok, date, "Spending")) { $("s-amt").value = ""; $("s-note").value = ""; $("s-amt").focus(); }
     });
   });
 
@@ -1000,6 +999,8 @@ button.badge { cursor: pointer; min-height: 26px; }
 
   /* Start with this device's copy, then switch to the private store if the viewer has one. */
   loadLocal(); fillSplitInputs(); fillStartInput(); render();
+  route(true);
+  window.addEventListener("hashchange", function () { route(false); });
   setStatus("Saved in this browser only.");
 
   (async function () {
