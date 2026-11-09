@@ -549,19 +549,20 @@ button.badge { cursor: pointer; min-height: 26px; }
     var pr = prevRange(period), prv = pr ? totalsFor(pr) : null;
     var names = { week: "last week", month: "last month", year: "last year" };
     var label = names[period] || "";
-    var note = periodLabel(period);
-    $("t-earn").textContent = fmt(cur.earn);
+    var base = period === "all" ? toCents(start) : 0;
+    var note = periodLabel(period) + (base > 0 ? " · includes starting amount" : "");
+    $("t-earn").textContent = fmt(cur.earn + base);
     $("t-earn-d").innerHTML = deltaHtml(cur.earn, prv ? prv.earn : null, true, label, note);
     $("t-exp").textContent = fmt(cur.exp);
     $("t-exp-d").innerHTML = deltaHtml(cur.exp, prv ? prv.exp : null, false, label, note);
-    $("t-net").textContent = fmt(cur.net);
+    $("t-net").textContent = fmt(cur.net + base);
     $("t-net-d").innerHTML = deltaHtml(cur.net, prv ? prv.net : null, true, label, note);
     var yr = new Date().getFullYear();
     var ty = totalsFor([yr + "-01-01", yr + "-12-31"]);
     var ly = totalsFor([(yr - 1) + "-01-01", (yr - 1) + "-12-31"]);
     $("t-year-label").textContent = "This Year (" + yr + ")";
-    $("t-year").textContent = fmt(ty.net);
-    $("t-year-d").innerHTML = deltaHtml(ty.net, ly.net, true, "last year", "Net profit, Jan 1 to today");
+    $("t-year").textContent = fmt(ty.net + toCents(start));
+    $("t-year-d").innerHTML = deltaHtml(ty.net, start > 0 ? null : ly.net, true, "last year", start > 0 ? "Includes your starting amount" : "Net profit, Jan 1 to today");
   }
 
   function niceStep(max) {
@@ -583,7 +584,7 @@ button.badge { cursor: pointer; min-height: 26px; }
       var c = 0;
       data.games.forEach(function (g) { if (g.date <= m.end) c += toCents(g.fee); });
       data.income.forEach(function (x) { if (x.date <= m.end) c += toCents(x.amount); });
-      return c / 100;
+      return c / 100 + start;
     });
     var maxV = Math.max.apply(null, vals);
     var step = niceStep(maxV), top = step * 4;
