@@ -312,7 +312,7 @@ button.badge { cursor: pointer; min-height: 26px; }
           <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
           <p class="msg" id="start-msg" role="status"></p>
         </div>
-        <p class="note">Counted in the All time view. Your games, other income and spending are added on top of it.</p>
+        <p class="note">Counted in every view: week, month, year and all time. Your games and other income are added on top of it.</p>
       </section>
     <section class="panel p-pct" aria-labelledby="h-pct">
         <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
@@ -523,7 +523,7 @@ button.badge { cursor: pointer; min-height: 26px; }
     income.forEach(function (x) { other += toCents(x.amount); });
     var used = { spend: 0, save: 0, donate: 0, invest: 0 };
     spending.forEach(function (s) { if (used[s.bucket] !== undefined) used[s.bucket] += toCents(s.amount); });
-    var base = period === "all" ? toCents(start) : 0;
+    var base = toCents(start);
     var demo = data.games.length === 0 && data.income.length === 0 && data.spending.length === 0 && base === 0;
     var net = demo ? DEMO_CENTS : Math.max(0, base + fee - exp + other);
     var a = allocate(net, split);
@@ -549,20 +549,20 @@ button.badge { cursor: pointer; min-height: 26px; }
     var pr = prevRange(period), prv = pr ? totalsFor(pr) : null;
     var names = { week: "last week", month: "last month", year: "last year" };
     var label = names[period] || "";
-    var base = period === "all" ? toCents(start) : 0;
+    var base = toCents(start);
     var note = periodLabel(period) + (base > 0 ? " · includes starting amount" : "");
     $("t-earn").textContent = fmt(cur.earn + base);
-    $("t-earn-d").innerHTML = deltaHtml(cur.earn, prv ? prv.earn : null, true, label, note);
+    $("t-earn-d").innerHTML = deltaHtml(cur.earn + base, prv ? prv.earn + base : null, true, label, note);
     $("t-exp").textContent = fmt(cur.exp);
     $("t-exp-d").innerHTML = deltaHtml(cur.exp, prv ? prv.exp : null, false, label, note);
     $("t-net").textContent = fmt(cur.net + base);
-    $("t-net-d").innerHTML = deltaHtml(cur.net, prv ? prv.net : null, true, label, note);
+    $("t-net-d").innerHTML = deltaHtml(cur.net + base, prv ? prv.net + base : null, true, label, note);
     var yr = new Date().getFullYear();
     var ty = totalsFor([yr + "-01-01", yr + "-12-31"]);
     var ly = totalsFor([(yr - 1) + "-01-01", (yr - 1) + "-12-31"]);
     $("t-year-label").textContent = "This Year (" + yr + ")";
     $("t-year").textContent = fmt(ty.net + toCents(start));
-    $("t-year-d").innerHTML = deltaHtml(ty.net, start > 0 ? null : ly.net, true, "last year", start > 0 ? "Includes your starting amount" : "Net profit, Jan 1 to today");
+    $("t-year-d").innerHTML = deltaHtml(ty.net + toCents(start), ly.net + toCents(start), true, "last year", start > 0 ? "Includes your starting amount" : "Net profit, Jan 1 to today");
   }
 
   function niceStep(max) {
