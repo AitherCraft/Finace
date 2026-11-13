@@ -1466,7 +1466,8 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (/invalid login/i.test(m)) return "Wrong username or password.";
     if (/already registered|already exists/i.test(m)) return "That username is taken. Pick another, or sign in if it's yours.";
     if (/not confirmed|confirm/i.test(m)) return "Email confirmation is still turned on in Supabase (Authentication > Providers > Email). Turn off Confirm email, then try again.";
-    if (/rate|too many|seconds/i.test(m)) return "Too many tries. Wait a minute and try again.";
+    if (/email rate limit|over_email/i.test(m + " " + (e && e.code))) return "Supabase is limiting emails because Confirm email is still on. In Supabase go to Authentication > Providers > Email, turn off Confirm email and save. Then sign in with your username (no new account needed if it already exists).";
+    if (/rate|too many|seconds/i.test(m)) return "The sign-in server says: " + m + ". Wait a few minutes, press Sign in once (not Create account), and don't tap repeatedly.";
     if (/signup.*disabled|disabled/i.test(m)) return "Sign-ups are turned off in Supabase.";
     return (mode === "up" ? "Could not create the account: " : "Could not sign in: ") + m;
   }
