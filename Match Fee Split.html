@@ -296,13 +296,18 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     <h2 id="h-gate">Sign in</h2>
     <form id="gate-form" novalidate class="fs">
       <div class="grid">
-        <div class="field"><label for="gate-user">Username</label><input id="gate-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30"></div>
-        <div class="field"><label for="gate-pass">Password</label><input id="gate-pass" type="password" autocomplete="current-password" maxlength="72"></div>
+        <div class="field"><label for="gate-user">Email</label><input id="gate-user" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="120" placeholder="you@example.com"></div>
+        <div class="field"><label for="gate-pass">Password</label><input id="gate-pass" type="password" autocomplete="current-password" maxlength="72" placeholder="at least 8 characters"></div>
       </div>
       <div class="row">
         <button class="btn" type="submit" id="gate-signin">Sign in</button>
         <button class="btn ghost" type="button" id="gate-signup">Create account</button>
       </div>
+    </form>
+    <button class="mini" type="button" id="gate-forgot">Forgot password?</button>
+    <form id="reset-form" novalidate class="fs" hidden>
+      <div class="field"><label for="reset-pass">New password</label><input id="reset-pass" type="password" autocomplete="new-password" maxlength="72" placeholder="at least 8 characters"></div>
+      <div class="row"><button class="btn" type="submit" id="reset-save">Save new password</button></div>
     </form>
     <p class="msg" id="gate-msg" role="status"></p>
   </section>
@@ -1315,6 +1320,8 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   var sbOn = false, sbSession = null, sbPending = 0, sbRefreshing = null, sbTimer = null, sbWired = false;
 
   function cleanUser(v) { return String(v || "").trim().toLowerCase(); }
+  function emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 120; }
+  function authEmail(v) { return v.indexOf("@") >= 0 ? v : userEmail(v); }
   function userOk(u) { return /^[a-z0-9._-]{3,30}$/.test(u); }
   function userEmail(u) { return u + "@referee-finance.app"; }
   function loadSession() {
@@ -1328,7 +1335,8 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     try { if (x) localStorage.setItem(SB_SESSION_KEY, JSON.stringify(x)); else localStorage.removeItem(SB_SESSION_KEY); } catch (e) {}
   }
   function setSession(j, name) {
-    var nm = name || (j.user && j.user.email ? String(j.user.email).split("@")[0] : (sbSession && sbSession.username) || "");
+    var em = j.user && j.user.email ? String(j.user.email) : "";
+    var nm = name || (em ? em.replace("@referee-finance.app", "") : (sbSession && sbSession.username) || "");
     sbSession = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: (j.user && j.user.id) || (sbSession && sbSession.user_id), username: nm };
     saveSession(sbSession);
   }
@@ -1422,7 +1430,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function acctRender() {
     var on = !!(sbOn && sbSession);
     $("acct-out").hidden = on; $("acct-in").hidden = !on;
-    if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this username shows the same data."; }
+    if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
     var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui) };
@@ -1463,9 +1471,9 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function authError(e, mode) {
     var m = String(e && e.message || "");
     if (/failed to fetch|networkerror|load failed/i.test(m)) return framed() ? "This preview inside Claude blocks outside connections, so it cannot reach the sync server. Open your GitHub Pages link in a browser to sign in." : "Could not reach the sync server (" + m + "). Check your connection and try again.";
-    if (/invalid login/i.test(m)) return "Wrong username or password.";
-    if (/already registered|already exists/i.test(m)) return "That username is taken. Pick another, or sign in if it's yours.";
-    if (/not confirmed|confirm/i.test(m)) return "Email confirmation is still turned on in Supabase (Authentication > Providers > Email). Turn off Confirm email, then try again.";
+    if (/invalid login/i.test(m)) return "Wrong email or password.";
+    if (/already registered|already exists/i.test(m)) return "That email already has an account. Press Sign in, or use Forgot password.";
+    if (/not confirmed|confirm/i.test(m)) return "Check your email and tap the confirmation link we sent, then come back and press Sign in.";
     if (/email rate limit|over_email/i.test(m + " " + (e && e.code))) return "Supabase is limiting emails because Confirm email is still on. In Supabase go to Authentication > Providers > Email, turn off Confirm email and save. Then sign in with your username (no new account needed if it already exists).";
     if (/rate|too many|seconds/i.test(m)) return "The sign-in server says: " + m + ". Wait a few minutes, press Sign in once (not Create account), and don't tap repeatedly.";
     if (/signup.*disabled|disabled/i.test(m)) return "Sign-ups are turned off in Supabase.";
@@ -1475,11 +1483,11 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function acctAuth(mode, pre) {
     pre = pre || "gate";
     var u = cleanUser($(pre + "-user").value), pw = $(pre + "-pass").value;
-    if (!userOk(u)) { acctMsg("Username must be 3 to 30 letters, numbers, dots, dashes or underscores.", true); return; }
+    if (u.indexOf("@") >= 0 ? !emailOk(u) : !userOk(u)) { acctMsg("Enter a valid email address.", true); return; }
     if (pw.length < 8) { acctMsg("Password must be at least 8 characters.", true); return; }
     setAuthBusy(true);
     acctMsg(mode === "up" ? "Creating your account…" : "Signing in…");
-    var cred = { email: userEmail(u), password: pw };
+    var cred = { email: authEmail(u), password: pw };
     sbSession = null;
     var first = mode === "up" ? sbRequest("/auth/v1/signup", "POST", cred) : sbRequest("/auth/v1/token?grant_type=password", "POST", cred);
     first.then(function (j) {
@@ -1500,6 +1508,42 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   $("acct-sync").addEventListener("click", function () {
     acctMsg("Syncing…");
     sbPull().then(function () { acctMsg("Up to date.", false); }, function () { acctMsg("Could not sync. Check your connection.", true); });
+  });
+  function recoverRedirect() { return location.origin + location.pathname; }
+  $("gate-forgot").addEventListener("click", function () {
+    var u = cleanUser($("gate-user").value);
+    if (u.indexOf("@") < 0 || !emailOk(u)) { acctMsg("Type your email in the Email box first, then tap Forgot password.", true); return; }
+    acctMsg("Sending…");
+    sbRequest("/auth/v1/recover?redirect_to=" + encodeURIComponent(recoverRedirect()), "POST", { email: u }).then(function () {
+      acctMsg("If that email has an account, a reset link is on its way. Open it on this device.", false);
+    }, function (e) { acctMsg(authError(e, "in"), true); });
+  });
+  var recovery = null;
+  (function () {
+    var h = location.hash || "";
+    if (h.indexOf("type=recovery") < 0 || h.indexOf("access_token=") < 0) return;
+    var q = {}; h.replace(/^#/, "").split("&").forEach(function (kv) { var i = kv.indexOf("="); if (i > 0) q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    if (!q.access_token) return;
+    recovery = { access_token: q.access_token, refresh_token: q.refresh_token || "" };
+    $("gate-form").hidden = true; $("gate-forgot").hidden = true; $("reset-form").hidden = false;
+    $("h-gate").textContent = "Set a new password";
+  })();
+  $("reset-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var pw = $("reset-pass").value;
+    if (pw.length < 8) { acctMsg("Password must be at least 8 characters.", true); return; }
+    if (!recovery) return;
+    $("reset-save").disabled = true; acctMsg("Saving…");
+    fetch(SB_URL + "/auth/v1/user", { method: "PUT", headers: { apikey: SB_KEY, "Content-Type": "application/json", Authorization: "Bearer " + recovery.access_token }, body: JSON.stringify({ password: pw }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.msg || j.message || j.error_description || "Could not save the password."); return j; }); })
+      .then(function (user) {
+        sbSession = null;
+        setSession({ access_token: recovery.access_token, refresh_token: recovery.refresh_token, user: user }, null);
+        recovery = null; $("reset-pass").value = "";
+        return sbStart().then(function () { acctMsg("Password changed. You are signed in.", false); });
+      }).catch(function (err) { acctMsg(String(err && err.message || err), true); })
+      .then(function () { $("reset-save").disabled = false; acctRender(); });
   });
   (function () {
     if (!loadSession() && !framed()) showGate(true);
