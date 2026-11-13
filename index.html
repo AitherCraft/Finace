@@ -378,6 +378,31 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   <div class="pages" id="pages" hidden>
     <a class="back" href="#home">&larr; Back to dashboard</a>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-acct">
+      <div class="panel-head"><h2 id="h-acct">Account and sync</h2><span class="chip" id="acct-chip">Not signed in</span></div>
+      <div id="acct-out">
+        <p class="note">Sign in on every device with the same username and password and your games, spending, percentages and settings stay in sync.</p>
+        <form id="acct-form" novalidate class="fs">
+          <div class="grid">
+            <div class="field"><label for="acct-user">Username</label><input id="acct-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="letters, numbers . _ -"></div>
+            <div class="field"><label for="acct-pass">Password</label><input id="acct-pass" type="password" autocomplete="current-password" maxlength="72" placeholder="at least 8 characters"></div>
+          </div>
+          <div class="row">
+            <button class="btn" type="submit" id="acct-signin">Sign in</button>
+            <button class="btn ghost" type="button" id="acct-signup">Create account</button>
+          </div>
+        </form>
+      </div>
+      <div id="acct-in" hidden>
+        <p class="note" id="acct-who"></p>
+        <div class="row">
+          <button class="btn" type="button" id="acct-sync">Sync now</button>
+          <button class="btn ghost" type="button" id="acct-signout">Sign out</button>
+        </div>
+      </div>
+      <p class="msg" id="acct-msg" role="status"></p>
+    </section>
+
     <section class="panel savebar" data-page="app-settings" hidden aria-labelledby="h-settings">
       <div class="panel-head"><h2 id="h-settings">Settings</h2><span class="chip ok" id="ui-state">Saved</span></div>
       <div class="row">
@@ -1272,13 +1297,205 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     document.head.appendChild(fav);
   } catch (e) {}
 
+  /* Account sync: username + password through the Supabase project, shared by every device that signs in. */
+  var SB_URL = "https://yamchkpoqulhhlotkenb.supabase.co";
+  var SB_KEY = "sb_publishable_6kB2Y2IUpiPaB96M6auPGg_i6WyWq0B";
+  var SB_SESSION_KEY = "referee-finance-account-v1";
+  var sbOn = false, sbSession = null, sbPending = 0, sbRefreshing = null, sbTimer = null, sbWired = false;
+
+  function cleanUser(v) { return String(v || "").trim().toLowerCase(); }
+  function userOk(u) { return /^[a-z0-9._-]{3,30}$/.test(u); }
+  function userEmail(u) { return u + "@referee-finance.app"; }
+  function loadSession() {
+    try {
+      var r = localStorage.getItem(SB_SESSION_KEY), x = r && JSON.parse(r);
+      if (x && x.access_token && x.refresh_token && x.user_id) return x;
+    } catch (e) {}
+    return null;
+  }
+  function saveSession(x) {
+    try { if (x) localStorage.setItem(SB_SESSION_KEY, JSON.stringify(x)); else localStorage.removeItem(SB_SESSION_KEY); } catch (e) {}
+  }
+  function setSession(j, name) {
+    var nm = name || (j.user && j.user.email ? String(j.user.email).split("@")[0] : (sbSession && sbSession.username) || "");
+    sbSession = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: (j.user && j.user.id) || (sbSession && sbSession.user_id), username: nm };
+    saveSession(sbSession);
+  }
+  function sbRequest(path, method, body, extra) {
+    function go() {
+      var h = { apikey: SB_KEY, "Content-Type": "application/json" };
+      if (sbSession) h.Authorization = "Bearer " + sbSession.access_token;
+      if (extra) Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
+      return fetch(SB_URL + path, { method: method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }).then(function (r) {
+        return r.text().then(function (t) {
+          var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+          if (!r.ok) {
+            var err = new Error((j && (j.msg || j.message || j.error_description || j.error)) || ("Request failed (" + r.status + ")"));
+            err.status = r.status; err.code = j && (j.error_code || j.code); throw err;
+          }
+          return j;
+        });
+      });
+    }
+    return go().catch(function (e) {
+      if (e.status === 401 && sbSession && path.indexOf("/auth/") !== 0) return sbRefresh().then(go);
+      throw e;
+    });
+  }
+  function sbRefresh() {
+    if (sbRefreshing) return sbRefreshing;
+    var rt = sbSession && sbSession.refresh_token;
+    sbRefreshing = fetch(SB_URL + "/auth/v1/token?grant_type=refresh_token", { method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token: rt }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.access_token) throw new Error("expired"); return j; }); })
+      .then(function (j) { setSession(j); sbRefreshing = null; }, function (e) {
+        sbRefreshing = null; acctSignOut("Your sign-in expired. Please sign in again."); throw e;
+      });
+    return sbRefreshing;
+  }
+  function sbWrap(p) { sbPending++; return p.then(function (r) { sbPending--; return r; }, function (e) { sbPending--; throw e; }); }
+  function sbUpsert(table, row, conflict) {
+    return sbWrap(sbRequest("/rest/v1/" + table + "?on_conflict=" + conflict, "POST", row, { Prefer: "resolution=merge-duplicates,return=minimal" }));
+  }
+  function makeSbStore() {
+    var me = sbSession.user_id;
+    function coll(kind) {
+      return { doc: function (id) {
+        return {
+          set: function (obj) {
+            var copy = Object.assign({}, obj); delete copy.id;
+            return sbUpsert("entries", { user_id: me, kind: kind, id: id, data: copy, updated_at: new Date().toISOString() }, "user_id,kind,id").then(function () {
+              var e = Object.assign({ id: id }, copy), list = data[kind], i = -1;
+              for (var n = 0; n < list.length; n++) if (list[n].id === id) i = n;
+              if (i >= 0) list[i] = e; else list.push(e);
+              render();
+            });
+          },
+          delete: function () {
+            return sbWrap(sbRequest("/rest/v1/entries?kind=eq." + kind + "&id=eq." + encodeURIComponent(id), "DELETE", undefined, { Prefer: "return=minimal" })).then(function () {
+              data[kind] = data[kind].filter(function (x) { return x.id !== id; }); render();
+            });
+          }
+        };
+      } };
+    }
+    return {
+      profile: { set: function (obj) { return sbUpsert("profiles", { user_id: me, data: obj, updated_at: new Date().toISOString() }, "user_id"); } },
+      games: coll("games"), income: coll("income"), spending: coll("spending")
+    };
+  }
+  function applyProfileData(d) {
+    if (!d) return;
+    if (typeof d.start === "number" && isFinite(d.start) && d.start >= 0) { var es = startDirty(); start = d.start; if (es) updateStartUI(); else fillStartInput(); }
+    if (d.ui) { var eu = uiDirty(); ui = sanitizeUi(d.ui); if (!eu) { draftUi = clone(ui); fillUiInputs(); applyUi(ui); } }
+    if (validSplit(d.split)) { var ed = draftDirty(); split = d.split; if (ed) updateDraftUI(); else fillSplitInputs(); }
+  }
+  function sbFetchAll() {
+    return Promise.all([sbRequest("/rest/v1/profiles?select=data", "GET"), sbRequest("/rest/v1/entries?select=kind,id,data&limit=5000", "GET")]).then(function (res) {
+      var nd = { games: [], income: [], spending: [] };
+      (res[1] || []).forEach(function (r) { if (nd[r.kind]) nd[r.kind].push(Object.assign({ id: r.id }, r.data)); });
+      return { prof: res[0] && res[0][0] ? res[0][0].data : null, entries: nd, count: (res[1] || []).length };
+    });
+  }
+  function sbApply(all) {
+    KINDS.forEach(function (k) { data[k] = all.entries[k]; });
+    applyProfileData(all.prof);
+    loaded = true; render();
+  }
+  function sbPull() {
+    if (!sbOn || sbPending) return Promise.resolve();
+    return sbFetchAll().then(function (all) { if (!sbPending) { sbApply(all); acctStatus(); } });
+  }
+  function acctStatus() { setStatus("Synced to your account" + (sbSession ? " (" + sbSession.username + ")" : "") + ". Only you can see it."); }
+  function acctMsg(t, err) { var m = $("acct-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  function acctRender() {
+    var on = !!(sbOn && sbSession);
+    $("acct-out").hidden = on; $("acct-in").hidden = !on;
+    $("acct-chip").textContent = on ? "Signed in" : "Not signed in";
+    $("acct-chip").className = "chip" + (on ? " ok" : "");
+    if (on) $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this username shows the same data.";
+  }
+  function sbStart() {
+    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui) };
+    var hasMine = mine.games.length + mine.income.length + mine.spending.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
+    sbOn = true; store = makeSbStore(); acctRender();
+    setStatus("Syncing with your account…");
+    return sbFetchAll().then(function (all) {
+      var cloudEmpty = !all.count && !(all.prof && Object.keys(all.prof).length);
+      if (cloudEmpty && hasMine) {
+        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui })];
+        KINDS.forEach(function (k) { mine[k].forEach(function (e) { ups.push(store[k].doc(e.id).set(e)); }); });
+        return Promise.all(ups).then(function () { loaded = true; acctStatus(); return "moved"; });
+      }
+      sbApply(all); acctStatus(); return "pulled";
+    }).then(function (how) {
+      if (!sbWired) {
+        sbWired = true;
+        sbTimer = setInterval(function () { if (document.visibilityState === "visible") sbPull().catch(function () {}); }, 20000);
+        document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") sbPull().catch(function () {}); });
+      }
+      return how;
+    }, function (e) { setStatus("Can't reach your account right now. It will keep trying."); throw e; });
+  }
+  function initAccount() {
+    var sess = loadSession();
+    acctRender();
+    if (!sess) return;
+    sbSession = sess; $("acct-user").value = sess.username || "";
+    sbStart().catch(function () {});
+  }
+  function acctSignOut(note) {
+    saveSession(null); sbSession = null; sbOn = false; store = null;
+    if (sbTimer) clearInterval(sbTimer);
+    if (note) { try { sessionStorage.setItem("rf-note", note); } catch (e) {} }
+    location.reload();
+  }
+  function authError(e, mode) {
+    var m = String(e && e.message || "");
+    if (/failed to fetch|networkerror|load failed/i.test(m)) return "Could not reach the sync server. Check your connection and try again.";
+    if (/invalid login/i.test(m)) return "Wrong username or password.";
+    if (/already registered|already exists/i.test(m)) return "That username is taken. Pick another, or sign in if it's yours.";
+    if (/not confirmed|confirm/i.test(m)) return "Email confirmation is still turned on in Supabase (Authentication > Providers > Email). Turn off Confirm email, then try again.";
+    if (/rate|too many|seconds/i.test(m)) return "Too many tries. Wait a minute and try again.";
+    if (/signup.*disabled|disabled/i.test(m)) return "Sign-ups are turned off in Supabase.";
+    return (mode === "up" ? "Could not create the account: " : "Could not sign in: ") + m;
+  }
+  function acctAuth(mode) {
+    var u = cleanUser($("acct-user").value), pw = $("acct-pass").value;
+    if (!userOk(u)) { acctMsg("Username must be 3 to 30 letters, numbers, dots, dashes or underscores.", true); return; }
+    if (pw.length < 8) { acctMsg("Password must be at least 8 characters.", true); return; }
+    $("acct-signin").disabled = true; $("acct-signup").disabled = true;
+    acctMsg(mode === "up" ? "Creating your account…" : "Signing in…");
+    var cred = { email: userEmail(u), password: pw };
+    sbSession = null;
+    var first = mode === "up" ? sbRequest("/auth/v1/signup", "POST", cred) : sbRequest("/auth/v1/token?grant_type=password", "POST", cred);
+    first.then(function (j) {
+      if (mode === "up" && !(j && j.access_token)) return sbRequest("/auth/v1/token?grant_type=password", "POST", cred);
+      return j;
+    }).then(function (j) {
+      setSession(j, u);
+      $("acct-pass").value = "";
+      return sbStart().then(function (how) { acctMsg(how === "moved" ? "Signed in. This device's data was saved to your account." : "Signed in. Your data is synced.", false); });
+    }).catch(function (e) {
+      if (!sbOn) { sbSession = null; saveSession(null); }
+      acctMsg(sbOn ? "Signed in, but the first sync failed. It will keep trying." : authError(e, mode), !sbOn);
+    }).then(function () { $("acct-signin").disabled = false; $("acct-signup").disabled = false; acctRender(); });
+  }
+  $("acct-form").addEventListener("submit", function (e) { e.preventDefault(); acctAuth("in"); });
+  $("acct-signup").addEventListener("click", function () { acctAuth("up"); });
+  $("acct-signout").addEventListener("click", function () { acctSignOut("Signed out."); });
+  $("acct-sync").addEventListener("click", function () {
+    acctMsg("Syncing…");
+    sbPull().then(function () { acctMsg("Up to date.", false); }, function () { acctMsg("Could not sync. Check your connection.", true); });
+  });
+  try { var rfn = sessionStorage.getItem("rf-note"); if (rfn) { sessionStorage.removeItem("rf-note"); acctMsg(rfn, false); } } catch (e) {}
+
   /* Start with this device's copy, then switch to the private store if the viewer has one. */
   loadLocal(); draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); render();
   route(true);
   window.addEventListener("hashchange", function () { route(false); });
   setStatus("Saved in this browser only.");
 
-  (async function () {
+  async function initClaude() {
     try {
       var db = await window.claude.use("db");
       var user = await window.claude.use("user");
@@ -1294,6 +1511,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         if (!loaded) setStatus("Can't reach your saved entries yet. Anything you add will save once it connects.");
       }, 10000);
       profile.onSnapshot(function (snap) {
+        if (sbOn) return;
         var d = snap.exists ? snap.data() : null;
         if (d && typeof d.start === "number" && isFinite(d.start) && d.start >= 0) {
           var editingStart = startDirty();
@@ -1315,6 +1533,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       }, function () {});
       KINDS.forEach(function (k) {
         store[k].onSnapshot(function (snap) {
+          if (sbOn) return;
           data[k] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
           if (!snap.metadata.fromCache) { loaded = true; clearTimeout(timer); }
           if (loaded) setStatus("Saved privately to your account. Only you can see it.");
@@ -1322,7 +1541,8 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         }, function () { clearTimeout(timer); setStatus("Saved entries are unavailable right now."); });
       });
     } catch (e) { /* stay on the browser copy */ }
-  })();
+  }
+  initClaude().then(initAccount, initAccount);
 })();
 </script>
 
