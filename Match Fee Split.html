@@ -1424,7 +1424,10 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (!sbOn || sbPending) return Promise.resolve();
     return sbFetchAll().then(function (all) { if (!sbPending) { sbApply(all); acctStatus(); } });
   }
-  function acctStatus() { setStatus("Synced to your account" + (sbSession ? " (" + sbSession.username + ")" : "") + ". Only you can see it."); }
+  function acctStatus() {
+    var t = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    setStatus("Auto-sync on" + (sbSession ? " for " + sbSession.username : "") + ". Last synced " + t + ". Only you can see it.");
+  }
   function acctMsg(t, err) { ["acct-msg", "gate-msg"].forEach(function (id) { var m = $(id); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }); }
   function showGate(on) { $("gate").hidden = !on; $("main").hidden = on; if (on) { try { window.scrollTo(0, 0); } catch (e) {} } }
   function acctRender() {
@@ -1448,7 +1451,9 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     }).then(function (how) {
       if (!sbWired) {
         sbWired = true;
-        sbTimer = setInterval(function () { if (document.visibilityState === "visible") sbPull().catch(function () {}); }, 20000);
+        sbTimer = setInterval(function () { if (document.visibilityState === "visible") sbPull().catch(function () { setStatus("Offline. Will sync again when the connection is back."); }); }, 5000);
+        window.addEventListener("online", function () { sbPull().catch(function () {}); });
+        window.addEventListener("focus", function () { sbPull().catch(function () {}); });
         document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") sbPull().catch(function () {}); });
       }
       return how;
