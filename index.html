@@ -270,6 +270,7 @@ html[data-hide~="plan"][data-hide~="quick"] .grid2:has(.p-plan) { display: none;
 }
 .q-blue { color: var(--on-accent); }
 .gate { max-width: 520px; }
+.btn.lock { background: #c0392b; border-color: #c0392b; color: #fff; }
 .gate-card { gap: 14px; }
 .hero-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -304,7 +305,6 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       </div>
     </form>
     <p class="msg" id="gate-msg" role="status"></p>
-    <button class="mini" type="button" id="gate-skip">Continue without an account</button>
   </section>
 </main>
 <main class="wrap" id="main">
@@ -403,31 +403,6 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   <div class="pages" id="pages" hidden>
     <a class="back" href="#home">&larr; Back to dashboard</a>
 
-    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-acct">
-      <div class="panel-head"><h2 id="h-acct">Account and sync</h2><span class="chip" id="acct-chip">Not signed in</span></div>
-      <div id="acct-out">
-        <p class="note">Sign in on every device with the same username and password and your games, spending, percentages and settings stay in sync.</p>
-        <form id="acct-form" novalidate class="fs">
-          <div class="grid">
-            <div class="field"><label for="acct-user">Username</label><input id="acct-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="letters, numbers . _ -"></div>
-            <div class="field"><label for="acct-pass">Password</label><input id="acct-pass" type="password" autocomplete="current-password" maxlength="72" placeholder="at least 8 characters"></div>
-          </div>
-          <div class="row">
-            <button class="btn" type="submit" id="acct-signin">Sign in</button>
-            <button class="btn ghost" type="button" id="acct-signup">Create account</button>
-          </div>
-        </form>
-      </div>
-      <div id="acct-in" hidden>
-        <p class="note" id="acct-who"></p>
-        <div class="row">
-          <button class="btn" type="button" id="acct-sync">Sync now</button>
-          <button class="btn ghost" type="button" id="acct-signout">Sign out</button>
-        </div>
-      </div>
-      <p class="msg" id="acct-msg" role="status"></p>
-    </section>
-
     <section class="panel savebar" data-page="app-settings" hidden aria-labelledby="h-settings">
       <div class="panel-head"><h2 id="h-settings">Settings</h2><span class="chip ok" id="ui-state">Saved</span></div>
       <div class="row">
@@ -493,6 +468,21 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         <label class="check" for="show-quick"><input id="show-quick" type="checkbox" data-ui>Quick actions</label>
       </div>
     </section>
+
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-acct">
+      <h2 id="h-acct">Account</h2>
+      <div id="acct-in" hidden>
+        <p class="note" id="acct-who"></p>
+        <div class="row">
+          <button class="btn ghost" type="button" id="acct-sync">Sync now</button>
+          <button class="btn lock" type="button" id="acct-signout">Lock out</button>
+        </div>
+        <p class="note">Lock out signs you out on this device and brings back the sign-in screen. Your data stays safe in your account.</p>
+      </div>
+      <p class="note" id="acct-out">This copy runs inside Claude, which keeps your data with your Claude account.</p>
+      <p class="msg" id="acct-msg" role="status"></p>
+    </section>
+
 
     <section class="panel" data-page="add-game" hidden aria-labelledby="h-game">
       <h2 id="h-game">Add a game</h2>
@@ -1432,10 +1422,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function acctRender() {
     var on = !!(sbOn && sbSession);
     $("acct-out").hidden = on; $("acct-in").hidden = !on;
-    if (on) showGate(false);
-    $("acct-chip").textContent = on ? "Signed in" : "Not signed in";
-    $("acct-chip").className = "chip" + (on ? " ok" : "");
-    if (on) $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this username shows the same data.";
+    if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this username shows the same data."; }
   }
   function sbStart() {
     var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui) };
@@ -1463,11 +1450,10 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     var sess = loadSession();
     acctRender();
     if (!sess) return;
-    sbSession = sess; $("acct-user").value = sess.username || "";
+    sbSession = sess;
     sbStart().catch(function () {});
   }
   function acctSignOut(note) {
-    try { sessionStorage.removeItem("rf-skip"); } catch (e) {}
     saveSession(null); sbSession = null; sbOn = false; store = null;
     if (sbTimer) clearInterval(sbTimer);
     if (note) { try { sessionStorage.setItem("rf-note", note); } catch (e) {} }
@@ -1484,9 +1470,9 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (/signup.*disabled|disabled/i.test(m)) return "Sign-ups are turned off in Supabase.";
     return (mode === "up" ? "Could not create the account: " : "Could not sign in: ") + m;
   }
-  function setAuthBusy(b) { ["acct-signin", "acct-signup", "gate-signin", "gate-signup"].forEach(function (id) { $(id).disabled = b; }); }
+  function setAuthBusy(b) { ["gate-signin", "gate-signup"].forEach(function (id) { $(id).disabled = b; }); }
   function acctAuth(mode, pre) {
-    pre = pre || "acct";
+    pre = pre || "gate";
     var u = cleanUser($(pre + "-user").value), pw = $(pre + "-pass").value;
     if (!userOk(u)) { acctMsg("Username must be 3 to 30 letters, numbers, dots, dashes or underscores.", true); return; }
     if (pw.length < 8) { acctMsg("Password must be at least 8 characters.", true); return; }
@@ -1500,26 +1486,22 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       return j;
     }).then(function (j) {
       setSession(j, u);
-      $("acct-pass").value = ""; $("gate-pass").value = "";
+      $("gate-pass").value = "";
       return sbStart().then(function (how) { acctMsg(how === "moved" ? "Signed in. This device's data was saved to your account." : "Signed in. Your data is synced.", false); });
     }).catch(function (e) {
       if (!sbOn) { sbSession = null; saveSession(null); }
       acctMsg(sbOn ? "Signed in, but the first sync failed. It will keep trying." : authError(e, mode), !sbOn);
     }).then(function () { setAuthBusy(false); acctRender(); });
   }
-  $("acct-form").addEventListener("submit", function (e) { e.preventDefault(); acctAuth("in", "acct"); });
   $("gate-form").addEventListener("submit", function (e) { e.preventDefault(); acctAuth("in", "gate"); });
   $("gate-signup").addEventListener("click", function () { acctAuth("up", "gate"); });
-  $("gate-skip").addEventListener("click", function () { try { sessionStorage.setItem("rf-skip", "1"); } catch (e) {} showGate(false); acctMsg(""); });
-  $("acct-signup").addEventListener("click", function () { acctAuth("up", "acct"); });
-  $("acct-signout").addEventListener("click", function () { acctSignOut("Signed out."); });
+  $("acct-signout").addEventListener("click", function () { acctSignOut("You are locked out. Sign in to continue."); });
   $("acct-sync").addEventListener("click", function () {
     acctMsg("Syncing…");
     sbPull().then(function () { acctMsg("Up to date.", false); }, function () { acctMsg("Could not sync. Check your connection.", true); });
   });
   (function () {
-    var skipped = false; try { skipped = !!sessionStorage.getItem("rf-skip"); } catch (e) {}
-    if (!loadSession() && !skipped) showGate(true);
+    if (!loadSession() && !framed()) showGate(true);
   })();
   try { var rfn = sessionStorage.getItem("rf-note"); if (rfn) { sessionStorage.removeItem("rf-note"); acctMsg(rfn, false); } } catch (e) {}
 
