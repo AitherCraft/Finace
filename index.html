@@ -284,6 +284,7 @@ html[data-hide~="plan"] .p-plan,
 html[data-hide~="quick"] .p-quick { display: none; }
 html[data-hide~="chart"][data-hide~="games"] .grid2:has(.p-chart),
 html[data-hide~="plan"][data-hide~="quick"] .grid2:has(.p-plan) { display: none; }
+@media (min-width: 960px) { .grid2:has(> .p-start:only-child) { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 960px) {
   html[data-hide~="chart"] .grid2:has(.p-chart),
   html[data-hide~="games"] .grid2:has(.p-games),
@@ -413,21 +414,6 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
       <p class="msg" id="wish-msg" role="status"></p>
     </section>
-    <section class="panel p-pct" aria-labelledby="h-pct">
-        <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
-        <div class="grid">
-          <div class="field"><label for="pct-donate"><i class="dot" style="background:var(--c-give)"></i>Give</label><div class="pct-wrap"><input id="pct-donate" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div></div>
-          <div class="field"><label for="pct-save"><i class="dot" style="background:var(--c-save)"></i>Save</label><div class="pct-wrap"><input id="pct-save" type="number" inputmode="decimal" min="0" max="100" step="1" value="45"></div></div>
-          <div class="field"><label for="pct-invest"><i class="dot" style="background:var(--c-invest)"></i>Invest</label><div class="pct-wrap"><input id="pct-invest" type="number" inputmode="decimal" min="0" max="100" step="1" value="25"></div></div>
-          <div class="field"><label for="pct-spend"><i class="dot" style="background:var(--c-spend)"></i>Spend</label><div class="pct-wrap"><input id="pct-spend" type="number" inputmode="decimal" min="0" max="100" step="1" value="20"></div></div>
-        </div>
-        <div class="row">
-          <button class="btn" type="button" id="save-split" disabled>Save percentages</button>
-          <button class="btn ghost" type="button" id="discard-split" disabled>Discard changes</button>
-          <button class="mini" type="button" id="reset-split">Use 10 / 45 / 25 / 20</button>
-        </div>
-        <p class="msg" id="pct-msg" role="status"></p>
-      </section>
   </div>
 
   <div class="pages" id="pages" hidden>
@@ -498,6 +484,22 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         <label class="check" for="show-quick"><input id="show-quick" type="checkbox" data-ui>Quick actions</label>
       </div>
     </section>
+
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-pct">
+        <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
+        <div class="grid">
+          <div class="field"><label for="pct-donate"><i class="dot" style="background:var(--c-give)"></i>Give</label><div class="pct-wrap"><input id="pct-donate" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div></div>
+          <div class="field"><label for="pct-save"><i class="dot" style="background:var(--c-save)"></i>Save</label><div class="pct-wrap"><input id="pct-save" type="number" inputmode="decimal" min="0" max="100" step="1" value="45"></div></div>
+          <div class="field"><label for="pct-invest"><i class="dot" style="background:var(--c-invest)"></i>Invest</label><div class="pct-wrap"><input id="pct-invest" type="number" inputmode="decimal" min="0" max="100" step="1" value="25"></div></div>
+          <div class="field"><label for="pct-spend"><i class="dot" style="background:var(--c-spend)"></i>Spend</label><div class="pct-wrap"><input id="pct-spend" type="number" inputmode="decimal" min="0" max="100" step="1" value="20"></div></div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="save-split" disabled>Save percentages</button>
+          <button class="btn ghost" type="button" id="discard-split" disabled>Discard changes</button>
+          <button class="mini" type="button" id="reset-split">Use 10 / 45 / 25 / 20</button>
+        </div>
+        <p class="msg" id="pct-msg" role="status"></p>
+      </section>
 
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-start">
         <h2 id="h-start">Starting amount</h2>
