@@ -227,6 +227,8 @@ input::placeholder { color: var(--muted); opacity: 0.7; }
 .a-amt { font: 700 21px/1.1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
 .badge { font: 700 12px/1 var(--body); padding: 5px 10px; border-radius: 999px; border: 0; color: #04180b; background: var(--green); }
 button.badge { cursor: pointer; min-height: 26px; }
+.unpaid-line { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--yellow); }
+.a-amt.is-unpaid { color: var(--muted); text-decoration: line-through; opacity: 0.8; }
 .badge.pending { background: var(--yellow); color: #231800; }
 .badge.inc { background: var(--blue); color: #021226; }
 .badge.out { color: #0a1022; }
@@ -694,7 +696,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function summarize() {
     var games = inPeriod("games"), income = inPeriod("income"), spending = inPeriod("spending");
     var fee = 0, exp = 0, other = 0;
-    games.forEach(function (g) { fee += toCents(g.fee); exp += toCents(g.expenses); });
+    games.forEach(function (g) { if (g.paid === false) return; fee += toCents(g.fee); exp += toCents(g.expenses); });
     income.forEach(function (x) { other += toCents(x.amount); });
     var used = { spend: 0, save: 0, donate: 0, invest: 0 };
     spending.forEach(function (s) { if (used[s.bucket] !== undefined) used[s.bucket] += toCents(s.amount); });
@@ -707,7 +709,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
 
   function totalsFor(r) {
     var earn = 0, exp = 0;
-    data.games.forEach(function (g) { if (g.date >= r[0] && g.date <= r[1]) { earn += toCents(g.fee); exp += toCents(g.expenses); } });
+    data.games.forEach(function (g) { if (g.paid !== false && g.date >= r[0] && g.date <= r[1]) { earn += toCents(g.fee); exp += toCents(g.expenses); } });
     data.income.forEach(function (x) { if (x.date >= r[0] && x.date <= r[1]) earn += toCents(x.amount); });
     return { earn: earn, exp: exp, net: earn - exp };
   }
@@ -757,7 +759,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     }
     var vals = months.map(function (m) {
       var c = 0;
-      data.games.forEach(function (g) { if (g.date <= m.end) c += toCents(g.fee); });
+      data.games.forEach(function (g) { if (g.paid !== false && g.date <= m.end) c += toCents(g.fee); });
       data.income.forEach(function (x) { if (x.date <= m.end) c += toCents(x.amount); });
       return c / 100 + start;
     });
@@ -887,7 +889,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       var badge = '<button type="button" class="badge ' + (paid ? "" : "pending") + '" data-paid="' + esc(g.id) + '" data-val="' + (paid ? "0" : "1") + '" aria-label="' + (paid ? "Paid. Click to mark pending" : "Pending. Click to mark paid") + '">' + (paid ? "Paid" : "Pending") + "</button>";
       items.push({ kind: "games", id: g.id, date: g.date, created: g.created || 0, title: g.match || "Game",
         badge: badge, detail: (g.role || "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
-        amt: Math.max(0, fee - ex), sign: "+" });
+        amt: Math.max(0, fee - ex), sign: paid ? "+" : "", unpaid: paid ? 0 : Math.max(0, fee - ex) });
     });
     S.income.forEach(function (x) {
       items.push({ kind: "income", id: x.id, date: x.date, created: x.created || 0, title: x.source || "Other income",
@@ -900,7 +902,8 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         amt: toCents(s.amount), sign: "−" });
     });
     items.sort(function (x, y) { return x.date < y.date ? 1 : x.date > y.date ? -1 : y.created - x.created; });
-    $("games-count").textContent = items.length + (items.length === 1 ? " entry" : " entries");
+    var owed = items.reduce(function (t, it) { return t + (it.unpaid || 0); }, 0);
+    $("games-count").textContent = items.length + (items.length === 1 ? " entry" : " entries") + (owed ? " · " + fmt(owed) + " unpaid" : "");
     if (!items.length) {
       $("games").innerHTML = '<li><p class="empty">Nothing here yet. Add a game, other income or spending and it shows up in this list.</p></li>';
       return;
@@ -913,8 +916,9 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         ? '<button class="mini danger" type="button" data-confirm="' + esc(key) + '">Remove</button><button class="mini" type="button" data-cancel="1">Keep</button>'
         : '<button class="mini" type="button" data-remove="' + esc(key) + '" aria-label="Remove ' + esc(it.title) + " on " + esc(d) + '">Remove</button>';
       return '<li class="a-row"><div class="a-date">' + esc(d) + "</div>" +
-        '<div class="a-main"><strong>' + esc(it.title) + '</strong><div class="a-sub">' + it.badge + (it.detail ? "<span>" + esc(it.detail) + "</span>" : "") + act + "</div></div>" +
-        '<div class="a-amt">' + it.sign + fmt(it.amt) + "</div></li>";
+        '<div class="a-main"><strong>' + esc(it.title) + '</strong><div class="a-sub">' + it.badge + (it.detail ? "<span>" + esc(it.detail) + "</span>" : "") + act + "</div>" +
+        (it.unpaid ? '<div class="unpaid-line">Unpaid &middot; ' + fmt(it.unpaid) + " not counted yet</div>" : "") + "</div>" +
+        '<div class="a-amt' + (it.unpaid ? " is-unpaid" : "") + '">' + it.sign + fmt(it.amt) + "</div></li>";
     }).join("");
   }
 
