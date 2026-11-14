@@ -781,8 +781,9 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     return { out: out, pcts: pcts, sum: sum };
   }
 
-  function summarize() {
-    var games = inPeriod("games"), income = inPeriod("income"), spending = inPeriod("spending");
+  function summarize(all) {
+    var pick = function (k) { return all ? data[k].slice() : inPeriod(k); };
+    var games = pick("games"), income = pick("income"), spending = pick("spending");
     var fee = 0, exp = 0, other = 0;
     games.forEach(function (g) { if (g.paid === false) return; fee += toCents(g.fee); exp += toCents(g.expenses); });
     income.forEach(function (x) { other += toCents(x.amount); });
@@ -895,7 +896,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     var sub;
     if (S.demo) sub = '<span class="tag">Example</span> Splitting ' + fmt(S.net) + ". Add an entry to see your own numbers.";
     else {
-      sub = "Splitting " + fmt(S.net) + " &middot; " + esc(periodLabel(period));
+      sub = "Splitting " + fmt(S.net) + " &middot; All time";
       if (S.base) sub += " &middot; includes your " + fmt(S.base) + " starting amount";
       if (S.base + S.fee - S.exp + S.other < 0) sub += " &middot; expenses are higher than income, so nothing to split";
     }
@@ -934,18 +935,18 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
 
   function render() {
     renderPeriods();
-    var S = summarize();
+    var S = summarize(), A = summarize(true);
     renderTiles();
     renderChart();
-    renderPlan(S);
-    renderAfford(S);
+    renderPlan(A);
+    renderAfford(A);
     renderWishes();
     renderLedger(S);
   }
 
   function renderAfford(S) {
-    S = S || summarize();
-    $("afford-period").textContent = "Checked against " + periodLabel(period).toLowerCase();
+    S = S || summarize(true);
+    $("afford-period").textContent = "Checked against all time";
     var amt = toCents($("a-amt").value);
     var k = $("a-bucket").value, b = BMAP[k];
     var i = BUCKETS.indexOf(b);
@@ -954,7 +955,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     $("a-log").disabled = !(amt > 0);
     $("a-wish").hidden = true;
     if (!(amt > 0)) {
-      box.innerHTML = '<div class="v-empty">Type an amount to see if it fits. You have ' + (left >= 0 ? fmt(left) + " left" : fmt(-left) + " over") + " in " + b.name + " " + (period === "all" ? "so far." : "for this period.") + "</div>";
+      box.innerHTML = '<div class="v-empty">Type an amount to see if it fits. You have ' + (left >= 0 ? fmt(left) + " left" : fmt(-left) + " over") + " in " + b.name + " " + "so far." + "</div>";
       return;
     }
     var after = left - amt;
@@ -966,7 +967,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       box.innerHTML = '<div class="verdict ok"><div class="v-head">Above plan</div><div class="v-body">This puts ' + fmt(-after) + " more into " + b.name + " than your " + trim(S.a.pcts[i]) + "% plan. That is fine, but it reduces what is available for other buckets.</div></div>";
     } else {
       var why = alloc === 0
-        ? "You have no " + b.name + " share " + (period === "all" ? "yet." : "in this period yet.")
+        ? "You have no " + b.name + " share " + "yet."
         : "Your " + b.name + " share is " + fmt(alloc) + " (" + trim(S.a.pcts[i]) + "%) and " + fmt(used) + " is already used.";
       $("a-wish").hidden = false;
       box.innerHTML = '<div class="verdict bad"><div class="v-head">Over by ' + fmt(-after) + '</div><div class="v-body">' + why + " This would take " + b.name + " to " + (pctOfShare !== null ? pctOfShare + "% of its share." : "over its share.") + "</div></div>";
