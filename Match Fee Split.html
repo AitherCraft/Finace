@@ -227,6 +227,11 @@ input::placeholder { color: var(--muted); opacity: 0.7; }
 .a-amt { font: 700 21px/1.1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
 .badge { font: 700 12px/1 var(--body); padding: 5px 10px; border-radius: 999px; border: 0; color: #04180b; background: var(--green); }
 button.badge { cursor: pointer; min-height: 26px; }
+.pay-line { display: grid; grid-template-columns: 84px minmax(0, 1fr) 150px auto; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--panel-line); }
+.pay-line:first-of-type { border-top: 0; }
+.pay-line select { min-height: 44px; }
+.pay-sub { grid-column: 2 / -1; font-size: 13px; color: var(--muted); }
+@media (max-width: 640px) { .pay-line { grid-template-columns: 1fr 1fr; } .pay-line .pay-row { grid-column: 1 / -1; order: -1; } .pay-sub { grid-column: 1 / -1; } }
 .wish { display: grid; gap: 8px; padding: 14px 0; border-top: 1px solid var(--panel-line); }
 .wish:first-child { border-top: 0; }
 .wish-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
@@ -501,6 +506,23 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         <p class="note">Counted in every view: week, month, year and all time. Your games and other income are added on top of it.</p>
       </section>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-pay">
+      <h2 id="h-pay">Pay scale and typical weekend</h2>
+      <p class="note">Wish list dates use this. Set what a normal weekend looks like and I'll work out how fast your money comes in from your pay scale.</p>
+      <div class="grid">
+        <div class="field"><label for="pay-cert">Your level</label>
+          <select id="pay-cert"><option value="c">Certified</option><option value="n">Non-certified</option></select>
+        </div>
+        <div class="field"><label for="pay-wk">Weekends I ref per month</label>
+          <select id="pay-wk"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+        </div>
+      </div>
+      <div id="pay-lines"></div>
+      <div class="row"><button class="mini" type="button" id="pay-add">Add a game type</button></div>
+      <p class="note" id="pay-total"></p>
+      <p class="msg" id="pay-msg" role="status"></p>
+    </section>
+
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-acct">
       <h2 id="h-acct">Account</h2>
       <div id="acct-in" hidden>
@@ -642,6 +664,29 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     { id: "light", c: { bg: "#eef3fb", panel: "#ffffff", text: "#0f1b33", accent: "#1f6fe0" } }
   ];
   var wishes = [];
+  var PAY_ROWS = [
+    { id: "u78div", g: "Division IV In House", t: "U7-U8 DIV", c: [20, null], n: [15, null] },
+    { id: "u910full", g: "Division IV In House", t: "U9-U10 Full", c: [30, 20], n: [20, 15] },
+    { id: "u910cr", g: "Division IV In House", t: "U9-U10 CR", c: [35, null], n: [25, null] },
+    { id: "jr5v5", g: "DIII & ADP", t: "5v5 (U7) Jr Academy", c: [20, null], n: [10, null] },
+    { id: "acadfull", g: "DIII & ADP", t: "U8/U9/U10 Academy (Full)", c: [30, 20], n: [15, 10] },
+    { id: "acadcr", g: "DIII & ADP", t: "U8/U9/U10 Academy (CR)", c: [30, null], n: [15, null] },
+    { id: "u1112full", g: "DIII & ADP", t: "U11/U12 CAYSA (Full)", c: [40, 30], n: [20, 15] },
+    { id: "u1112cr", g: "DIII & ADP", t: "U11/U12 CAYSA (CR)", c: [50, null], n: [25, null] },
+    { id: "u1314caysa", g: "DIII & ADP", t: "U13/U14 CAYSA", c: [50, 35], n: [25, 17.5] },
+    { id: "u1112alpha", g: "DIII & ADP", t: "U11/U12 Alpha", c: [60, 40], n: [30, 20] },
+    { id: "u1314alpha", g: "DIII & ADP", t: "U13/U14 Alpha", c: [70, 50], n: [32.5, 22.5] },
+    { id: "u1112chal", g: "DIII & ADP", t: "U11/U12 Challenger & Higher", c: [65, 45], n: [32.5, 22.5] },
+    { id: "u1314chal", g: "DIII & ADP", t: "U13/U14 Challenger & Higher", c: [70, 50], n: [35, 25] }
+  ];
+  var PAY_ROLES = [["center", "Center"], ["ar", "AR"], ["avg", "Center/AR mix"]];
+  var DEFAULT_PAY = { cert: "c", wk: 4, lines: [
+    { id: "p1", row: "u78div", role: "center", count: 3 },
+    { id: "p2", row: "u910full", role: "avg", count: 1 },
+    { id: "p3", row: "u1112full", role: "avg", count: 1 },
+    { id: "p4", row: "u1314caysa", role: "avg", count: 1 }
+  ] };
+  var pay = JSON.parse(JSON.stringify(DEFAULT_PAY));
   var ui = JSON.parse(JSON.stringify(DEFAULT_UI));
   var draftUi = JSON.parse(JSON.stringify(DEFAULT_UI));
   var LOCAL_KEY = "match-fee-split-v1";
@@ -1017,7 +1062,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
 
   /* Storage: a private store when the viewer has one, this browser otherwise. */
   function saveLocal() {
-    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes })); } catch (e) {}
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay })); } catch (e) {}
   }
   function loadLocal() {
     try {
@@ -1029,10 +1074,11 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       if (d && typeof d.start === "number" && isFinite(d.start) && d.start >= 0) start = d.start;
       if (d && d.ui) ui = sanitizeUi(d.ui);
       if (d && Array.isArray(d.wishes)) wishes = sanitizeWishes(d.wishes);
+      if (d && d.pay) pay = sanitizePay(d.pay);
     } catch (e) {}
   }
   function persistSplit() {
-    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes }).then(function () { return true; }, function () { return false; });
+    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay }).then(function () { return true; }, function () { return false; });
     saveLocal();
     return Promise.resolve(true);
   }
@@ -1342,6 +1388,70 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     });
   });
 
+  /* Pay scale: what a typical weekend pays, used to estimate wish list dates. */
+  var PAY_MAP = {}; PAY_ROWS.forEach(function (r) { PAY_MAP[r.id] = r; });
+  function sanitizePay(raw) {
+    var o = { cert: "c", wk: 4, lines: [] };
+    if (!raw || typeof raw !== "object") return JSON.parse(JSON.stringify(DEFAULT_PAY));
+    if (raw.cert === "n") o.cert = "n";
+    var w = parseInt(raw.wk, 10); if (w >= 1 && w <= 5) o.wk = w;
+    (Array.isArray(raw.lines) ? raw.lines : []).forEach(function (l) {
+      if (!l || o.lines.length >= 12 || !PAY_MAP[l.row]) return;
+      var c = parseInt(l.count, 10); if (!(c >= 0 && c <= 10)) c = 1;
+      o.lines.push({ id: typeof l.id === "string" ? l.id.slice(0, 20) : uid("p"), row: l.row, role: ["center", "ar", "avg"].indexOf(l.role) >= 0 ? l.role : "center", count: c });
+    });
+    return o;
+  }
+  function linePay(l, cert) {
+    var r = PAY_MAP[l.row]; if (!r) return 0;
+    var col = cert === "n" ? r.n : r.c, cen = col[0], ar = col[1] === null ? col[0] : col[1];
+    var each = l.role === "ar" ? ar : l.role === "avg" ? (cen + ar) / 2 : cen;
+    return Math.round(each * 100);
+  }
+  function weekendCents(pp) { return pp.lines.reduce(function (t, l) { return t + linePay(l, pp.cert) * l.count; }, 0); }
+  function renderPay() {
+    var box = $("pay-lines");
+    if (!box) return;
+    $("pay-cert").value = pay.cert; $("pay-wk").value = String(pay.wk);
+    var groups = []; PAY_ROWS.forEach(function (r) { if (groups.indexOf(r.g) < 0) groups.push(r.g); });
+    var rowOpts = function (sel) { return groups.map(function (g) { return '<optgroup label="' + esc(g) + '">' + PAY_ROWS.filter(function (r) { return r.g === g; }).map(function (r) { return '<option value="' + r.id + '"' + (r.id === sel ? " selected" : "") + ">" + esc(r.t) + "</option>"; }).join("") + "</optgroup>"; }).join(""); };
+    box.innerHTML = pay.lines.map(function (l, i) {
+      var r = PAY_MAP[l.row], col = pay.cert === "n" ? r.n : r.c, noAr = col[1] === null && l.role !== "center";
+      var cnt = ""; for (var n = 0; n <= 10; n++) cnt += '<option value="' + n + '"' + (n === l.count ? " selected" : "") + ">" + n + "</option>";
+      var roles = PAY_ROLES.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === l.role ? " selected" : "") + ">" + x[1] + "</option>"; }).join("");
+      return '<div class="pay-line" data-i="' + i + '">' +
+        '<select data-f="count" aria-label="Number of games">' + cnt + "</select>" +
+        '<select class="pay-row" data-f="row" aria-label="Game type">' + rowOpts(l.row) + "</select>" +
+        '<select data-f="role" aria-label="Your role">' + roles + "</select>" +
+        '<button class="mini" type="button" data-pay-del="' + i + '">Remove</button>' +
+        '<div class="pay-sub">' + l.count + " &times; " + fmt(linePay(l, pay.cert)) + " = " + fmt(linePay(l, pay.cert) * l.count) + (noAr ? ". This game has no AR pay, so Center pay is used." : "") + "</div></div>";
+    }).join("");
+    var wk = weekendCents(pay), games = pay.lines.reduce(function (t, l) { return t + l.count; }, 0);
+    $("pay-total").textContent = wk > 0
+      ? "A typical weekend pays about " + fmt(wk) + " for " + games + (games === 1 ? " game" : " games") + ". With " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month that is about " + fmt(Math.round(wk * pay.wk)) + " a month, before expenses."
+      : "No games set, so wish list dates use your recent earnings instead.";
+  }
+  function payMsg(t, err) { var m = $("pay-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  function savePay() {
+    pay = sanitizePay(pay); renderPay(); renderWishes();
+    persistSplit().then(function (ok) { payMsg(ok ? "Saved." : "Could not save that. Try again in a moment.", !ok); });
+  }
+  $("pay-cert").addEventListener("change", function () { pay.cert = $("pay-cert").value; savePay(); });
+  $("pay-wk").addEventListener("change", function () { pay.wk = parseInt($("pay-wk").value, 10); savePay(); });
+  $("pay-add").addEventListener("click", function () { if (pay.lines.length >= 12) { payMsg("That is the most game types you can add.", true); return; } pay.lines.push({ id: uid("p"), row: "u78div", role: "center", count: 1 }); savePay(); });
+  $("pay-lines").addEventListener("change", function (e) {
+    var sel = e.target.closest("select[data-f]"), line = e.target.closest(".pay-line");
+    if (!sel || !line) return;
+    var l = pay.lines[+line.getAttribute("data-i")]; if (!l) return;
+    var f = sel.getAttribute("data-f");
+    l[f] = f === "count" ? parseInt(sel.value, 10) : sel.value;
+    savePay();
+  });
+  $("pay-lines").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-pay-del]"); if (!b) return;
+    pay.lines.splice(+b.getAttribute("data-pay-del"), 1); savePay();
+  });
+
   /* Wish list: things you cannot afford yet, with an estimate of when you can. */
   function sanitizeWishes(a) {
     var out = [];
@@ -1375,7 +1485,9 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       nets.forEach(function (n) { if (pdate(n[0]) >= cut) recent += n[1]; });
       perWeek = Math.max(0, recent) / (span / 7);
     }
-    return { a: a, used: used, unpaid: unpaid, perWeek: perWeek, now: now };
+    var wk = weekendCents(pay), plan = wk > 0;
+    if (plan) perWeek = wk * pay.wk / 4.33;
+    return { a: a, used: used, unpaid: unpaid, perWeek: perWeek, now: now, plan: plan, weekend: wk };
   }
   function wishStatus(w, info, ahead, aheadN) {
     var i = -1; BUCKETS.forEach(function (b, n) { if (b.k === w.bucket) i = n; });
@@ -1388,13 +1500,13 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     var need = upto - avail;
     if (need <= 0) return { ok: true, text: aheadN ? "You can afford this now, even after your higher priorities." : "You can afford this now. You have " + fmt(avail) + " in " + BMAP[w.bucket].name + "." };
     var pend = Math.round(info.unpaid * share);
-    if (pend > 0 && avail + pend >= upto) return { ok: false, text: lead + "you need " + fmt(need) + " more. Once your unpaid games (" + fmt(info.unpaid) + ") are paid, you can afford this." };
+    if (pend > 0 && avail + pend >= upto) return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. Once your unpaid games (" + fmt(info.unpaid) + ") are paid, you can afford this." };
     var weekly = info.perWeek * share;
-    if (weekly <= 0) return { ok: false, text: lead + "you need " + fmt(need) + " more in " + BMAP[w.bucket].name + ". Log some paid games and I'll estimate a date." };
+    if (weekly <= 0) return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more in " + BMAP[w.bucket].name + ". Log some paid games and I'll estimate a date." };
     var days = Math.ceil(need / weekly * 7);
-    if (days > 730) return { ok: false, text: lead + "you need " + fmt(need) + " more. At your recent pace that is more than 2 years away." };
+    if (days > 730) return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. " + (info.plan ? "At your pay scale (" + fmt(info.weekend) + " a weekend, " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month)" : "At your recent pace") + " that is more than 2 years away." };
     var when = new Date(info.now.getTime() + days * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", year: days > 300 ? "numeric" : undefined });
-    return { ok: false, text: lead + "you need " + fmt(need) + " more. At your recent pace you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." };
+    return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. " + (info.plan ? "At your pay scale (" + fmt(info.weekend) + " a weekend, " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month)" : "At your recent pace") + " you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." };
   }
   function renderWishes() {
     var list = $("wishes");
@@ -1559,6 +1671,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function applyProfileData(d) {
     if (!d) return;
     if (typeof d.start === "number" && isFinite(d.start) && d.start >= 0) { var es = startDirty(); start = d.start; if (es) updateStartUI(); else fillStartInput(); }
+    if (d.pay) { pay = sanitizePay(d.pay); renderPay(); }
     if (Array.isArray(d.wishes)) { wishes = sanitizeWishes(d.wishes); renderWishes(); }
     if (d.ui) { var eu = uiDirty(); ui = sanitizeUi(d.ui); if (!eu) { draftUi = clone(ui); fillUiInputs(); applyUi(ui); } }
     if (validSplit(d.split)) { var ed = draftDirty(); split = d.split; if (ed) updateDraftUI(); else fillSplitInputs(); }
@@ -1591,14 +1704,14 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
-    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice() };
+    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay) };
     var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
     sbOn = true; store = makeSbStore(); acctRender();
     setStatus("Syncing with your account…");
     return sbFetchAll().then(function (all) {
       var cloudEmpty = !all.count && !(all.prof && Object.keys(all.prof).length);
       if (cloudEmpty && hasMine) {
-        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes })];
+        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay })];
         KINDS.forEach(function (k) { mine[k].forEach(function (e) { ups.push(store[k].doc(e.id).set(e)); }); });
         return Promise.all(ups).then(function () { loaded = true; acctStatus(); return "moved"; });
       }
@@ -1711,7 +1824,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   try { var rfn = sessionStorage.getItem("rf-note"); if (rfn) { sessionStorage.removeItem("rf-note"); acctMsg(rfn, false); } } catch (e) {}
 
   /* Start with this device's copy, then switch to the private store if the viewer has one. */
-  loadLocal(); draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); render();
+  loadLocal(); draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); render();
   route(true);
   window.addEventListener("hashchange", function () { route(false); });
   setStatus("Saved in this browser only.");
@@ -1740,6 +1853,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
           if (editingStart) updateStartUI(); else fillStartInput();
           render();
         }
+        if (d && d.pay) { pay = sanitizePay(d.pay); renderPay(); }
         if (d && Array.isArray(d.wishes)) { wishes = sanitizeWishes(d.wishes); renderWishes(); }
         if (d && d.ui) {
           var editingUi = uiDirty();
