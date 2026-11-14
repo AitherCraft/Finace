@@ -360,7 +360,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
 
   <div class="home-only">
     <section class="panel" id="wish-alert" hidden aria-live="polite">
-      <div class="panel-head"><h2>You can afford it now</h2><a class="back" href="#can-i-afford">Wish list</a></div>
+      <div class="panel-head"><h2>You can afford it now</h2></div>
       <p class="note" id="wish-alert-text"></p>
     </section>
   </div>
@@ -395,17 +395,12 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   </div>
 
   <div class="grid2 home-only">
-    <section class="panel p-start" aria-labelledby="h-start">
-        <h2 id="h-start">Starting amount</h2>
-        <div class="grid">
-          <div class="field"><label for="start-amt">Money you start with</label><div class="money-wrap"><input id="start-amt" type="number" inputmode="decimal" min="0" step="0.01" value="715"></div></div>
-        </div>
-        <div class="row">
-          <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
-          <p class="msg" id="start-msg" role="status"></p>
-        </div>
-        <p class="note">Counted in every view: week, month, year and all time. Your games and other income are added on top of it.</p>
-      </section>
+    <section class="panel p-start" aria-labelledby="h-wish">
+      <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
+      <p class="note" id="wish-empty">Things you can't afford yet go here. In Can I Afford It?, if an amount doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
+      <ul class="wish-list" id="wishes"></ul>
+      <p class="msg" id="wish-msg" role="status"></p>
+    </section>
     <section class="panel p-pct" aria-labelledby="h-pct">
         <div class="panel-head"><h2 id="h-pct">Your percentages</h2><span class="chip" id="pct-total"></span></div>
         <div class="grid">
@@ -491,6 +486,18 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         <label class="check" for="show-quick"><input id="show-quick" type="checkbox" data-ui>Quick actions</label>
       </div>
     </section>
+
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-start">
+        <h2 id="h-start">Starting amount</h2>
+        <div class="grid">
+          <div class="field"><label for="start-amt">Money you start with</label><div class="money-wrap"><input id="start-amt" type="number" inputmode="decimal" min="0" step="0.01" value="715"></div></div>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="save-start" disabled>Save starting amount</button>
+          <p class="msg" id="start-msg" role="status"></p>
+        </div>
+        <p class="note">Counted in every view: week, month, year and all time. Your games and other income are added on top of it.</p>
+      </section>
 
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-acct">
       <h2 id="h-acct">Account</h2>
@@ -596,12 +603,6 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       </div>
     </section>
 
-    <section class="panel" data-page="can-i-afford" hidden aria-labelledby="h-wish">
-      <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
-      <p class="note" id="wish-empty">Things you can't afford yet go here. Check an amount above, and if it doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
-      <ul class="wish-list" id="wishes"></ul>
-      <p class="msg" id="wish-msg" role="status"></p>
-    </section>
   </div>
 
   <p class="status" id="status"></p>
