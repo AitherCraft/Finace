@@ -232,6 +232,7 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 .wish-top strong { overflow-wrap: anywhere; }
 .wish-amt { font: 700 20px/1.1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.prio { color: var(--blue); font-variant-numeric: tabular-nums; }
 .wish-when { font-size: 14px; color: var(--muted); }
 .wish-when.ready { color: var(--c-save); font-weight: 700; }
 .wish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -399,6 +400,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
       <p class="note" id="wish-empty">Things you can't afford yet go here. In Can I Afford It?, if an amount doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
       <ul class="wish-list" id="wishes"></ul>
+      <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
       <p class="msg" id="wish-msg" role="status"></p>
     </section>
     <section class="panel p-pct" aria-labelledby="h-pct">
@@ -1375,34 +1377,45 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     }
     return { a: a, used: used, unpaid: unpaid, perWeek: perWeek, now: now };
   }
-  function wishStatus(w, info) {
+  function wishStatus(w, info, ahead, aheadN) {
     var i = -1; BUCKETS.forEach(function (b, n) { if (b.k === w.bucket) i = n; });
     var total = info.a.pcts.reduce(function (t, v) { return t + v; }, 0) || 1;
     var share = info.a.pcts[i] / total;
     var avail = info.a.out[i] - info.used[w.bucket];
-    var need = toCents(w.amount) - avail;
-    if (need <= 0) return { ok: true, text: "You can afford this now. You have " + fmt(avail) + " in " + BMAP[w.bucket].name + "." };
+    var cost = toCents(w.amount);
+    var upto = ahead + cost;
+    var lead = aheadN ? "After your " + (aheadN === 1 ? "higher priority wish" : aheadN + " higher priority wishes") + " (" + fmt(ahead) + "), " : "";
+    var need = upto - avail;
+    if (need <= 0) return { ok: true, text: aheadN ? "You can afford this now, even after your higher priorities." : "You can afford this now. You have " + fmt(avail) + " in " + BMAP[w.bucket].name + "." };
     var pend = Math.round(info.unpaid * share);
-    if (pend > 0 && avail + pend >= toCents(w.amount)) return { ok: false, text: "You need " + fmt(need) + " more. Once your unpaid games (" + fmt(info.unpaid) + ") are paid, you can afford this." };
+    if (pend > 0 && avail + pend >= upto) return { ok: false, text: lead + "you need " + fmt(need) + " more. Once your unpaid games (" + fmt(info.unpaid) + ") are paid, you can afford this." };
     var weekly = info.perWeek * share;
-    if (weekly <= 0) return { ok: false, text: "You need " + fmt(need) + " more in " + BMAP[w.bucket].name + ". Log some paid games and I'll estimate a date." };
+    if (weekly <= 0) return { ok: false, text: lead + "you need " + fmt(need) + " more in " + BMAP[w.bucket].name + ". Log some paid games and I'll estimate a date." };
     var days = Math.ceil(need / weekly * 7);
-    if (days > 730) return { ok: false, text: "You need " + fmt(need) + " more. At your recent pace that is more than 2 years away." };
+    if (days > 730) return { ok: false, text: lead + "you need " + fmt(need) + " more. At your recent pace that is more than 2 years away." };
     var when = new Date(info.now.getTime() + days * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", year: days > 300 ? "numeric" : undefined });
-    return { ok: false, text: "You need " + fmt(need) + " more. At your recent pace you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." };
+    return { ok: false, text: lead + "you need " + fmt(need) + " more. At your recent pace you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." };
   }
   function renderWishes() {
     var list = $("wishes");
     if (!list) return;
     var info = allTimeInfo();
-    var rows = wishes.map(function (w) { return { w: w, st: wishStatus(w, info) }; });
-    rows.sort(function (x, y) { return (y.st.ok ? 1 : 0) - (x.st.ok ? 1 : 0) || x.w.created - y.w.created; });
+    var aheadSum = {}, aheadN = {};
+    var rows = wishes.map(function (w) {
+      var k = w.bucket, st = wishStatus(w, info, aheadSum[k] || 0, aheadN[k] || 0);
+      aheadSum[k] = (aheadSum[k] || 0) + toCents(w.amount); aheadN[k] = (aheadN[k] || 0) + 1;
+      return { w: w, st: st };
+    });
     $("wish-empty").hidden = wishes.length > 0;
-    list.innerHTML = rows.map(function (r) {
+    $("wish-prio-note").hidden = wishes.length < 2;
+    list.innerHTML = rows.map(function (r, n) {
       var w = r.w;
-      return '<li class="wish"><div class="wish-top"><strong>' + esc(w.what) + '</strong><span class="wish-amt">' + fmt(toCents(w.amount)) + '</span></div>' +
+      return '<li class="wish"><div class="wish-top"><strong><span class="prio">#' + (n + 1) + "</span> " + esc(w.what) + '</strong><span class="wish-amt">' + fmt(toCents(w.amount)) + '</span></div>' +
         '<div class="wish-when' + (r.st.ok ? " ready" : "") + '">From ' + esc(BMAP[w.bucket].name) + ". " + esc(r.st.text) + '</div>' +
-        '<div class="wish-actions">' + (r.st.ok ? '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '">I bought it</button>' : "") +
+        '<div class="wish-actions">' +
+        '<button class="mini" type="button" data-wish-up="' + esc(w.id) + '"' + (n === 0 ? " disabled" : "") + ' aria-label="Higher priority: ' + esc(w.what) + '">&uarr; Higher</button>' +
+        '<button class="mini" type="button" data-wish-down="' + esc(w.id) + '"' + (n === rows.length - 1 ? " disabled" : "") + ' aria-label="Lower priority: ' + esc(w.what) + '">&darr; Lower</button>' +
+        (r.st.ok ? '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '">I bought it</button>' : "") +
         '<button class="mini" type="button" data-wish-del="' + esc(w.id) + '">Remove</button></div></li>';
     }).join("");
     var ready = rows.filter(function (r) { return r.st.ok; });
@@ -1425,9 +1438,17 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   $("wishes").addEventListener("click", function (e) {
     var t = e.target.closest("button");
     if (!t) return;
-    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy");
+    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
     var w = wishes.filter(function (x) { return x.id === id; })[0];
     if (!w) return;
+    if (t.hasAttribute("data-wish-up") || t.hasAttribute("data-wish-down")) {
+      var at = wishes.indexOf(w), to = at + (t.hasAttribute("data-wish-up") ? -1 : 1);
+      if (to < 0 || to >= wishes.length) return;
+      var before = wishes.slice();
+      wishes[at] = wishes[to]; wishes[to] = w; renderWishes();
+      persistSplit().then(function (ok) { if (!ok) { wishes = before; renderWishes(); wishMsg("Could not save the new order. Try again.", true); } else wishMsg(""); });
+      return;
+    }
     function drop() {
       wishes = wishes.filter(function (x) { return x.id !== id; });
       return persistSplit().then(function (ok) { renderWishes(); return ok; });
