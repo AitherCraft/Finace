@@ -227,6 +227,9 @@ input::placeholder { color: var(--muted); opacity: 0.7; }
 .a-amt { font: 700 21px/1.1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
 .badge { font: 700 12px/1 var(--body); padding: 5px 10px; border-radius: 999px; border: 0; color: #04180b; background: var(--green); }
 button.badge { cursor: pointer; min-height: 26px; }
+.assoc-line { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; padding: 10px 0; border-top: 1px solid var(--panel-line); }
+.assoc-line:first-of-type { border-top: 0; }
+@media (max-width: 640px) { .assoc-line { grid-template-columns: 1fr 1fr; } .assoc-line .a-name { grid-column: 1 / -1; } }
 .pay-line { display: grid; grid-template-columns: 84px minmax(0, 1fr) 150px auto; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--panel-line); }
 .pay-line:first-of-type { border-top: 0; }
 .pay-line select { min-height: 44px; }
@@ -506,6 +509,14 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
         <p class="note">Counted in every view: week, month, year and all time. Your games and other income are added on top of it.</p>
       </section>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-assoc">
+      <h2 id="h-assoc">Associations and seasons</h2>
+      <p class="note">Add each association you ref for (like i9 or Liberty Hill) with the dates its season starts and ends. Wish list dates only count weekends inside a season, and you pick the association when you log a game.</p>
+      <div id="assoc-lines"></div>
+      <div class="row"><button class="mini" type="button" id="assoc-add">Add an association</button></div>
+      <p class="msg" id="assoc-msg" role="status"></p>
+    </section>
+
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-pay">
       <h2 id="h-pay">Pay scale and typical weekend</h2>
       <p class="note">Wish list dates use this. Set what a normal weekend looks like and I'll work out how fast your money comes in from your pay scale.</p>
@@ -543,6 +554,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       <p class="page-sub">Log a match fee and any gas or gear you paid for it.</p>
       <form id="form-game" novalidate class="fs">
         <div class="grid">
+          <div class="field"><label for="g-assoc">Association</label><select id="g-assoc"></select></div>
           <div class="field"><label for="g-date">Date</label><input id="g-date" type="date"></div>
           <div class="field"><label for="g-role">Role</label>
             <select id="g-role">
@@ -687,6 +699,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     { id: "p4", row: "u1314caysa", role: "avg", count: 1 }
   ] };
   var pay = JSON.parse(JSON.stringify(DEFAULT_PAY));
+  var assocs = [];
   var ui = JSON.parse(JSON.stringify(DEFAULT_UI));
   var draftUi = JSON.parse(JSON.stringify(DEFAULT_UI));
   var LOCAL_KEY = "match-fee-split-v1";
@@ -964,7 +977,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       var fee = toCents(g.fee), ex = toCents(g.expenses), paid = g.paid !== false;
       var badge = '<button type="button" class="badge ' + (paid ? "" : "pending") + '" data-paid="' + esc(g.id) + '" data-val="' + (paid ? "0" : "1") + '" aria-label="' + (paid ? "Paid. Click to mark pending" : "Pending. Click to mark paid") + '">' + (paid ? "Paid" : "Pending") + "</button>";
       items.push({ kind: "games", id: g.id, date: g.date, created: g.created || 0, title: g.match || "Game",
-        badge: badge, detail: (g.role || "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
+        badge: badge, detail: (g.assoc ? g.assoc + " · " : "") + (g.role || "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
         amt: Math.max(0, fee - ex), sign: paid ? "+" : "", unpaid: paid ? 0 : Math.max(0, fee - ex) });
     });
     S.income.forEach(function (x) {
@@ -1062,7 +1075,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
 
   /* Storage: a private store when the viewer has one, this browser otherwise. */
   function saveLocal() {
-    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay })); } catch (e) {}
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs })); } catch (e) {}
   }
   function loadLocal() {
     try {
@@ -1075,10 +1088,11 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       if (d && d.ui) ui = sanitizeUi(d.ui);
       if (d && Array.isArray(d.wishes)) wishes = sanitizeWishes(d.wishes);
       if (d && d.pay) pay = sanitizePay(d.pay);
+      if (d && Array.isArray(d.assocs)) assocs = sanitizeAssocs(d.assocs);
     } catch (e) {}
   }
   function persistSplit() {
-    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay }).then(function () { return true; }, function () { return false; });
+    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs }).then(function () { return true; }, function () { return false; });
     saveLocal();
     return Promise.resolve(true);
   }
@@ -1338,7 +1352,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (!isFinite(fee) || fee < 0) return formMsg("form-game", "Enter the game fee, like 55 or 62.50.", true);
     if ($("g-exp").value !== "" && (!isFinite(ex) || ex < 0)) return formMsg("form-game", "Expenses must be zero or more.", true);
     addEntry("games", {
-      id: uid("g"), date: date, match: $("g-match").value.trim(), role: $("g-role").value,
+      id: uid("g"), date: date, match: $("g-match").value.trim(), role: $("g-role").value, assoc: $("g-assoc").value,
       fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) ? Math.round(ex * 100) / 100 : 0,
       paid: $("g-paid").checked, created: Date.now()
     }).then(function (ok) {
@@ -1387,6 +1401,92 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       renderAfford();
     });
   });
+
+  /* Associations and seasons: games are logged against an association, and estimates only count weekends inside a season. */
+  var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  function sanitizeAssocs(a) {
+    var out = [];
+    (Array.isArray(a) ? a : []).forEach(function (x) {
+      if (!x || typeof x !== "object" || out.length >= 12) return;
+      var name = String(x.name || "").trim().slice(0, 40);
+      out.push({ id: typeof x.id === "string" ? x.id.slice(0, 20) : uid("a"), name: name, start: DATE_RE.test(x.start || "") ? x.start : "", end: DATE_RE.test(x.end || "") ? x.end : "" });
+    });
+    return out;
+  }
+  function hasSeasons() { return assocs.some(function (a) { return a.start || a.end; }); }
+  function seasonActive(ds) {
+    if (!hasSeasons()) return true;
+    return assocs.some(function (a) { return (a.start || a.end) && (!a.start || ds >= a.start) && (!a.end || ds <= a.end); });
+  }
+  function seasonsOver(now) {
+    var t = ymd(now);
+    return assocs.filter(function (a) { return a.start || a.end; }).every(function (a) { return a.end && a.end < t; });
+  }
+  function seasonSim(needC, weeklyC, now) {
+    var acc = 0, skipped = false;
+    for (var w = 0; w < 156; w++) {
+      var ds = ymd(new Date(now.getTime() + w * 7 * 864e5));
+      if (seasonActive(ds)) {
+        if (acc + weeklyC >= needC) return { days: w * 7 + Math.max(1, Math.ceil((needC - acc) / weeklyC * 7)), skipped: skipped };
+        acc += weeklyC;
+      } else if (acc > 0 || w > 0) skipped = true;
+    }
+    return null;
+  }
+  function shortDate(ds) { var p = ds.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
+  function seasonStatus(a) {
+    var t = ymd(new Date());
+    if (!a.start && !a.end) return "Add the season dates so estimates know when you can work.";
+    if (a.start && a.end && a.end < a.start) return "The end date is before the start date. Check the dates.";
+    if (a.start && t < a.start) return "Season starts " + shortDate(a.start) + (a.end ? " and ends " + shortDate(a.end) + "." : ".");
+    if (a.end && t > a.end) return "Season ended " + shortDate(a.end) + ". Update the dates for next season.";
+    return "In season" + (a.end ? " until " + shortDate(a.end) + "." : ".");
+  }
+  function assocNames() { return assocs.map(function (a) { return a.name; }).filter(Boolean); }
+  function renderAssocSelect() {
+    var sel = $("g-assoc"); if (!sel) return;
+    var keep = sel.value, names = assocNames(), seen = {};
+    var opts = names.filter(function (n) { if (seen[n]) return false; seen[n] = 1; return true; });
+    sel.innerHTML = (opts.length ? "" : '<option value="">None added yet (set up in Settings)</option>') + opts.map(function (n) { return "<option>" + esc(n) + "</option>"; }).join("") + (opts.length ? '<option value="">Other</option>' : "");
+    if (keep && opts.indexOf(keep) >= 0) sel.value = keep;
+    else { try { var last = localStorage.getItem("rf-last-assoc"); if (last && opts.indexOf(last) >= 0) sel.value = last; } catch (e) {} }
+  }
+  function renderAssocs() {
+    var box = $("assoc-lines"); if (!box) return;
+    box.innerHTML = assocs.map(function (a, i) {
+      return '<div class="assoc-line" data-i="' + i + '">' +
+        '<div class="field a-name"><label for="as-n' + i + '">Association</label><input id="as-n' + i + '" data-f="name" type="text" maxlength="40" value="' + esc(a.name) + '" placeholder="i9 Sports" autocomplete="off"></div>' +
+        '<div class="field"><label for="as-s' + i + '">Season starts</label><input id="as-s' + i + '" data-f="start" type="date" value="' + esc(a.start) + '"></div>' +
+        '<div class="field"><label for="as-e' + i + '">Season ends</label><input id="as-e' + i + '" data-f="end" type="date" value="' + esc(a.end) + '"></div>' +
+        '<button class="mini" type="button" data-assoc-del="' + i + '">Remove</button>' +
+        '<div class="pay-sub" style="grid-column:1/-1" data-status>' + esc(seasonStatus(a)) + "</div></div>";
+    }).join("");
+    renderAssocSelect(); renderWishes();
+  }
+  function assocMsg(t, err) { var m = $("assoc-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  function saveAssocs(rerender) {
+    assocs = sanitizeAssocs(assocs);
+    if (rerender) renderAssocs(); else { renderAssocSelect(); renderWishes(); }
+    persistSplit().then(function (ok) { assocMsg(ok ? "Saved." : "Could not save that. Try again in a moment.", !ok); });
+  }
+  $("assoc-add").addEventListener("click", function () {
+    if (assocs.length >= 12) { assocMsg("That is the most associations you can add.", true); return; }
+    assocs.push({ id: uid("a"), name: "", start: "", end: "" }); saveAssocs(true);
+    var f = $("as-n" + (assocs.length - 1)); if (f) f.focus();
+  });
+  $("assoc-lines").addEventListener("change", function (e) {
+    var inp = e.target.closest("input[data-f]"), line = e.target.closest(".assoc-line");
+    if (!inp || !line) return;
+    var a = assocs[+line.getAttribute("data-i")]; if (!a) return;
+    a[inp.getAttribute("data-f")] = inp.value;
+    var st = line.querySelector("[data-status]"); if (st) st.textContent = seasonStatus(sanitizeAssocs([a])[0]);
+    saveAssocs(false);
+  });
+  $("assoc-lines").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-assoc-del]"); if (!b) return;
+    assocs.splice(+b.getAttribute("data-assoc-del"), 1); saveAssocs(true);
+  });
+  $("g-assoc").addEventListener("change", function () { try { localStorage.setItem("rf-last-assoc", $("g-assoc").value); } catch (e) {} });
 
   /* Pay scale: what a typical weekend pays, used to estimate wish list dates. */
   var PAY_MAP = {}; PAY_ROWS.forEach(function (r) { PAY_MAP[r.id] = r; });
@@ -1503,10 +1603,16 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (pend > 0 && avail + pend >= upto) return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. Once your unpaid games (" + fmt(info.unpaid) + ") are paid, you can afford this." };
     var weekly = info.perWeek * share;
     if (weekly <= 0) return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more in " + BMAP[w.bucket].name + ". Log some paid games and I'll estimate a date." };
-    var days = Math.ceil(need / weekly * 7);
+    var days = Math.ceil(need / weekly * 7), skip = false;
+    if (hasSeasons()) {
+      var sim = seasonSim(need, weekly, info.now);
+      var head = (lead ? lead + "you need " : "You need ") + fmt(need) + " more. ";
+      if (!sim) return { ok: false, text: head + (seasonsOver(info.now) ? "Your listed seasons have ended. Add next season's dates in Settings and I'll estimate it." : "At this pace that is more than 2 years away.") };
+      days = sim.days; skip = sim.skipped;
+    }
     if (days > 730) return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. " + (info.plan ? "At your pay scale (" + fmt(info.weekend) + " a weekend, " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month)" : "At your recent pace") + " that is more than 2 years away." };
     var when = new Date(info.now.getTime() + days * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", year: days > 300 ? "numeric" : undefined });
-    return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. " + (info.plan ? "At your pay scale (" + fmt(info.weekend) + " a weekend, " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month)" : "At your recent pace") + " you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." };
+    return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. " + (info.plan ? "At your pay scale (" + fmt(info.weekend) + " a weekend, " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month)" : "At your recent pace") + " you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." + (skip ? " This skips the off-season." : "") };
   }
   function renderWishes() {
     var list = $("wishes");
@@ -1671,6 +1777,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function applyProfileData(d) {
     if (!d) return;
     if (typeof d.start === "number" && isFinite(d.start) && d.start >= 0) { var es = startDirty(); start = d.start; if (es) updateStartUI(); else fillStartInput(); }
+    if (Array.isArray(d.assocs)) { assocs = sanitizeAssocs(d.assocs); renderAssocs(); }
     if (d.pay) { pay = sanitizePay(d.pay); renderPay(); }
     if (Array.isArray(d.wishes)) { wishes = sanitizeWishes(d.wishes); renderWishes(); }
     if (d.ui) { var eu = uiDirty(); ui = sanitizeUi(d.ui); if (!eu) { draftUi = clone(ui); fillUiInputs(); applyUi(ui); } }
@@ -1704,14 +1811,14 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
-    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay) };
-    var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
+    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs) };
+    var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length + mine.assocs.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
     sbOn = true; store = makeSbStore(); acctRender();
     setStatus("Syncing with your account…");
     return sbFetchAll().then(function (all) {
       var cloudEmpty = !all.count && !(all.prof && Object.keys(all.prof).length);
       if (cloudEmpty && hasMine) {
-        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay })];
+        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay, assocs: mine.assocs })];
         KINDS.forEach(function (k) { mine[k].forEach(function (e) { ups.push(store[k].doc(e.id).set(e)); }); });
         return Promise.all(ups).then(function () { loaded = true; acctStatus(); return "moved"; });
       }
@@ -1824,7 +1931,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   try { var rfn = sessionStorage.getItem("rf-note"); if (rfn) { sessionStorage.removeItem("rf-note"); acctMsg(rfn, false); } } catch (e) {}
 
   /* Start with this device's copy, then switch to the private store if the viewer has one. */
-  loadLocal(); draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); render();
+  loadLocal(); draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); renderAssocs(); render();
   route(true);
   window.addEventListener("hashchange", function () { route(false); });
   setStatus("Saved in this browser only.");
@@ -1853,6 +1960,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
           if (editingStart) updateStartUI(); else fillStartInput();
           render();
         }
+        if (d && Array.isArray(d.assocs)) { assocs = sanitizeAssocs(d.assocs); renderAssocs(); }
         if (d && d.pay) { pay = sanitizePay(d.pay); renderPay(); }
         if (d && Array.isArray(d.wishes)) { wishes = sanitizeWishes(d.wishes); renderWishes(); }
         if (d && d.ui) {
