@@ -227,6 +227,15 @@ input::placeholder { color: var(--muted); opacity: 0.7; }
 .a-amt { font: 700 21px/1.1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
 .badge { font: 700 12px/1 var(--body); padding: 5px 10px; border-radius: 999px; border: 0; color: #04180b; background: var(--green); }
 button.badge { cursor: pointer; min-height: 26px; }
+.wish { display: grid; gap: 8px; padding: 14px 0; border-top: 1px solid var(--panel-line); }
+.wish:first-child { border-top: 0; }
+.wish-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.wish-top strong { overflow-wrap: anywhere; }
+.wish-amt { font: 700 20px/1.1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wish-when { font-size: 14px; color: var(--muted); }
+.wish-when.ready { color: var(--c-save); font-weight: 700; }
+.wish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.wish-list { list-style: none; margin: 0; padding: 0; }
 .unpaid-line { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--yellow); }
 .a-amt.is-unpaid { color: var(--muted); text-decoration: line-through; opacity: 0.8; }
 .badge.pending { background: var(--yellow); color: #231800; }
@@ -348,6 +357,13 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       <div class="t-d" id="t-year-d"></div>
     </div>
   </section>
+
+  <div class="home-only">
+    <section class="panel" id="wish-alert" hidden aria-live="polite">
+      <div class="panel-head"><h2>You can afford it now</h2><a class="back" href="#can-i-afford">Wish list</a></div>
+      <p class="note" id="wish-alert-text"></p>
+    </section>
+  </div>
 
   <div class="grid2 home-only">
     <section class="panel p-chart" aria-labelledby="h-chart">
@@ -574,9 +590,17 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       <div id="verdict" aria-live="polite"></div>
       <div class="row">
         <button class="btn" type="button" id="a-log" disabled>Log it as spent</button>
+        <button class="btn ghost" type="button" id="a-wish" hidden>Save to my wish list</button>
         <a class="btn ghost" href="#home">Done</a>
         <p class="msg" id="a-msg" role="status"></p>
       </div>
+    </section>
+
+    <section class="panel" data-page="can-i-afford" hidden aria-labelledby="h-wish">
+      <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
+      <p class="note" id="wish-empty">Things you can't afford yet go here. Check an amount above, and if it doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
+      <ul class="wish-list" id="wishes"></ul>
+      <p class="msg" id="wish-msg" role="status"></p>
     </section>
   </div>
 
@@ -614,6 +638,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     { id: "crimson", c: { bg: "#16060a", panel: "#260c13", text: "#ffeef1", accent: "#f0525b" } },
     { id: "light", c: { bg: "#eef3fb", panel: "#ffffff", text: "#0f1b33", accent: "#1f6fe0" } }
   ];
+  var wishes = [];
   var ui = JSON.parse(JSON.stringify(DEFAULT_UI));
   var draftUi = JSON.parse(JSON.stringify(DEFAULT_UI));
   var LOCAL_KEY = "match-fee-split-v1";
@@ -851,6 +876,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     renderChart();
     renderPlan(S);
     renderAfford(S);
+    renderWishes();
     renderLedger(S);
   }
 
@@ -863,6 +889,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     var alloc = S.a.out[i], used = S.used[k], left = alloc - used;
     var box = $("verdict");
     $("a-log").disabled = !(amt > 0);
+    $("a-wish").hidden = true;
     if (!(amt > 0)) {
       box.innerHTML = '<div class="v-empty">Type an amount to see if it fits. You have ' + (left >= 0 ? fmt(left) + " left" : fmt(-left) + " over") + " in " + b.name + " " + (period === "all" ? "so far." : "for this period.") + "</div>";
       return;
@@ -878,6 +905,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       var why = alloc === 0
         ? "You have no " + b.name + " share " + (period === "all" ? "yet." : "in this period yet.")
         : "Your " + b.name + " share is " + fmt(alloc) + " (" + trim(S.a.pcts[i]) + "%) and " + fmt(used) + " is already used.";
+      $("a-wish").hidden = false;
       box.innerHTML = '<div class="verdict bad"><div class="v-head">Over by ' + fmt(-after) + '</div><div class="v-body">' + why + " This would take " + b.name + " to " + (pctOfShare !== null ? pctOfShare + "% of its share." : "over its share.") + "</div></div>";
     }
   }
@@ -986,7 +1014,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
 
   /* Storage: a private store when the viewer has one, this browser otherwise. */
   function saveLocal() {
-    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui })); } catch (e) {}
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes })); } catch (e) {}
   }
   function loadLocal() {
     try {
@@ -997,10 +1025,11 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
       if (d && validSplit(d.split)) split = d.split;
       if (d && typeof d.start === "number" && isFinite(d.start) && d.start >= 0) start = d.start;
       if (d && d.ui) ui = sanitizeUi(d.ui);
+      if (d && Array.isArray(d.wishes)) wishes = sanitizeWishes(d.wishes);
     } catch (e) {}
   }
   function persistSplit() {
-    if (store) return store.profile.set({ split: split, start: start, ui: ui }).then(function () { return true; }, function () { return false; });
+    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes }).then(function () { return true; }, function () { return false; });
     saveLocal();
     return Promise.resolve(true);
   }
@@ -1310,6 +1339,105 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     });
   });
 
+  /* Wish list: things you cannot afford yet, with an estimate of when you can. */
+  function sanitizeWishes(a) {
+    var out = [];
+    (a || []).forEach(function (w) {
+      if (!w || typeof w !== "object" || out.length >= 50) return;
+      var amt = Number(w.amount);
+      if (!isFinite(amt) || amt <= 0 || !BMAP[w.bucket] || typeof w.id !== "string") return;
+      out.push({ id: w.id.slice(0, 40), what: String(w.what || "Something I want").slice(0, 80), amount: Math.round(amt * 100) / 100, bucket: w.bucket, created: Number(w.created) || 0 });
+    });
+    return out;
+  }
+  function pdate(str) { var p = String(str).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function allTimeInfo() {
+    var fee = 0, exp = 0, other = 0, unpaid = 0, nets = [];
+    data.games.forEach(function (g) {
+      var n = toCents(g.fee) - toCents(g.expenses);
+      if (g.paid === false) unpaid += Math.max(0, n);
+      else { fee += toCents(g.fee); exp += toCents(g.expenses); nets.push([g.date, n]); }
+    });
+    data.income.forEach(function (x) { other += toCents(x.amount); nets.push([x.date, toCents(x.amount)]); });
+    var net = Math.max(0, toCents(start) + fee - exp + other);
+    var a = allocate(net, split);
+    var used = {}; BUCKETS.forEach(function (b) { used[b.k] = 0; });
+    data.spending.forEach(function (x) { if (used[x.bucket] !== undefined) used[x.bucket] += toCents(x.amount); });
+    var now = new Date(); now = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var perWeek = 0;
+    if (nets.length) {
+      var first = nets.reduce(function (m, n) { return n[0] < m ? n[0] : m; }, nets[0][0]);
+      var span = Math.min(56, Math.max(7, Math.round((now - pdate(first)) / 864e5)));
+      var cut = new Date(now.getTime() - 56 * 864e5), recent = 0;
+      nets.forEach(function (n) { if (pdate(n[0]) >= cut) recent += n[1]; });
+      perWeek = Math.max(0, recent) / (span / 7);
+    }
+    return { a: a, used: used, unpaid: unpaid, perWeek: perWeek, now: now };
+  }
+  function wishStatus(w, info) {
+    var i = -1; BUCKETS.forEach(function (b, n) { if (b.k === w.bucket) i = n; });
+    var total = info.a.pcts.reduce(function (t, v) { return t + v; }, 0) || 1;
+    var share = info.a.pcts[i] / total;
+    var avail = info.a.out[i] - info.used[w.bucket];
+    var need = toCents(w.amount) - avail;
+    if (need <= 0) return { ok: true, text: "You can afford this now. You have " + fmt(avail) + " in " + BMAP[w.bucket].name + "." };
+    var pend = Math.round(info.unpaid * share);
+    if (pend > 0 && avail + pend >= toCents(w.amount)) return { ok: false, text: "You need " + fmt(need) + " more. Once your unpaid games (" + fmt(info.unpaid) + ") are paid, you can afford this." };
+    var weekly = info.perWeek * share;
+    if (weekly <= 0) return { ok: false, text: "You need " + fmt(need) + " more in " + BMAP[w.bucket].name + ". Log some paid games and I'll estimate a date." };
+    var days = Math.ceil(need / weekly * 7);
+    if (days > 730) return { ok: false, text: "You need " + fmt(need) + " more. At your recent pace that is more than 2 years away." };
+    var when = new Date(info.now.getTime() + days * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", year: days > 300 ? "numeric" : undefined });
+    return { ok: false, text: "You need " + fmt(need) + " more. At your recent pace you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." };
+  }
+  function renderWishes() {
+    var list = $("wishes");
+    if (!list) return;
+    var info = allTimeInfo();
+    var rows = wishes.map(function (w) { return { w: w, st: wishStatus(w, info) }; });
+    rows.sort(function (x, y) { return (y.st.ok ? 1 : 0) - (x.st.ok ? 1 : 0) || x.w.created - y.w.created; });
+    $("wish-empty").hidden = wishes.length > 0;
+    list.innerHTML = rows.map(function (r) {
+      var w = r.w;
+      return '<li class="wish"><div class="wish-top"><strong>' + esc(w.what) + '</strong><span class="wish-amt">' + fmt(toCents(w.amount)) + '</span></div>' +
+        '<div class="wish-when' + (r.st.ok ? " ready" : "") + '">From ' + esc(BMAP[w.bucket].name) + ". " + esc(r.st.text) + '</div>' +
+        '<div class="wish-actions">' + (r.st.ok ? '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '">I bought it</button>' : "") +
+        '<button class="mini" type="button" data-wish-del="' + esc(w.id) + '">Remove</button></div></li>';
+    }).join("");
+    var ready = rows.filter(function (r) { return r.st.ok; });
+    $("wish-alert").hidden = !ready.length;
+    if (ready.length) $("wish-alert-text").textContent = ready.map(function (r) { return r.w.what + " (" + fmt(toCents(r.w.amount)) + ")"; }).join(", ") + (ready.length > 1 ? " all fit" : " fits") + " in your plan right now.";
+  }
+  function wishMsg(t, err) { var m = $("wish-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  $("a-wish").addEventListener("click", function () {
+    var amt = parseFloat($("a-amt").value);
+    if (!isFinite(amt) || amt <= 0) return;
+    var w = { id: uid("w"), what: $("a-note").value.trim() || "Something I want", amount: Math.round(amt * 100) / 100, bucket: $("a-bucket").value, created: Date.now() };
+    wishes.push(w);
+    persistSplit().then(function (ok) {
+      if (!ok) { wishes = wishes.filter(function (x) { return x.id !== w.id; }); renderWishes(); $("a-msg").textContent = "Could not save that. Try again in a moment."; $("a-msg").className = "msg err"; return; }
+      $("a-amt").value = ""; $("a-note").value = "";
+      $("a-msg").className = "msg"; $("a-msg").textContent = "Added to your wish list.";
+      renderAfford(); renderWishes();
+    });
+  });
+  $("wishes").addEventListener("click", function (e) {
+    var t = e.target.closest("button");
+    if (!t) return;
+    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy");
+    var w = wishes.filter(function (x) { return x.id === id; })[0];
+    if (!w) return;
+    function drop() {
+      wishes = wishes.filter(function (x) { return x.id !== id; });
+      return persistSplit().then(function (ok) { renderWishes(); return ok; });
+    }
+    if (t.hasAttribute("data-wish-del")) { drop().then(function (ok) { wishMsg(ok ? "Removed." : "Could not save that. Try again.", !ok); }); return; }
+    addEntry("spending", { id: uid("s"), date: ymd(new Date()), bucket: w.bucket, note: w.what, amount: w.amount, created: Date.now() }).then(function (ok) {
+      if (!ok) { wishMsg("Could not save that. Try again in a moment.", true); return; }
+      drop().then(function () { wishMsg("Logged under " + BMAP[w.bucket].name + " and removed from your wish list."); });
+    });
+  });
+
   /* Browser tab icon uses the same logo. */
   try {
     var fav = document.createElement("link");
@@ -1409,6 +1537,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
   function applyProfileData(d) {
     if (!d) return;
     if (typeof d.start === "number" && isFinite(d.start) && d.start >= 0) { var es = startDirty(); start = d.start; if (es) updateStartUI(); else fillStartInput(); }
+    if (Array.isArray(d.wishes)) { wishes = sanitizeWishes(d.wishes); renderWishes(); }
     if (d.ui) { var eu = uiDirty(); ui = sanitizeUi(d.ui); if (!eu) { draftUi = clone(ui); fillUiInputs(); applyUi(ui); } }
     if (validSplit(d.split)) { var ed = draftDirty(); split = d.split; if (ed) updateDraftUI(); else fillSplitInputs(); }
   }
@@ -1440,14 +1569,14 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
     if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
-    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui) };
-    var hasMine = mine.games.length + mine.income.length + mine.spending.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
+    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice() };
+    var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
     sbOn = true; store = makeSbStore(); acctRender();
     setStatus("Syncing with your account…");
     return sbFetchAll().then(function (all) {
       var cloudEmpty = !all.count && !(all.prof && Object.keys(all.prof).length);
       if (cloudEmpty && hasMine) {
-        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui })];
+        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes })];
         KINDS.forEach(function (k) { mine[k].forEach(function (e) { ups.push(store[k].doc(e.id).set(e)); }); });
         return Promise.all(ups).then(function () { loaded = true; acctStatus(); return "moved"; });
       }
@@ -1589,6 +1718,7 @@ input[type="color"] { width: 64px; min-height: 44px; padding: 3px; cursor: point
           if (editingStart) updateStartUI(); else fillStartInput();
           render();
         }
+        if (d && Array.isArray(d.wishes)) { wishes = sanitizeWishes(d.wishes); renderWishes(); }
         if (d && d.ui) {
           var editingUi = uiDirty();
           ui = sanitizeUi(d.ui);
