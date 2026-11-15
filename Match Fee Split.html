@@ -290,7 +290,8 @@ html[data-hide~="records"] [data-card="records"],
 html[data-hide~="tips"] [data-card="tips"],
 html[data-hide~="earnings"] [data-card="earnings"],
 html[data-hide~="reminders"] [data-card="reminders"],
-html[data-hide~="owed"] [data-card="owed"] { display: none; }
+html[data-hide~="owed"] [data-card="owed"],
+html[data-hide~="goals"] [data-card="goals"] { display: none; }
 @media (min-width: 960px) { .grid2:has(> .p-start:only-child) { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 960px) {
   html[data-hide~="chart"] .grid2:has(.p-chart),
@@ -447,6 +448,18 @@ h1 span { display: inline; }
 .lbar .lt i { display: block; height: 100%; border-radius: 5px; }
 .lbar small { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; }
 #ch-tabs button { padding: 9px 11px; font-size: 12.5px; min-height: 36px; }
+.sg { display: grid; gap: 8px; padding: 14px 0; border-top: 1px solid var(--panel-line); }
+.sg:first-child { border-top: 0; padding-top: 0; }
+.sg .gbar { margin: 2px 0; }
+.sg-act { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.sg-ok { color: var(--green); }
+.sg-late { color: var(--orange); }
+.sg-s { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--panel-line); }
+.sg-s:first-child { border-top: 0; padding-top: 0; }
+.sgh { display: grid; gap: 4px; margin-bottom: 10px; font-size: 14px; }
+.sgh .gbar { margin: 0; height: 9px; }
+.sg .wish-top strong, .sg-s .wish-top strong { line-height: 1.35; }
+.sg .chip, .sg-s .chip { display: inline-block; margin: 2px 0 2px 4px; vertical-align: middle; }
 </style>
 
 <main class="wrap gate" id="gate" hidden>
@@ -522,6 +535,7 @@ h1 span { display: inline; }
         <section class="panel hc o2 mob-only" data-card="next"><h2>Next Game</h2><div id="next-game"></div></section>
         <section class="panel hc half o4" data-card="recent"><div class="panel-head"><h2>Recent Games</h2></div><div id="recent"></div><a class="more" href="#games">View all</a></section>
         <section class="panel hc o3" data-card="goal"><div class="panel-head"><h2>Monthly Goal</h2><a class="mini" href="#goals">Edit</a></div><div id="goal-card"></div></section>
+        <section class="panel hc o3" data-card="goals"><div class="panel-head"><h2>Goals</h2></div><div id="sg-home"></div></section>
         <section class="panel hc o6" data-card="quick" aria-labelledby="h-quick">
           <h2 id="h-quick">Quick Actions</h2>
           <div class="qa four">
@@ -640,11 +654,32 @@ h1 span { display: inline; }
 
   <div class="view" data-view="goals" hidden>
     <section class="panel" aria-labelledby="h-goal">
-      <h2 id="h-goal">Monthly goal</h2>
+      <h2 id="h-goal">Monthly earnings goal</h2>
       <p class="note">How much you want to earn each month, after expenses. Home shows your progress.</p>
       <div class="field"><label for="goal-amt">Goal per month</label><div class="money-wrap"><input id="goal-amt" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
       <div class="row"><button class="btn" id="save-goal" type="button">Save goal</button></div>
       <p class="msg" id="goal-msg" role="status"></p>
+    </section>
+    <section class="panel" aria-labelledby="h-sg">
+      <div class="panel-head"><h2 id="h-sg">Savings, investment and equipment goals</h2></div>
+      <ul class="wish-list" id="sg-list"></ul>
+    </section>
+    <section class="panel" aria-labelledby="h-sgform">
+      <h2 id="h-sgform">Add a goal</h2>
+      <div class="grid">
+        <div class="field"><label for="sg-name">Name</label><input id="sg-name" type="text" maxlength="60" placeholder="New flags" autocomplete="off"></div>
+        <div class="field"><label for="sg-type">Type</label><select id="sg-type"><option value="save">Savings</option><option value="invest">Investment</option><option value="equip">Equipment</option></select></div>
+        <div class="field"><label for="sg-target">Target</label><div class="money-wrap"><input id="sg-target" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
+        <div class="field"><label for="sg-saved">Saved so far</label><div class="money-wrap"><input id="sg-saved" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
+        <div class="field"><label for="sg-deadline">Deadline (optional)</label><input id="sg-deadline" type="date"></div>
+      </div>
+      <div class="row"><button class="btn" id="sg-save" type="button">Add goal</button><button class="btn ghost" id="sg-cancel" type="button" hidden>Cancel</button></div>
+      <p class="msg" id="sg-msg" role="status"></p>
+    </section>
+    <section class="panel" aria-labelledby="h-sug">
+      <h2 id="h-sug">Suggested goals</h2>
+      <p class="note">Based on what you earn and your percentages.</p>
+      <div id="sg-suggest"></div>
     </section>
     <section class="panel p-start" aria-labelledby="h-wish">
       <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
@@ -730,6 +765,7 @@ h1 span { display: inline; }
         <label class="check" for="show-earnings"><input id="show-earnings" type="checkbox" data-ui>Earnings overview</label>
         <label class="check" for="show-reminders"><input id="show-reminders" type="checkbox" data-ui>Payment reminders</label>
         <label class="check" for="show-owed"><input id="show-owed" type="checkbox" data-ui>Money owed card</label>
+        <label class="check" for="show-goals"><input id="show-goals" type="checkbox" data-ui>Goals progress</label>
       </div>
     </section>
 
@@ -919,13 +955,13 @@ h1 span { display: inline; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Payment reminders" }, { k: "owed", label: "Money owed card" }
+    { k: "tiles", label: "Summary tiles" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Payment reminders" }, { k: "owed", label: "Money owed card" }, { k: "goals", label: "Goals progress" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, tips: true, earnings: true, reminders: true, owed: true },
+    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, tips: true, earnings: true, reminders: true, owed: true, goals: true },
     name: "Referee Finance", tagline: "Track \u2022 Plan \u2022 Earn"
   };
   var PRESETS = [
@@ -1435,6 +1471,141 @@ h1 span { display: inline; }
     $("ch-stats").innerHTML = stats; $("ch-chart").innerHTML = chart; $("ch-detail").innerHTML = detail;
   }
 
+  /* Savings, investment and equipment goals */
+  var sgoals = [], sgEditId = null, sgConfirm = null, sgSig = "";
+  var SG_TYPES = { save: { name: "Savings", color: "var(--c-save)", pct: "save" }, invest: { name: "Investment", color: "var(--c-invest)", pct: "invest" }, equip: { name: "Equipment", color: "var(--c-spend)", pct: "spend" } };
+  function sanitizeSGoals(a) {
+    var out = [];
+    if (!Array.isArray(a)) return out;
+    a.slice(0, 20).forEach(function (g) {
+      if (!g || typeof g !== "object") return;
+      var t = Number(g.target), sv = Number(g.saved), name = typeof g.name === "string" ? g.name.trim().slice(0, 60) : "";
+      if (!name || !isFinite(t) || t <= 0 || t > 1e7) return;
+      out.push({ id: typeof g.id === "string" && g.id ? g.id.slice(0, 24) : uid("sg"), name: name, type: SG_TYPES[g.type] ? g.type : "save",
+        target: Math.round(t * 100) / 100, saved: isFinite(sv) && sv >= 0 && sv < 1e8 ? Math.round(sv * 100) / 100 : 0,
+        deadline: typeof g.deadline === "string" && /^\d{4}-\d{2}-\d{2}$/.test(g.deadline) ? g.deadline : "", created: Number(g.created) || 0 });
+    });
+    return out;
+  }
+  function sgMonthly() { return allTimeInfo().perWeek * 4.33; }
+  function sgCapacity(type, monthly) {
+    var tot = BUCKETS.reduce(function (t, b) { return t + (Number(split[b.k]) || 0); }, 0) || 100;
+    return monthly * (Number(split[SG_TYPES[type].pct]) || 0) / tot;
+  }
+  function sgLeft(deadline) {
+    var d = dayDiff(deadline);
+    if (d < 0) return "Past deadline";
+    if (d === 0) return "Due today";
+    if (d < 45) return d + (d === 1 ? " day left" : " days left");
+    var m = Math.round(d / 30.4); return m + (m === 1 ? " month left" : " months left");
+  }
+  function sgPace(g) {
+    var rem = Math.max(0, Math.round((g.target - g.saved) * 100));
+    if (rem === 0) return { done: true, text: "Goal reached!" };
+    var cap = sgCapacity(g.type, sgMonthly());
+    if (!g.deadline) return { text: cap > 0 ? "At your current pace this takes about " + Math.max(1, Math.round(rem / cap)) + " months." : "Log some games and I will estimate how long this takes." };
+    var d = dayDiff(g.deadline);
+    if (d <= 0) return { late: true, text: fmt(rem) + " still to go and the deadline has passed." };
+    var need = d < 60 ? rem / (d / 7) : rem / (d / 30.4), unit = d < 60 ? "week" : "month", capU = d < 60 ? cap * 7 / 30.4 : cap;
+    var ok = cap > 0 && need <= capU * 1.0001;
+    return { ok: ok, text: "Needs about " + fmt(Math.round(need)) + " a " + unit + (cap > 0 ? (ok ? ". You are on pace." : ". That is more than your current pace (" + fmt(Math.round(capU)) + ").") : ".") };
+  }
+  function sgProgress(g) { return Math.min(100, Math.round(g.saved / g.target * 100)); }
+  function sgMsg(t, err) { var m = $("sg-msg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+  function renderSGoals() {
+    if (!$("sg-list")) return;
+    var list = sgoals.slice().sort(function (a, b) {
+      var da = sgProgress(a) >= 100 ? 1 : 0, db = sgProgress(b) >= 100 ? 1 : 0;
+      if (da !== db) return da - db;
+      return (a.deadline || "9999") < (b.deadline || "9999") ? -1 : (a.deadline || "9999") > (b.deadline || "9999") ? 1 : a.created - b.created;
+    });
+    var html = list.map(function (g) {
+      var t = SG_TYPES[g.type], p = sgProgress(g), pace = sgPace(g), askDel = sgConfirm === g.id;
+      return '<li class="sg" data-id="' + esc(g.id) + '"><div class="wish-top"><strong>' + esc(g.name) + ' <span class="chip">' + t.name + '</span></strong><span class="wish-amt">' + fmt(Math.round(g.saved * 100)) + " / " + fmt(Math.round(g.target * 100)) + "</span></div>" +
+        '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="' + esc(g.name) + '"><span style="width:' + p + "%;background:" + t.color + '"></span></div>' +
+        '<p class="note">' + p + "%" + (g.deadline ? " &middot; Due " + esc(shortDate(g.deadline)) + " &middot; " + sgLeft(g.deadline) : " &middot; No deadline") + "</p>" +
+        '<p class="note' + (pace.done || pace.ok ? " sg-ok" : pace.late ? " sg-late" : "") + '">' + pace.text + "</p>" +
+        '<div class="sg-act"><div class="money-wrap"><input id="sg-amt-' + esc(g.id) + '" type="number" inputmode="decimal" min="0" step="1" placeholder="Amount" aria-label="Amount for ' + esc(g.name) + '"></div>' +
+        '<button class="mini" type="button" data-sg-add="' + esc(g.id) + '">Add</button><button class="mini" type="button" data-sg-take="' + esc(g.id) + '">Take out</button></div>' +
+        '<div class="wish-actions"><button class="mini" type="button" data-sg-edit="' + esc(g.id) + '">Edit</button>' +
+        (askDel ? '<button class="mini danger" type="button" data-sg-del="' + esc(g.id) + '">Delete goal</button><button class="mini" type="button" data-sg-keep="1">Keep</button>' : '<button class="mini" type="button" data-sg-ask="' + esc(g.id) + '">Delete</button>') + "</div></li>";
+    }).join("");
+    if (!html) html = '<li><p class="note">No goals yet. Add one below, or use a suggestion.</p></li>';
+    if (html !== sgSig && !editingIn("sg-list")) { $("sg-list").innerHTML = html; sgSig = html; }
+    renderSuggest();
+    /* home card */
+    var open = list.filter(function (g) { return sgProgress(g) < 100; }).slice(0, 3);
+    $("sg-home").innerHTML = open.length ? open.map(function (g) {
+      return '<div class="sgh"><div class="wish-top"><span>' + esc(g.name) + "</span><b>" + sgProgress(g) + '%</b></div><div class="gbar"><span style="width:' + sgProgress(g) + "%;background:" + SG_TYPES[g.type].color + '"></span></div></div>';
+    }).join("") + '<a class="more" href="#goals">All goals</a>' : '<p class="note">Set a savings, investment or equipment goal.</p><a class="more" href="#goals">Add a goal</a>';
+  }
+  var sgSuggestions = [];
+  function renderSuggest() {
+    var monthly = sgMonthly(), box = $("sg-suggest");
+    if (monthly <= 0) { box.innerHTML = '<p class="note">Log a few games (or set your typical weekend in Settings) and I will suggest goals that fit what you earn.</p>'; sgSuggestions = []; return; }
+    var round = function (v, step, lo, hi) { return Math.min(hi, Math.max(lo, Math.round(v / step) * step)); };
+    var mo = monthly / 100, add = function (m) { var d = new Date(); d.setDate(d.getDate() + Math.round(m * 30.4)); return ymd(d); };
+    var sv = sgCapacity("save", monthly) / 100, iv = sgCapacity("invest", monthly) / 100, sp = sgCapacity("equip", monthly) / 100;
+    var s1 = round(mo, 25, 100, 5000), m1 = sv > 0 ? Math.min(12, Math.max(2, Math.ceil(s1 / sv))) : 6;
+    var s2 = round(iv * 12, 25, 100, 20000);
+    var s3 = round(sp * 3, 25, 75, 500);
+    sgSuggestions = [
+      { name: "Emergency cushion", type: "save", target: s1, deadline: add(m1), why: "You earn about " + fmt(Math.round(monthly)) + " a month. Your Save share is about " + fmt(Math.round(sv * 100)) + " a month, so one month of earnings takes around " + m1 + " months." },
+      { name: "Invest for the year", type: "invest", target: s2, deadline: add(12), why: "Your Invest share is about " + fmt(Math.round(iv * 100)) + " a month. Keeping that up for a year adds up to this." },
+      { name: "Gear upgrade", type: "equip", target: s3, deadline: add(3), why: "Your Spend share is about " + fmt(Math.round(sp * 100)) + " a month. Three months of it covers new flags, cards or boots." }
+    ].filter(function (x) { return x.target > 0 && !sgoals.some(function (g) { return g.name === x.name; }); });
+    box.innerHTML = sgSuggestions.length ? sgSuggestions.map(function (x, i) {
+      return '<div class="sg-s"><div class="wish-top"><strong>' + esc(x.name) + ' <span class="chip">' + SG_TYPES[x.type].name + '</span></strong><span class="wish-amt">' + fmt(x.target * 100) + '</span></div><p class="note">' + x.why + " Aim for " + esc(shortDate(x.deadline)) + '.</p><button class="mini" type="button" data-sg-sug="' + i + '">Add this goal</button></div>';
+    }).join("") : '<p class="note">You already have all of my suggestions.</p>';
+  }
+  function sgSave(next, okMsg) {
+    var before = sgoals; sgoals = next; render();
+    return persistSplit().then(function (ok) {
+      if (!ok) { sgoals = before; render(); sgMsg("Could not save that. Try again in a moment.", true); return false; }
+      if (okMsg) sgMsg(okMsg, false);
+      return true;
+    });
+  }
+  function sgFormReset() {
+    sgEditId = null; ["sg-name", "sg-target", "sg-saved", "sg-deadline"].forEach(function (id) { $(id).value = ""; }); $("sg-type").value = "save";
+    $("sg-save").textContent = "Add goal"; $("sg-cancel").hidden = true; $("h-sgform").textContent = "Add a goal";
+  }
+  function sgClick(b) {
+    var id;
+    if (b.hasAttribute("data-sg-sug")) {
+      var x = sgSuggestions[+b.getAttribute("data-sg-sug")]; if (!x) return;
+      sgSave(sanitizeSGoals(sgoals.concat([{ id: uid("sg"), name: x.name, type: x.type, target: x.target, saved: 0, deadline: x.deadline, created: Date.now() }])), "Added " + x.name + ".");
+    } else if (b.hasAttribute("data-sg-add") || b.hasAttribute("data-sg-take")) {
+      id = b.getAttribute("data-sg-add") || b.getAttribute("data-sg-take");
+      var inp = $("sg-amt-" + id), amt = parseFloat(inp && inp.value);
+      if (!isFinite(amt) || amt <= 0) { sgMsg("Type an amount above $0 first.", true); return; }
+      var add = b.hasAttribute("data-sg-add");
+      sgSave(sgoals.map(function (g) { return g.id === id ? Object.assign({}, g, { saved: Math.max(0, Math.round((g.saved + (add ? amt : -amt)) * 100) / 100) }) : g; }), add ? "Added " + fmt(Math.round(amt * 100)) + "." : "Took out " + fmt(Math.round(amt * 100)) + ".").then(function () { sgSig = ""; renderSGoals(); });
+    } else if (b.hasAttribute("data-sg-edit")) {
+      id = b.getAttribute("data-sg-edit"); var g = sgoals.filter(function (x) { return x.id === id; })[0]; if (!g) return;
+      sgEditId = id; $("sg-name").value = g.name; $("sg-type").value = g.type; $("sg-target").value = g.target; $("sg-saved").value = g.saved || ""; $("sg-deadline").value = g.deadline;
+      $("sg-save").textContent = "Save changes"; $("sg-cancel").hidden = false; $("h-sgform").textContent = "Edit goal"; $("sg-name").focus(); $("h-sgform").scrollIntoView({ block: "start" });
+    } else if (b.hasAttribute("data-sg-ask")) { sgConfirm = b.getAttribute("data-sg-ask"); sgSig = ""; renderSGoals(); }
+    else if (b.hasAttribute("data-sg-keep")) { sgConfirm = null; sgSig = ""; renderSGoals(); }
+    else if (b.hasAttribute("data-sg-del")) {
+      id = b.getAttribute("data-sg-del"); sgConfirm = null; if (sgEditId === id) sgFormReset();
+      sgSave(sgoals.filter(function (g) { return g.id !== id; }), "Goal deleted.").then(function () { sgSig = ""; renderSGoals(); });
+    }
+  }
+  function sgFormSubmit() {
+    var name = $("sg-name").value.trim(), target = parseFloat($("sg-target").value), saved = $("sg-saved").value === "" ? 0 : parseFloat($("sg-saved").value), dl = $("sg-deadline").value;
+    if (!name) return sgMsg("Give the goal a name.", true);
+    if (!isFinite(target) || target <= 0) return sgMsg("Enter a target amount above $0.", true);
+    if (!isFinite(saved) || saved < 0) return sgMsg("Saved so far must be zero or more.", true);
+    var g = { id: sgEditId || uid("sg"), name: name, type: $("sg-type").value, target: target, saved: saved, deadline: dl, created: Date.now() };
+    var next;
+    if (sgEditId) { var old = sgoals.filter(function (x) { return x.id === sgEditId; })[0]; if (old) g.created = old.created; next = sgoals.map(function (x) { return x.id === sgEditId ? g : x; }); }
+    else { if (sgoals.length >= 20) return sgMsg("That is the most goals you can keep. Delete one first.", true); next = sgoals.concat([g]); }
+    next = sanitizeSGoals(next);
+    var wasEdit = !!sgEditId;
+    sgSave(next, wasEdit ? "Goal updated." : "Goal added.").then(function (ok) { if (ok) sgFormReset(); });
+  }
+
   function renderOwed() {
     var all = owedGames();
     var list = all.filter(function (g) {
@@ -1495,6 +1666,7 @@ h1 span { display: inline; }
     renderAssocFilter();
     renderOwed();
     renderCharts();
+    renderSGoals();
     renderLedger(A);
     fillGoalInput();
   }
@@ -1648,7 +1820,7 @@ h1 span { display: inline; }
 
   /* Storage: a private store when the viewer has one, this browser otherwise. */
   function saveLocal() {
-    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal })); } catch (e) {}
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals })); } catch (e) {}
   }
   function loadLocal() {
     try {
@@ -1663,10 +1835,11 @@ h1 span { display: inline; }
       if (d && d.pay) pay = sanitizePay(d.pay);
       if (d && Array.isArray(d.assocs)) assocs = sanitizeAssocs(d.assocs);
       if (d && sanitizeGoal(d.goal) !== null) goal = d.goal;
+      if (d && Array.isArray(d.sgoals)) sgoals = sanitizeSGoals(d.sgoals);
     } catch (e) {}
   }
   function persistSplit() {
-    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal }).then(function () { return true; }, function () { return false; });
+    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals }).then(function () { return true; }, function () { return false; });
     saveLocal();
     return Promise.resolve(true);
   }
@@ -1863,6 +2036,8 @@ h1 span { display: inline; }
 
   /* Dashboard events */
   document.addEventListener("click", function (e) {
+    var sb = e.target.closest("[data-sg-add],[data-sg-take],[data-sg-edit],[data-sg-ask],[data-sg-del],[data-sg-keep],[data-sg-sug]");
+    if (sb) { sgClick(sb); return; }
     var ct = e.target.closest("[data-ch]");
     if (ct) { chMetric = ct.getAttribute("data-ch"); chSel = null; renderCharts(); return; }
     var cl = e.target.closest("[data-league]");
@@ -1896,6 +2071,8 @@ h1 span { display: inline; }
     fQ = $("top-search").value; $("f-q").value = fQ;
     if (location.hash !== "#games") location.hash = "#games"; else filterChanged();
   });
+  $("sg-save").addEventListener("click", sgFormSubmit);
+  $("sg-cancel").addEventListener("click", function () { sgFormReset(); sgMsg("", false); });
   $("save-goal").addEventListener("click", function () {
     var v = parseFloat($("goal-amt").value || "0"), g = sanitizeGoal(v), m = $("goal-msg");
     if (g === null) { m.className = "msg err"; m.textContent = "Enter an amount of $0 or more."; return; }
@@ -2465,6 +2642,7 @@ h1 span { display: inline; }
     if (d.pay) { var np = sanitizePay(d.pay); if (!sameJson(np, pay) && !editingIn("pay-lines")) { pay = np; renderPay(); } }
     if (Array.isArray(d.wishes)) { var nw = sanitizeWishes(d.wishes); if (!sameJson(nw, wishes)) { wishes = nw; renderWishes(); } }
     if (sanitizeGoal(d.goal) !== null && d.goal !== goal) { goal = d.goal; fillGoalInput(); render(); }
+    if (Array.isArray(d.sgoals)) { var ng = sanitizeSGoals(d.sgoals); if (!sameJson(ng, sgoals)) { sgoals = ng; render(); } }
     if (d.ui) { var eu = uiDirty(); ui = sanitizeUi(d.ui); if (!eu) { draftUi = clone(ui); fillUiInputs(); applyUi(ui); } }
     if (validSplit(d.split)) { var ed = draftDirty(); split = d.split; if (ed) updateDraftUI(); else fillSplitInputs(); }
   }
@@ -2501,14 +2679,14 @@ h1 span { display: inline; }
     if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
-    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs), goal: goal };
-    var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length + mine.assocs.length > 0 || mine.goal > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
+    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs), goal: goal, sgoals: sgoals.slice() };
+    var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length + mine.assocs.length > 0 || mine.goal > 0 || mine.sgoals.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
     sbOn = true; store = makeSbStore(); acctRender();
     setStatus("Syncing with your account…");
     return sbFetchAll().then(function (all) {
       var cloudEmpty = !all.count && !(all.prof && Object.keys(all.prof).length);
       if (cloudEmpty && hasMine) {
-        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay, assocs: mine.assocs, goal: mine.goal })];
+        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay, assocs: mine.assocs, goal: mine.goal, sgoals: mine.sgoals })];
         KINDS.forEach(function (k) { mine[k].forEach(function (e) { ups.push(store[k].doc(e.id).set(e)); }); });
         return Promise.all(ups).then(function () { loaded = true; acctStatus(); return "moved"; });
       }
@@ -2654,6 +2832,7 @@ h1 span { display: inline; }
         if (d && d.pay) { var np = sanitizePay(d.pay); if (!sameJson(np, pay) && !editingIn("pay-lines")) { pay = np; renderPay(); } }
         if (d && Array.isArray(d.wishes)) { var nw = sanitizeWishes(d.wishes); if (!sameJson(nw, wishes)) { wishes = nw; renderWishes(); } }
         if (d && sanitizeGoal(d.goal) !== null && d.goal !== goal) { goal = d.goal; fillGoalInput(); render(); }
+        if (d && Array.isArray(d.sgoals)) { var ng = sanitizeSGoals(d.sgoals); if (!sameJson(ng, sgoals)) { sgoals = ng; render(); } }
         if (d && d.ui) {
           var editingUi = uiDirty();
           ui = sanitizeUi(d.ui);
