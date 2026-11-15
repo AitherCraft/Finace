@@ -435,6 +435,18 @@ h1 span { display: inline; }
 .by-row:first-child { border-top: 0; padding-top: 0; }
 .by-row span { color: var(--muted); }
 #owed-box.late { border-color: rgba(255, 138, 31, 0.6); background: linear-gradient(135deg, rgba(255, 138, 31, 0.16), transparent 70%), var(--panel); }
+.ch-filters { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .ch-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+#ch-chart svg { display: block; width: 100%; height: auto; }
+#ch-detail { min-height: 2.6em; color: var(--fg); }
+.lbars { display: grid; gap: 10px; }
+.lbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; text-align: left; background: var(--field); border: 1px solid var(--panel-line); border-radius: var(--r-sm); padding: 10px 12px; color: var(--fg); font: 500 15px/1.2 var(--body); cursor: pointer; }
+.lbar .ln { font-weight: 600; overflow-wrap: anywhere; }
+.lbar b { font: 700 18px/1 var(--display); font-variant-numeric: tabular-nums; }
+.lbar .lt { grid-column: 1 / -1; height: 9px; border-radius: 5px; background: var(--meter); overflow: hidden; }
+.lbar .lt i { display: block; height: 100%; border-radius: 5px; }
+.lbar small { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; }
+#ch-tabs button { padding: 9px 11px; font-size: 12.5px; min-height: 36px; }
 </style>
 
 <main class="wrap gate" id="gate" hidden>
@@ -609,6 +621,18 @@ h1 span { display: inline; }
         <div class="t-val" id="t-year">$0.00</div>
         <div class="t-d" id="t-year-d"></div>
       </div>
+    </section>
+    <section class="panel" aria-labelledby="h-charts">
+      <div class="panel-head"><h2 id="h-charts">Charts</h2></div>
+      <div class="tabs" id="ch-tabs" role="tablist" aria-label="Chart"></div>
+      <div class="filters ch-filters">
+        <select id="ch-range" aria-label="Range"><option value="3m">Last 3 months</option><option value="6m">Last 6 months</option><option value="1y">Last 12 months</option><option value="all">All time</option></select>
+        <select id="ch-league" aria-label="League"><option value="">All leagues</option></select>
+        <select id="ch-assignor" aria-label="Assignor"><option value="">All assignors</option></select>
+      </div>
+      <div class="stats" id="ch-stats"></div>
+      <div class="chart" id="ch-chart"></div>
+      <p class="note" id="ch-detail" aria-live="polite"></p>
     </section>
     <section class="panel"><div class="panel-head"><h2>Earnings Overview</h2><div class="periods sm" role="group" aria-label="Range" data-rngbox="1"></div></div><p class="note earn-sum"></p><div class="chart earn-chart" id="earn-reports"></div></section>
     <section class="panel"><h2>Export</h2><p class="note">Download every game, other income and spending entry as a spreadsheet file (CSV).</p><div class="row"><button class="btn" type="button" data-export="1">Export data</button></div></section>
@@ -1306,9 +1330,109 @@ h1 span { display: inline; }
     data.games.forEach(function (g) { if (g.assoc && names.indexOf(g.assoc) < 0) names.push(g.assoc); });
     var asg = assignorNames();
     fillSelect("f-assoc", "All leagues", names, fAssoc); fillSelect("f-assignor", "All assignors", asg, fAssignor);
-    fillSelect("o-league", "All leagues", names, oLeague); fillSelect("o-assignor", "All assignors", asg, oAssignor);
+    fillSelect("o-league", "All leagues", names, oLeague); fillSelect("ch-league", "All leagues", names, chLeague); fillSelect("ch-assignor", "All assignors", asg, chAssignor); fillSelect("o-assignor", "All assignors", asg, oAssignor);
     var dl = $("assignor-list"), sig = asg.join("|");
     if (dl.getAttribute("data-sig") !== sig) { dl.setAttribute("data-sig", sig); dl.innerHTML = asg.map(function (n) { return '<option value="' + esc(n) + '">'; }).join(""); }
+  }
+
+  /* Advanced charts: pick a metric, narrow by range, league and assignor, tap a bar for details */
+  var chMetric = "earn", chRange = "6m", chLeague = "", chAssignor = "", chSel = null;
+  var CH_TABS = [["earn", "Earnings"], ["games", "Games"], ["miles", "Mileage"], ["exp", "Expenses"], ["league", "By league"]];
+  var CH_COLOR = { earn: "var(--blue)", games: "var(--green)", miles: "#14b8a6", exp: "var(--orange)", league: "var(--purple)" };
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function chGames() {
+    return data.games.filter(function (g) { return (!chLeague || chMetric === "league" || (g.assoc || "") === chLeague) && (!chAssignor || (g.assignor || "") === chAssignor); });
+  }
+  function chBuckets() {
+    var now = new Date(), n = chRange === "3m" ? 3 : chRange === "6m" ? 6 : chRange === "1y" ? 12 : 0;
+    if (!n) {
+      var first = null;
+      data.games.concat(data.income).forEach(function (x) { if (x.date && (!first || x.date < first)) first = x.date; });
+      if (first) { var f = parseD(first); n = (now.getFullYear() - f.getFullYear()) * 12 + now.getMonth() - f.getMonth() + 1; }
+      n = Math.max(3, Math.min(36, n || 3));
+    }
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1), e = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      out.push({ from: ymd(d), to: ymd(e), label: MON[d.getMonth()], full: MON[d.getMonth()] + " " + d.getFullYear(), yr: d.getFullYear() });
+    }
+    out.forEach(function (b, i) { if (n > 12 && (i === 0 || b.label === "Jan")) b.label = b.label + " '" + String(b.yr).slice(2); });
+    return out;
+  }
+  function chCompute() {
+    var bs = chBuckets(), gs = chGames(), withIncome = !chLeague && !chAssignor && chMetric !== "league";
+    bs.forEach(function (b) { b.pay = 0; b.exp = 0; b.miles = 0; b.games = 0; b.paid = 0; b.income = 0; });
+    gs.forEach(function (g) {
+      bs.forEach(function (b) {
+        if (g.date < b.from || g.date > b.to) return;
+        b.games++; b.exp += toCents(g.expenses); b.miles += gMiles(g);
+        if (g.paid !== false) { b.paid++; b.pay += toCents(g.fee); }
+      });
+    });
+    if (withIncome) data.income.forEach(function (x) { bs.forEach(function (b) { if (x.date >= b.from && x.date <= b.to) b.income += toCents(x.amount); }); });
+    bs.forEach(function (b) { b.earn = b.pay + b.income; b.net = b.earn - b.exp; });
+    return bs;
+  }
+  function chFmt(metric, v) { return metric === "games" ? String(Math.round(v)) : metric === "miles" ? fmtMiles(v) : fmt(Math.round(v)); }
+  function chDetail(metric, b) {
+    if (metric === "earn") return "<b>" + b.full + "</b>: " + fmt(b.earn) + " earned from " + b.paid + (b.paid === 1 ? " paid game" : " paid games") + (b.income ? " (incl. " + fmt(b.income) + " other income)" : "") + ". Expenses " + fmt(b.exp) + ", net " + fmt(b.net) + ".";
+    if (metric === "games") return "<b>" + b.full + "</b>: " + b.games + (b.games === 1 ? " game" : " games") + " (" + b.paid + " paid, " + (b.games - b.paid) + " unpaid).";
+    if (metric === "miles") return "<b>" + b.full + "</b>: " + fmtMiles(b.miles) + " over " + b.games + (b.games === 1 ? " game" : " games") + (b.games && b.miles ? ", about " + fmtMiles(b.miles / b.games) + " per game" : "") + ".";
+    return "<b>" + b.full + "</b>: " + fmt(b.exp) + " in game expenses over " + b.games + (b.games === 1 ? " game" : " games") + (b.games && b.exp ? ", about " + fmt(Math.round(b.exp / b.games)) + " per game" : "") + ".";
+  }
+  function chBarSvg(bs, metric) {
+    var vals = bs.map(function (b) { return metric === "earn" ? b.earn / 100 : metric === "exp" ? b.exp / 100 : metric === "miles" ? b.miles : b.games; });
+    var n = bs.length, maxV = Math.max.apply(null, vals), step = niceStep(maxV);
+    if (metric === "games") step = Math.max(1, Math.ceil(step));
+    var top = step * 4, W = 440, H = 260, padL = 50, padR = 8, padT = 26, padB = 32, plotW = W - padL - padR, plotH = H - padT - padB, slot = plotW / n, bw = Math.min(38, slot * 0.66);
+    var every = n > 24 ? 4 : n > 12 ? 2 : 1, tick = function (v) { return metric === "earn" || metric === "exp" ? "$" + v.toLocaleString("en-US") : Number.isInteger(v) ? v.toLocaleString("en-US") : v.toFixed(1); };
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(CH_TABS.filter(function (t) { return t[0] === metric; })[0][1]) + ' by month">';
+    for (var t = 0; t <= 4; t++) {
+      var v = step * t, y = padT + plotH * (1 - v / top);
+      s += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '" style="stroke:var(--panel-line)" stroke-width="1"/><text x="' + (padL - 7) + '" y="' + (y + 5) + '" text-anchor="end" font-size="13" style="fill:var(--muted)">' + tick(v) + "</text>";
+    }
+    bs.forEach(function (b, i) {
+      var cx = padL + slot * i + slot / 2, h = plotH * vals[i] / top, y = padT + plotH - h, on = i === chSel;
+      if (h > 0) s += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="4" style="fill:' + CH_COLOR[metric] + '" opacity="' + (on ? 1 : 0.55) + '"/>';
+      if (on && vals[i] > 0) s += '<text x="' + cx.toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--fg)">' + chFmt(metric, metric === "earn" || metric === "exp" ? vals[i] * 100 : vals[i]) + "</text>";
+      if (i % every === 0 || on) s += '<text x="' + cx.toFixed(1) + '" y="' + (H - 9) + '" text-anchor="middle" font-size="13" ' + (on ? 'font-weight="700" style="fill:var(--fg)"' : 'style="fill:var(--muted)"') + ">" + esc(b.label) + "</text>";
+      s += '<rect data-i="' + i + '" x="' + (padL + slot * i).toFixed(1) + '" y="' + padT + '" width="' + slot.toFixed(1) + '" height="' + (plotH + 8) + '" fill="transparent" style="cursor:pointer"><title>' + esc(b.full) + "</title></rect>";
+    });
+    if (maxV === 0) s += '<text x="' + W / 2 + '" y="' + (padT + plotH / 2) + '" text-anchor="middle" font-size="15" style="fill:var(--muted)">Nothing to show for these filters.</text>';
+    return s + "</svg>";
+  }
+  function chLeagueRows(bs) {
+    var from = bs[0].from, to = bs[bs.length - 1].to, by = {};
+    chGames().forEach(function (g) {
+      if (g.date < from || g.date > to) return;
+      var k = g.assoc || "No league", o = by[k] || (by[k] = { name: k, pay: 0, exp: 0, miles: 0, games: 0 });
+      o.games++; o.exp += toCents(g.expenses); o.miles += gMiles(g); if (g.paid !== false) o.pay += toCents(g.fee);
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.pay - a.pay || b.games - a.games; });
+  }
+  function renderCharts() {
+    if (!$("ch-chart")) return;
+    $("ch-tabs").innerHTML = CH_TABS.map(function (t) { return '<button type="button" role="tab" data-ch="' + t[0] + '" aria-selected="' + (chMetric === t[0]) + '">' + t[1] + "</button>"; }).join("");
+    $("ch-range").value = chRange;
+    var bs = chCompute(), metric = chMetric, stats, detail, chart;
+    if (metric === "league") {
+      var rows = chLeagueRows(bs), tot = rows.reduce(function (a, r) { return a + r.pay; }, 0), mx = Math.max.apply(null, rows.map(function (r) { return r.pay; }).concat([1]));
+      stats = "<div><b>" + fmt(tot) + "</b><span>Earned</span></div><div><b>" + rows.length + "</b><span>" + (rows.length === 1 ? "League" : "Leagues") + "</span></div><div><b>" + (rows[0] ? esc(rows[0].name) : "-") + "</b><span>Top league</span></div>";
+      chart = rows.length ? '<div class="lbars">' + rows.map(function (r, i) {
+        return '<button type="button" class="lbar" data-league="' + esc(r.name === "No league" ? "" : r.name) + '" data-lname="' + esc(r.name) + '"><span class="ln">' + esc(r.name) + '</span><span class="lt"><i style="width:' + Math.round(r.pay / mx * 100) + '%;background:' + LEAGUE_COLORS[i % LEAGUE_COLORS.length] + '"></i></span><b>' + fmt(r.pay) + '</b><small>' + r.games + (r.games === 1 ? " game" : " games") + (r.miles ? " · " + fmtMiles(r.miles) : "") + " · " + fmt(r.exp) + " expenses</small></button>";
+      }).join("") + "</div>" : '<p class="note">Nothing to show for these filters.</p>';
+      detail = rows.length ? "Tap a league to see its earnings by month." : "";
+    } else {
+      var vals = bs.map(function (b) { return metric === "earn" ? b.earn : metric === "exp" ? b.exp : metric === "miles" ? b.miles : b.games; });
+      var total = vals.reduce(function (a, b) { return a + b; }, 0), best = 0;
+      vals.forEach(function (v, i) { if (v > vals[best]) best = i; });
+      var cur = bs.length - 1; if (chSel === null || chSel >= bs.length) chSel = cur;
+      stats = "<div><b>" + chFmt(metric, total) + "</b><span>Total</span></div><div><b>" + chFmt(metric, total / bs.length) + "</b><span>Avg / month</span></div><div><b>" + (vals[best] > 0 ? esc(bs[best].label) : "-") + "</b><span>Best month</span></div>";
+      chart = chBarSvg(bs, metric); detail = chDetail(metric, bs[chSel]);
+      if (metric === "earn" && (chLeague || chAssignor)) detail += " Other income is left out while a filter is on.";
+    }
+    $("ch-stats").innerHTML = stats; $("ch-chart").innerHTML = chart; $("ch-detail").innerHTML = detail;
   }
 
   function renderOwed() {
@@ -1370,6 +1494,7 @@ h1 span { display: inline; }
     renderHome(A);
     renderAssocFilter();
     renderOwed();
+    renderCharts();
     renderLedger(A);
     fillGoalInput();
   }
@@ -1738,6 +1863,12 @@ h1 span { display: inline; }
 
   /* Dashboard events */
   document.addEventListener("click", function (e) {
+    var ct = e.target.closest("[data-ch]");
+    if (ct) { chMetric = ct.getAttribute("data-ch"); chSel = null; renderCharts(); return; }
+    var cl = e.target.closest("[data-league]");
+    if (cl) { chLeague = cl.getAttribute("data-league"); chMetric = "earn"; chSel = null; $("ch-league").value = chLeague; renderCharts(); return; }
+    var ci = e.target.closest("#ch-chart [data-i]");
+    if (ci) { chSel = +ci.getAttribute("data-i"); renderCharts(); return; }
     var mp = e.target.closest("[data-markpaid]");
     if (mp) { setPaid(mp.getAttribute("data-markpaid"), true); return; }
     var x = e.target.closest("[data-export]");
@@ -1754,6 +1885,10 @@ h1 span { display: inline; }
   $("f-type").addEventListener("change", function () { fType = $("f-type").value; filterChanged(); });
   $("f-assoc").addEventListener("change", function () { fAssoc = $("f-assoc").value; filterChanged(); });
   $("f-assignor").addEventListener("change", function () { fAssignor = $("f-assignor").value; filterChanged(); });
+  $("ch-range").addEventListener("change", function () { chRange = $("ch-range").value; chSel = null; renderCharts(); });
+  $("ch-league").addEventListener("change", function () { chLeague = $("ch-league").value; chSel = null; renderCharts(); });
+  $("ch-assignor").addEventListener("change", function () { chAssignor = $("ch-assignor").value; chSel = null; renderCharts(); });
+  $("ch-chart").addEventListener("mouseover", function (e) { var r = e.target.closest("[data-i]"); if (r && +r.getAttribute("data-i") !== chSel) { chSel = +r.getAttribute("data-i"); renderCharts(); } });
   $("o-league").addEventListener("change", function () { oLeague = $("o-league").value; renderOwed(); });
   $("o-assignor").addEventListener("change", function () { oAssignor = $("o-assignor").value; renderOwed(); });
   $("o-status").addEventListener("change", function () { oStatus = $("o-status").value; renderOwed(); });
