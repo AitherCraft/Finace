@@ -289,7 +289,8 @@ html[data-hide~="calendar"] [data-card="calendar"],
 html[data-hide~="records"] [data-card="records"],
 html[data-hide~="tips"] [data-card="tips"],
 html[data-hide~="earnings"] [data-card="earnings"],
-html[data-hide~="reminders"] [data-card="reminders"] { display: none; }
+html[data-hide~="reminders"] [data-card="reminders"],
+html[data-hide~="owed"] [data-card="owed"] { display: none; }
 @media (min-width: 960px) { .grid2:has(> .p-start:only-child) { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 960px) {
   html[data-hide~="chart"] .grid2:has(.p-chart),
@@ -390,7 +391,7 @@ h1 span { display: inline; }
 .btn.small { min-height: 36px; padding: 9px 14px; font-size: 14px; text-decoration: none; display: inline-grid; place-items: center; }
 .btn.red { background: #d63b45; color: #fff; }
 .filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
-@media (min-width: 640px) { .filters { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); } }
+@media (min-width: 640px) { .filters { grid-template-columns: repeat(4, minmax(0, 1fr)); } .filters input { grid-column: 1 / -1; } }
 .list.tall { max-height: none; }
 .tiles.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 720px) { .tiles.five { grid-template-columns: repeat(4, minmax(0, 1fr)); } .logo { width: 60px; height: 60px; } }
@@ -423,6 +424,17 @@ h1 span { display: inline; }
 .field textarea { font: 500 16px/1.35 var(--body); color: var(--fg); background: var(--field); border: 1.5px solid var(--field-line); border-radius: var(--r-sm); padding: 11px 12px; width: 100%; min-width: 0; resize: vertical; }
 .game-note { margin-top: 6px; font-size: 13px; color: var(--muted); font-style: italic; overflow-wrap: anywhere; }
 .a-sub .mini { text-decoration: none; }
+.badge.overdue { background: #d63b45; color: #fff; }
+.q-red { background: #c0392b; }
+.owed-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--panel-line); align-items: start; }
+.owed-row:first-child { border-top: 0; padding-top: 0; }
+.owed-row strong { font-weight: 600; overflow-wrap: anywhere; }
+.owed-row .a-sub { margin-top: 4px; }
+.owed-row .amt { font: 700 21px/1.1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
+.by-row { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--panel-line); font-size: 15px; }
+.by-row:first-child { border-top: 0; padding-top: 0; }
+.by-row span { color: var(--muted); }
+#owed-box.late { border-color: rgba(255, 138, 31, 0.6); background: linear-gradient(135deg, rgba(255, 138, 31, 0.16), transparent 70%), var(--panel); }
 </style>
 
 <main class="wrap gate" id="gate" hidden>
@@ -520,6 +532,7 @@ h1 span { display: inline; }
         <section class="panel hc desk-only" data-card="earnings"><div class="panel-head"><h2>Earnings Overview</h2><div class="periods sm" role="group" aria-label="Range" data-rngbox="1"></div></div><p class="note earn-sum"></p><div class="chart earn-chart" id="earn-home"></div></section>
         <section class="panel hc half o5" data-card="league"><h2>League Breakdown</h2><div id="league"></div></section>
         <section class="panel hc half o8" data-card="upcoming"><div class="panel-head"><h2>Upcoming Games</h2></div><div id="upcoming"></div></section>
+        <section class="panel hc o5" id="owed-box" data-card="owed"><div class="panel-head"><h2>Money Owed</h2><a class="mini" href="#owed">View all</a></div><div id="owed-card"></div></section>
         <section class="panel hc o9" id="remind-card" data-card="reminders"><div class="panel-head"><h2>Payment Reminder</h2></div><div id="reminders"></div></section>
       </div>
     </div>
@@ -530,12 +543,28 @@ h1 span { display: inline; }
       <div class="panel-head"><h2 id="h-games">Game Log</h2><span class="chip" id="games-count"></span></div>
       <div class="filters">
         <input id="f-q" type="search" placeholder="Search games, leagues, notes" aria-label="Search" autocomplete="off">
-        <select id="f-type" aria-label="Show"><option value="all">Everything</option><option value="games">Games</option><option value="unpaid">Unpaid games</option><option value="paid">Paid games</option><option value="income">Other income</option><option value="spending">Spending</option></select>
-        <select id="f-assoc" aria-label="Association"><option value="">All associations</option></select>
+        <select id="f-type" aria-label="Show"><option value="all">Everything</option><option value="games">Games</option><option value="unpaid">Unpaid games</option><option value="pending">Pending</option><option value="overdue">Overdue</option><option value="paid">Paid games</option><option value="income">Other income</option><option value="spending">Spending</option></select>
+        <select id="f-assoc" aria-label="Association"><option value="">All leagues</option></select>
+        <select id="f-assignor" aria-label="Assignor"><option value="">All assignors</option></select>
       </div>
       <div class="row"><a class="btn" href="#add-game">Add game</a></div>
       <ul class="list tall" id="games"></ul>
     </section>
+  </div>
+
+  <div class="view" data-view="owed" hidden>
+    <section class="panel" aria-labelledby="h-owed">
+      <div class="panel-head"><h2 id="h-owed">Money Owed</h2><span class="chip" id="owed-count"></span></div>
+      <p class="note">Games you worked that have not been paid yet. A game turns Overdue after 7 days.</p>
+      <div class="filters">
+        <select id="o-league" aria-label="League"><option value="">All leagues</option></select>
+        <select id="o-assignor" aria-label="Assignor"><option value="">All assignors</option></select>
+        <select id="o-status" aria-label="Status"><option value="">Pending and overdue</option><option value="pending">Pending only</option><option value="overdue">Overdue only</option></select>
+      </div>
+      <div class="stats" id="owed-stats"></div>
+    </section>
+    <section class="panel" aria-labelledby="h-owed-by"><h2 id="h-owed-by">By league</h2><div id="owed-by"></div></section>
+    <section class="panel" aria-labelledby="h-owed-list"><h2 id="h-owed-list">Unpaid games</h2><ul class="list tall" id="owed-list"></ul></section>
   </div>
 
   <div class="view" data-view="money" hidden>
@@ -552,6 +581,7 @@ h1 span { display: inline; }
         <a class="qbtn q-purple" href="#i-spent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9m0 0l-4 4m4-4l4 4M5 4h14"/></svg>I Spent</a>
         <a class="qbtn q-orange" href="#can-i-afford"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1.9-1.1 1.8M12 17h.01"/></svg>Can I Afford It?</a>
         <a class="qbtn q-blue" href="#goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></svg>Goals &amp; Wish List</a>
+        <a class="qbtn q-red" href="#owed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>Money Owed</a>
       </div>
     </section>
   </div>
@@ -675,6 +705,7 @@ h1 span { display: inline; }
         <label class="check" for="show-tips"><input id="show-tips" type="checkbox" data-ui>Referee tips</label>
         <label class="check" for="show-earnings"><input id="show-earnings" type="checkbox" data-ui>Earnings overview</label>
         <label class="check" for="show-reminders"><input id="show-reminders" type="checkbox" data-ui>Payment reminders</label>
+        <label class="check" for="show-owed"><input id="show-owed" type="checkbox" data-ui>Money owed card</label>
       </div>
     </section>
 
@@ -769,6 +800,7 @@ h1 span { display: inline; }
           <div class="field"><label for="g-away">Away team</label><input id="g-away" type="text" maxlength="40" placeholder="Rapids" autocomplete="off"></div>
           <div class="field"><label for="g-match">Game name (optional)</label><input id="g-match" type="text" maxlength="80" placeholder="U14 Boys" autocomplete="off"></div>
           <div class="field"><label for="g-field">Field</label><input id="g-field" type="text" maxlength="40" placeholder="Field 3" autocomplete="off"></div>
+          <div class="field"><label for="g-assignor">Assignor</label><input id="g-assignor" type="text" maxlength="40" list="assignor-list" placeholder="Who assigned it" autocomplete="off"><datalist id="assignor-list"></datalist></div>
         </div>
         <div class="grid">
           <div class="field"><label for="g-fee">Pay (game fee)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
@@ -863,13 +895,13 @@ h1 span { display: inline; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Payment reminders" }
+    { k: "tiles", label: "Summary tiles" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Payment reminders" }, { k: "owed", label: "Money owed card" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, tips: true, earnings: true, reminders: true },
+    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, tips: true, earnings: true, reminders: true, owed: true },
     name: "Referee Finance", tagline: "Track \u2022 Plan \u2022 Earn"
   };
   var PRESETS = [
@@ -1134,7 +1166,7 @@ h1 span { display: inline; }
   }
 
   /* Dashboard cards */
-  var goal = 0, earnRange = "6m", calOff = 0, fQ = "", fType = "all", fAssoc = "";
+  var goal = 0, earnRange = "6m", calOff = 0, fQ = "", fType = "all", fAssoc = "", fAssignor = "", oLeague = "", oAssignor = "", oStatus = "";
   function todayStr() { return ymd(new Date()); }
   function gNet(g) { return Math.max(0, toCents(g.fee) - toCents(g.expenses)); }
   function parseD(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
@@ -1153,6 +1185,8 @@ h1 span { display: inline; }
     if (h && a) return h + " vs " + a;
     return h || a || g.match || g.assoc || "Game";
   }
+  var OVERDUE_DAYS = 7;
+  function gStatus(g) { return g.paid !== false ? "paid" : dayDiff(g.date) < -OVERDUE_DAYS ? "overdue" : "pending"; }
   function gMiles(g) { var m = parseFloat(g.miles); return isFinite(m) && m > 0 ? m : 0; }
   function fmtMiles(m) { return (Math.round(m * 10) / 10).toLocaleString("en-US") + " mi"; }
   function upcomingGames() { var t = todayStr(); return data.games.filter(function (g) { return g.date >= t; }).sort(byDateTime); }
@@ -1255,14 +1289,53 @@ h1 span { display: inline; }
     else $("reminders").innerHTML = '<p class="note">You are all caught up. Nothing is waiting for payment.</p>';
   }
 
+  function fillSelect(id, first, names, cur) {
+    var sel = $(id), sig = names.join("|");
+    if (sel.getAttribute("data-sig") === sig) return;
+    sel.setAttribute("data-sig", sig);
+    sel.innerHTML = '<option value="">' + first + "</option>" + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + "</option>"; }).join("");
+    sel.value = cur;
+  }
+  function assignorNames() {
+    var n = [];
+    data.games.forEach(function (g) { if (g.assignor && n.indexOf(g.assignor) < 0) n.push(g.assignor); });
+    return n.sort();
+  }
   function renderAssocFilter() {
     var names = assocNames().slice();
     data.games.forEach(function (g) { if (g.assoc && names.indexOf(g.assoc) < 0) names.push(g.assoc); });
-    var sig = names.join("|"), sel = $("f-assoc");
-    if (sel.getAttribute("data-sig") === sig) return;
-    sel.setAttribute("data-sig", sig);
-    sel.innerHTML = '<option value="">All associations</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + "</option>"; }).join("");
-    sel.value = fAssoc;
+    var asg = assignorNames();
+    fillSelect("f-assoc", "All leagues", names, fAssoc); fillSelect("f-assignor", "All assignors", asg, fAssignor);
+    fillSelect("o-league", "All leagues", names, oLeague); fillSelect("o-assignor", "All assignors", asg, oAssignor);
+    var dl = $("assignor-list"), sig = asg.join("|");
+    if (dl.getAttribute("data-sig") !== sig) { dl.setAttribute("data-sig", sig); dl.innerHTML = asg.map(function (n) { return '<option value="' + esc(n) + '">'; }).join(""); }
+  }
+
+  function renderOwed() {
+    var all = owedGames();
+    var list = all.filter(function (g) {
+      return (!oLeague || (g.assoc || "") === oLeague) && (!oAssignor || (g.assignor || "") === oAssignor) && (!oStatus || gStatus(g) === oStatus);
+    });
+    var total = list.reduce(function (a, g) { return a + gNet(g); }, 0);
+    var od = list.filter(function (g) { return gStatus(g) === "overdue"; }), odC = od.reduce(function (a, g) { return a + gNet(g); }, 0);
+    $("owed-count").textContent = list.length + (list.length === 1 ? " game" : " games") + " · " + fmt(total);
+    $("owed-stats").innerHTML = "<div><b>" + fmt(total) + "</b><span>Owed</span></div><div><b>" + (list.length - od.length) + "</b><span>Pending</span></div><div><b>" + od.length + "</b><span>Overdue" + (od.length ? " (" + fmt(odC) + ")" : "") + "</span></div>";
+    var by = {}, n = {};
+    list.forEach(function (g) { var k = g.assoc || "No league"; by[k] = (by[k] || 0) + gNet(g); n[k] = (n[k] || 0) + 1; });
+    var keys = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; });
+    $("owed-by").innerHTML = keys.length ? keys.map(function (k) { return '<div class="by-row"><span>' + esc(k) + " · " + n[k] + (n[k] === 1 ? " game" : " games") + "</span><b>" + fmt(by[k]) + "</b></div>"; }).join("") : '<p class="note">Nothing owed for these filters.</p>';
+    $("owed-list").innerHTML = list.length ? list.map(function (g) {
+      var st = gStatus(g), days = -dayDiff(g.date);
+      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + st + '">' + (st === "overdue" ? "Overdue" : "Pending") + "</span><span>" + esc([shortDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ")) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Mark paid</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
+    }).join("") : '<li><p class="empty">' + (all.length ? "No games match these filters." : "Nothing is owed. Every game you worked has been paid.") + "</p></li>";
+
+    var odAll = all.filter(function (g) { return gStatus(g) === "overdue"; }), totAll = all.reduce(function (a, g) { return a + gNet(g); }, 0);
+    $("owed-box").classList.toggle("late", odAll.length > 0);
+    var by2 = {}; all.forEach(function (g) { var k = g.assoc || "No league"; by2[k] = (by2[k] || 0) + gNet(g); });
+    var k2 = Object.keys(by2).sort(function (a, b) { return by2[b] - by2[a]; }).slice(0, 3);
+    $("owed-card").innerHTML = '<div class="goal-top"><b>' + fmt(totAll) + '</b><span class="note">' + all.length + (all.length === 1 ? " game pending" : " games pending") + "</span></div>" +
+      '<p class="note">' + (odAll.length ? "<b style=\"color:var(--fg)\">" + odAll.length + " overdue</b>" : "None overdue") + "</p>" +
+      k2.map(function (k) { return '<div class="by-row"><span>' + esc(k) + "</span><b>" + fmt(by2[k]) + "</b></div>"; }).join("");
   }
 
   function csvCell(v) {
@@ -1271,10 +1344,10 @@ h1 span { display: inline; }
     return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function exportCsv() {
-    var rows = [["Type", "Date", "Time", "Title", "Association", "Role", "Field", "Miles", "Amount", "Expenses", "Status", "Notes"]];
-    data.games.slice().sort(byDateTime).forEach(function (g) { rows.push(["Game", g.date, g.time || "", gTitle(g), g.assoc || "", g.role || "", g.field || "", gMiles(g) || "", (+g.fee || 0).toFixed(2), (+g.expenses || 0).toFixed(2), g.paid === false ? "Unpaid" : "Paid", g.notes || ""]); });
-    data.income.slice().sort(byDateTime).forEach(function (x) { rows.push(["Other income", x.date, "", x.source || "", "", "", "", "", (+x.amount || 0).toFixed(2), "", "", ""]); });
-    data.spending.slice().sort(byDateTime).forEach(function (s) { rows.push(["Spending", s.date, "", s.note || "", "", (BMAP[s.bucket] || BMAP.spend).name, "", "", (+s.amount || 0).toFixed(2), "", "", ""]); });
+    var rows = [["Type", "Date", "Time", "Title", "Association", "Role", "Field", "Assignor", "Miles", "Amount", "Expenses", "Status", "Notes"]];
+    data.games.slice().sort(byDateTime).forEach(function (g) { rows.push(["Game", g.date, g.time || "", gTitle(g), g.assoc || "", g.role || "", g.field || "", g.assignor || "", gMiles(g) || "", (+g.fee || 0).toFixed(2), (+g.expenses || 0).toFixed(2), g.paid === false ? "Unpaid" : "Paid", g.notes || ""]); });
+    data.income.slice().sort(byDateTime).forEach(function (x) { rows.push(["Other income", x.date, "", x.source || "", "", "", "", "", "", (+x.amount || 0).toFixed(2), "", "", ""]); });
+    data.spending.slice().sort(byDateTime).forEach(function (s) { rows.push(["Spending", s.date, "", s.note || "", "", (BMAP[s.bucket] || BMAP.spend).name, "", "", "", (+s.amount || 0).toFixed(2), "", "", ""]); });
     var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
@@ -1296,6 +1369,7 @@ h1 span { display: inline; }
     renderWishes();
     renderHome(A);
     renderAssocFilter();
+    renderOwed();
     renderLedger(A);
     fillGoalInput();
   }
@@ -1334,9 +1408,10 @@ h1 span { display: inline; }
     var items = [];
     S.games.forEach(function (g) {
       var fee = toCents(g.fee), ex = toCents(g.expenses), paid = g.paid !== false;
-      var badge = '<button type="button" class="badge ' + (paid ? "" : "pending") + '" data-paid="' + esc(g.id) + '" data-val="' + (paid ? "0" : "1") + '" aria-label="' + (paid ? "Paid. Click to mark pending" : "Pending. Click to mark paid") + '">' + (paid ? "Paid" : "Pending") + "</button>";
+      var st = gStatus(g), stLabel = st === "paid" ? "Paid" : st === "overdue" ? "Overdue" : "Pending";
+      var badge = '<button type="button" class="badge ' + (paid ? "" : st) + '" data-paid="' + esc(g.id) + '" data-val="' + (paid ? "0" : "1") + '" aria-label="' + (paid ? "Paid. Click to mark pending" : stLabel + ". Click to mark paid") + '">' + stLabel + "</button>";
       items.push({ kind: "games", id: g.id, date: g.date, created: g.created || 0, title: gTitle(g), notes: g.notes || "", editId: g.id,
-        paid: paid, assoc: g.assoc || "", badge: badge, detail: [g.assoc, g.role, g.field].filter(Boolean).join(" · ") + (gMiles(g) ? " · " + fmtMiles(gMiles(g)) : "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
+        paid: paid, status: st, assignor: g.assignor || "", assoc: g.assoc || "", badge: badge, detail: [g.assoc, g.assignor ? "Assignor " + g.assignor : "", g.role, g.field].filter(Boolean).join(" · ") + (gMiles(g) ? " · " + fmtMiles(gMiles(g)) : "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
         amt: Math.max(0, fee - ex), sign: paid ? "+" : "", unpaid: paid ? 0 : Math.max(0, fee - ex) });
     });
     S.income.forEach(function (x) {
@@ -1350,11 +1425,13 @@ h1 span { display: inline; }
         amt: toCents(s.amount), sign: "−" });
     });
     var q = fQ.trim().toLowerCase();
-    var filtered = q || fType !== "all" || fAssoc;
+    var filtered = q || fType !== "all" || fAssoc || fAssignor;
     items = items.filter(function (it) {
       if (fType === "games" && it.kind !== "games") return false;
       if (fType === "paid" && !(it.kind === "games" && it.paid)) return false;
       if (fType === "unpaid" && !(it.kind === "games" && !it.paid)) return false;
+      if ((fType === "pending" || fType === "overdue") && !(it.kind === "games" && it.status === fType)) return false;
+      if (fAssignor && it.assignor !== fAssignor) return false;
       if (fType === "income" && it.kind !== "income") return false;
       if (fType === "spending" && it.kind !== "spending") return false;
       if (fAssoc && it.assoc !== fAssoc) return false;
@@ -1508,7 +1585,7 @@ h1 span { display: inline; }
 
   /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
   var PAGES = { "add-game": "g-home", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "" };
-  var TABS = ["home", "games", "money", "reports", "goals"];
+  var TABS = ["home", "games", "money", "reports", "goals", "owed"];
   function route(first) {
     var h = (location.hash || "").replace(/^#/, "");
     var view = Object.prototype.hasOwnProperty.call(PAGES, h) || TABS.indexOf(h) >= 0 ? h : "home";
@@ -1517,7 +1594,7 @@ h1 span { display: inline; }
     Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (el) { el.hidden = el.getAttribute("data-view") !== view; });
     Array.prototype.forEach.call(document.querySelectorAll("[data-page]"), function (el) { el.hidden = el.getAttribute("data-page") !== view; });
     $("pages").hidden = tab;
-    var nk = tab || view === "app-settings" ? view : view === "add-game" ? "games" : "money";
+    var nk = view === "owed" ? "money" : tab || view === "app-settings" ? view : view === "add-game" ? "games" : "money";
     Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function (el) {
       if (el.getAttribute("data-nav") === nk) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
     });
@@ -1661,6 +1738,8 @@ h1 span { display: inline; }
 
   /* Dashboard events */
   document.addEventListener("click", function (e) {
+    var mp = e.target.closest("[data-markpaid]");
+    if (mp) { setPaid(mp.getAttribute("data-markpaid"), true); return; }
     var x = e.target.closest("[data-export]");
     if (x) { exportCsv(); return; }
     var r = e.target.closest("[data-rng]");
@@ -1674,6 +1753,10 @@ h1 span { display: inline; }
   $("f-q").addEventListener("input", function () { fQ = $("f-q").value; $("top-search").value = fQ; filterChanged(); });
   $("f-type").addEventListener("change", function () { fType = $("f-type").value; filterChanged(); });
   $("f-assoc").addEventListener("change", function () { fAssoc = $("f-assoc").value; filterChanged(); });
+  $("f-assignor").addEventListener("change", function () { fAssignor = $("f-assignor").value; filterChanged(); });
+  $("o-league").addEventListener("change", function () { oLeague = $("o-league").value; renderOwed(); });
+  $("o-assignor").addEventListener("change", function () { oAssignor = $("o-assignor").value; renderOwed(); });
+  $("o-status").addEventListener("change", function () { oStatus = $("o-status").value; renderOwed(); });
   $("top-search").addEventListener("input", function () {
     fQ = $("top-search").value; $("f-q").value = fQ;
     if (location.hash !== "#games") location.hash = "#games"; else filterChanged();
@@ -1773,7 +1856,7 @@ h1 span { display: inline; }
   }
   function resetGameForm() {
     editGameId = null; gameFormMode(false);
-    ["g-home", "g-away", "g-match", "g-field", "g-fee", "g-exp", "g-miles", "g-notes", "g-time"].forEach(function (id) { $(id).value = ""; });
+    ["g-home", "g-away", "g-match", "g-field", "g-assignor", "g-fee", "g-exp", "g-miles", "g-notes", "g-time"].forEach(function (id) { $(id).value = ""; });
     $("g-date").value = todayStr(); $("g-status").value = "paid"; $("g-role").value = "Center";
     formMsg("form-game", "", false);
   }
@@ -1785,7 +1868,7 @@ h1 span { display: inline; }
     if (g.assoc) $("g-assoc").value = g.assoc;
     setOpt($("g-role"), g.role || "Center");
     $("g-date").value = g.date; $("g-time").value = g.time || "";
-    $("g-home").value = g.home || ""; $("g-away").value = g.away || ""; $("g-match").value = g.match || ""; $("g-field").value = g.field || "";
+    $("g-home").value = g.home || ""; $("g-away").value = g.away || ""; $("g-match").value = g.match || ""; $("g-field").value = g.field || ""; $("g-assignor").value = g.assignor || "";
     $("g-fee").value = g.fee; $("g-exp").value = g.expenses ? g.expenses : ""; $("g-miles").value = gMiles(g) || "";
     $("g-notes").value = g.notes || ""; $("g-status").value = g.paid === false ? "pending" : "paid";
     editSwap = true; location.hash = "#add-game";
@@ -1799,7 +1882,7 @@ h1 span { display: inline; }
     if ($("g-miles").value !== "" && (!isFinite(mi) || mi < 0 || mi > 5000)) return formMsg("form-game", "Mileage must be zero or more.", true);
     var f = {
       date: date, time: $("g-time").value || "", role: $("g-role").value, assoc: $("g-assoc").value,
-      home: $("g-home").value.trim(), away: $("g-away").value.trim(), match: $("g-match").value.trim(), field: $("g-field").value.trim(),
+      home: $("g-home").value.trim(), away: $("g-away").value.trim(), match: $("g-match").value.trim(), field: $("g-field").value.trim(), assignor: $("g-assignor").value.trim(),
       fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) ? Math.round(ex * 100) / 100 : 0,
       miles: isFinite(mi) ? Math.round(mi * 10) / 10 : 0, notes: $("g-notes").value.trim().slice(0, 300),
       paid: $("g-status").value === "paid"
