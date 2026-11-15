@@ -525,7 +525,7 @@ h1 span { display: inline; }
     <section class="tiles five" data-card="tiles" aria-label="Summary">
       <div class="tile t-green"><div class="t-head"><span class="ic" aria-hidden="true">$</span><span class="t-label">Today's Earnings</span></div><div class="t-val" id="h-today">$0.00</div><div class="t-d" id="h-today-d"></div></div>
       <div class="tile t-blue"><div class="t-head"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 17l5-5 4 4 7-8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span class="t-label">Total Earned</span></div><div class="t-val" id="h-total">$0.00</div><div class="t-d" id="h-total-d"></div></div>
-      <div class="tile t-orange"><div class="t-head"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" stroke="#fff" stroke-width="2.4" fill="none"/><path d="M12 7.5V12l3 2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></span><span class="t-label">Money Owed</span></div><div class="t-val" id="h-owed">$0.00</div><div class="t-d" id="h-owed-d"></div></div>
+      <div class="tile t-orange"><div class="t-head"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" stroke="#fff" stroke-width="2.4" fill="none"/><path d="M12 7.5V12l3 2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></span><span class="t-label">Owed to You</span></div><div class="t-val" id="h-owed">$0.00</div><div class="t-d" id="h-owed-d"></div></div>
       <div class="tile t-purple"><div class="t-head"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="9" width="16" height="10" rx="2.5" stroke="#fff" stroke-width="2.2" fill="none"/><path d="M8 9V7a4 4 0 0 1 8 0v2" stroke="#fff" stroke-width="2.2" fill="none"/></svg></span><span class="t-label">Savings</span></div><div class="t-val" id="h-save">$0.00</div><div class="t-d" id="h-save-d"></div></div>
       <div class="tile t-teal desk-only"><div class="t-head"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 18l5-6 4 3 7-9M15 6h5v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span class="t-label">Investment</span></div><div class="t-val" id="h-invest">$0.00</div><div class="t-d" id="h-invest-d"></div></div>
     </section>
@@ -548,7 +548,7 @@ h1 span { display: inline; }
       </div>
       <div class="hcol">
         <section class="panel hc desk-only" data-card="calendar"><div class="panel-head"><h2>Assignment Calendar</h2><span class="cal-nav"><button class="mini" type="button" data-cal="-1" aria-label="Previous month">&lsaquo;</button><button class="mini" type="button" data-cal="1" aria-label="Next month">&rsaquo;</button></span></div><div id="cal"></div>
-          <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Awaiting payment</span></div></section>
+          <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Waiting to get paid</span></div></section>
         <section class="panel hc half o7" data-card="career"><h2>Career Stats</h2><div id="career" class="stats"></div></section>
         <section class="panel hc desk-only" data-card="records"><h2>Personal Records</h2><div id="records"></div></section>
         <section class="panel hc desk-only" data-card="tips"><h2>Referee Bag Tips</h2>
@@ -558,8 +558,8 @@ h1 span { display: inline; }
         <section class="panel hc desk-only" data-card="earnings"><div class="panel-head"><h2>Earnings Overview</h2><div class="periods sm" role="group" aria-label="Range" data-rngbox="1"></div></div><p class="note earn-sum"></p><div class="chart earn-chart" id="earn-home"></div></section>
         <section class="panel hc half o5" data-card="league"><h2>League Breakdown</h2><div id="league"></div></section>
         <section class="panel hc half o8" data-card="upcoming"><div class="panel-head"><h2>Upcoming Games</h2></div><div id="upcoming"></div></section>
-        <section class="panel hc o5" id="owed-box" data-card="owed"><div class="panel-head"><h2>Money Owed</h2><a class="mini" href="#owed">View all</a></div><div id="owed-card"></div></section>
-        <section class="panel hc o9" id="remind-card" data-card="reminders"><div class="panel-head"><h2>Payment Reminder</h2></div><div id="reminders"></div></section>
+        <section class="panel hc o5" id="owed-box" data-card="owed"><div class="panel-head"><h2>Owed to You</h2><a class="mini" href="#owed">View all</a></div><div id="owed-card"></div></section>
+        <section class="panel hc o9" id="remind-card" data-card="reminders"><div class="panel-head"><h2>Collect Your Pay</h2></div><div id="reminders"></div></section>
       </div>
     </div>
   </div>
@@ -580,12 +580,12 @@ h1 span { display: inline; }
 
   <div class="view" data-view="owed" hidden>
     <section class="panel" aria-labelledby="h-owed">
-      <div class="panel-head"><h2 id="h-owed">Money Owed</h2><span class="chip" id="owed-count"></span></div>
-      <p class="note">Games you worked that have not been paid yet. A game turns Overdue after 7 days.</p>
+      <div class="panel-head"><h2 id="h-owed">Owed to You</h2><span class="chip" id="owed-count"></span></div>
+      <p class="note">Games you worked that have not paid you yet. A game turns Overdue after 7 days.</p>
       <div class="filters">
         <select id="o-league" aria-label="League"><option value="">All leagues</option></select>
         <select id="o-assignor" aria-label="Assignor"><option value="">All assignors</option></select>
-        <select id="o-status" aria-label="Status"><option value="">Pending and overdue</option><option value="pending">Pending only</option><option value="overdue">Overdue only</option></select>
+        <select id="o-status" aria-label="Status"><option value="">Not paid yet</option><option value="pending">Pending only</option><option value="overdue">Overdue only</option></select>
       </div>
       <div class="stats" id="owed-stats"></div>
     </section>
@@ -607,7 +607,7 @@ h1 span { display: inline; }
         <a class="qbtn q-purple" href="#i-spent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9m0 0l-4 4m4-4l4 4M5 4h14"/></svg>I Spent</a>
         <a class="qbtn q-orange" href="#can-i-afford"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1.9-1.1 1.8M12 17h.01"/></svg>Can I Afford It?</a>
         <a class="qbtn q-blue" href="#goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></svg>Goals &amp; Wish List</a>
-        <a class="qbtn q-red" href="#owed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>Money Owed</a>
+        <a class="qbtn q-red" href="#owed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>Owed to You</a>
       </div>
     </section>
   </div>
@@ -763,8 +763,8 @@ h1 span { display: inline; }
         <label class="check" for="show-records"><input id="show-records" type="checkbox" data-ui>Personal records</label>
         <label class="check" for="show-tips"><input id="show-tips" type="checkbox" data-ui>Referee tips</label>
         <label class="check" for="show-earnings"><input id="show-earnings" type="checkbox" data-ui>Earnings overview</label>
-        <label class="check" for="show-reminders"><input id="show-reminders" type="checkbox" data-ui>Payment reminders</label>
-        <label class="check" for="show-owed"><input id="show-owed" type="checkbox" data-ui>Money owed card</label>
+        <label class="check" for="show-reminders"><input id="show-reminders" type="checkbox" data-ui>Collect your pay card</label>
+        <label class="check" for="show-owed"><input id="show-owed" type="checkbox" data-ui>Owed to you card</label>
         <label class="check" for="show-goals"><input id="show-goals" type="checkbox" data-ui>Goals progress</label>
       </div>
     </section>
@@ -866,7 +866,7 @@ h1 span { display: inline; }
           <div class="field"><label for="g-fee">Pay (game fee)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
           <div class="field"><label for="g-exp">Expenses (gas, gear)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
           <div class="field"><label for="g-miles">Mileage (round trip)</label><input id="g-miles" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"></div>
-          <div class="field"><label for="g-status">Payment status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Pending</option></select></div>
+          <div class="field"><label for="g-status">Did you get paid?</label><select id="g-status"><option value="paid">Yes, I was paid</option><option value="pending">Not paid yet</option></select></div>
         </div>
         <div class="field"><label for="g-notes">Notes</label><textarea id="g-notes" rows="3" maxlength="300" placeholder="Assignor, who you worked with, anything to remember"></textarea></div>
         <div class="row"><button class="btn" id="g-submit" type="submit">Add game</button><a class="btn ghost" id="g-cancel" href="#home">Done</a></div>
@@ -955,7 +955,7 @@ h1 span { display: inline; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Payment reminders" }, { k: "owed", label: "Money owed card" }, { k: "goals", label: "Goals progress" }
+    { k: "tiles", label: "Summary tiles" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
@@ -1262,7 +1262,7 @@ h1 span { display: inline; }
     $("h-total-d").textContent = A.demo ? "Example numbers" : "All time";
     var owed = owedGames(), owedC = owed.reduce(function (a, g) { return a + gNet(g); }, 0);
     $("h-owed").textContent = fmt(owedC);
-    $("h-owed-d").textContent = owed.length ? owed.length + (owed.length === 1 ? " game pending" : " games pending") : "All paid up";
+    $("h-owed-d").textContent = owed.length ? owed.length + (owed.length === 1 ? " game waiting on pay" : " games waiting on pay") : "All paid up";
     var leftOf = function (k) { var i = BUCKETS.findIndex(function (b) { return b.k === k; }); return A.a.out[i] - A.used[k]; };
     $("h-save").textContent = fmt(leftOf("save")); $("h-save-d").textContent = "Left in Save";
     $("h-invest").textContent = fmt(leftOf("invest")); $("h-invest-d").textContent = "Left in Invest";
@@ -1343,10 +1343,10 @@ h1 span { display: inline; }
     var late = owed.filter(function (g) { return dayDiff(g.date) < -7; }), lateC = late.reduce(function (a, g) { return a + gNet(g); }, 0), card = $("remind-card");
     card.classList.toggle("late", late.length > 0);
     if (late.length) {
-      $("reminders").innerHTML = '<div class="remind-row"><p class="note" style="color:var(--fg)"><b>' + late.length + (late.length === 1 ? " game is" : " games are") + " overdue</b> &middot; " + fmt(lateC) + '</p><a class="btn small red" href="#games" data-setfilter="unpaid">View</a></div>' +
-        late.slice(0, 3).map(function (g) { return '<div class="rg rg2"><div><strong>' + esc(gTitle(g)) + "</strong><small>" + (-dayDiff(g.date)) + " days overdue</small></div><span class=\"amt\">" + fmt(gNet(g)) + "</span></div>"; }).join("");
-    } else if (owed.length) $("reminders").innerHTML = '<div class="remind-row"><p class="note">' + owed.length + (owed.length === 1 ? " game is" : " games are") + " waiting for payment (" + fmt(owedC) + "). None are overdue yet.</p></div>";
-    else $("reminders").innerHTML = '<p class="note">You are all caught up. Nothing is waiting for payment.</p>';
+      $("reminders").innerHTML = '<div class="remind-row"><p class="note" style="color:var(--fg)"><b>' + late.length + (late.length === 1 ? " game has" : " games have") + " not paid you</b> in over 7 days &middot; " + fmt(lateC) + '</p><a class="btn small red" href="#games" data-setfilter="unpaid">View</a></div>' +
+        late.slice(0, 3).map(function (g) { return '<div class="rg rg2"><div><strong>' + esc(gTitle(g)) + "</strong><small>" + (-dayDiff(g.date)) + " days unpaid</small></div><span class=\"amt\">" + fmt(gNet(g)) + "</span></div>"; }).join("");
+    } else if (owed.length) $("reminders").innerHTML = '<div class="remind-row"><p class="note">' + owed.length + (owed.length === 1 ? " game is" : " games are") + " waiting to pay you (" + fmt(owedC) + "). None are overdue yet.</p></div>";
+    else $("reminders").innerHTML = '<p class="note">You are all caught up. Every game you worked has paid you.</p>';
   }
 
   function fillSelect(id, first, names, cur) {
@@ -1614,21 +1614,21 @@ h1 span { display: inline; }
     var total = list.reduce(function (a, g) { return a + gNet(g); }, 0);
     var od = list.filter(function (g) { return gStatus(g) === "overdue"; }), odC = od.reduce(function (a, g) { return a + gNet(g); }, 0);
     $("owed-count").textContent = list.length + (list.length === 1 ? " game" : " games") + " · " + fmt(total);
-    $("owed-stats").innerHTML = "<div><b>" + fmt(total) + "</b><span>Owed</span></div><div><b>" + (list.length - od.length) + "</b><span>Pending</span></div><div><b>" + od.length + "</b><span>Overdue" + (od.length ? " (" + fmt(odC) + ")" : "") + "</span></div>";
+    $("owed-stats").innerHTML = "<div><b>" + fmt(total) + "</b><span>Owed to you</span></div><div><b>" + (list.length - od.length) + "</b><span>Pending</span></div><div><b>" + od.length + "</b><span>Overdue" + (od.length ? " (" + fmt(odC) + ")" : "") + "</span></div>";
     var by = {}, n = {};
     list.forEach(function (g) { var k = g.assoc || "No league"; by[k] = (by[k] || 0) + gNet(g); n[k] = (n[k] || 0) + 1; });
     var keys = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; });
     $("owed-by").innerHTML = keys.length ? keys.map(function (k) { return '<div class="by-row"><span>' + esc(k) + " · " + n[k] + (n[k] === 1 ? " game" : " games") + "</span><b>" + fmt(by[k]) + "</b></div>"; }).join("") : '<p class="note">Nothing owed for these filters.</p>';
     $("owed-list").innerHTML = list.length ? list.map(function (g) {
       var st = gStatus(g), days = -dayDiff(g.date);
-      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + st + '">' + (st === "overdue" ? "Overdue" : "Pending") + "</span><span>" + esc([shortDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ")) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Mark paid</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
-    }).join("") : '<li><p class="empty">' + (all.length ? "No games match these filters." : "Nothing is owed. Every game you worked has been paid.") + "</p></li>";
+      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + st + '">' + (st === "overdue" ? "Overdue" : "Pending") + "</span><span>" + esc([shortDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ")) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Got paid</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
+    }).join("") : '<li><p class="empty">' + (all.length ? "No games match these filters." : "Nothing is owed to you. Every game you worked has paid you.") + "</p></li>";
 
     var odAll = all.filter(function (g) { return gStatus(g) === "overdue"; }), totAll = all.reduce(function (a, g) { return a + gNet(g); }, 0);
     $("owed-box").classList.toggle("late", odAll.length > 0);
     var by2 = {}; all.forEach(function (g) { var k = g.assoc || "No league"; by2[k] = (by2[k] || 0) + gNet(g); });
     var k2 = Object.keys(by2).sort(function (a, b) { return by2[b] - by2[a]; }).slice(0, 3);
-    $("owed-card").innerHTML = '<div class="goal-top"><b>' + fmt(totAll) + '</b><span class="note">' + all.length + (all.length === 1 ? " game pending" : " games pending") + "</span></div>" +
+    $("owed-card").innerHTML = '<div class="goal-top"><b>' + fmt(totAll) + '</b><span class="note">' + all.length + (all.length === 1 ? " game waiting on pay" : " games waiting on pay") + "</span></div>" +
       '<p class="note">' + (odAll.length ? "<b style=\"color:var(--fg)\">" + odAll.length + " overdue</b>" : "None overdue") + "</p>" +
       k2.map(function (k) { return '<div class="by-row"><span>' + esc(k) + "</span><b>" + fmt(by2[k]) + "</b></div>"; }).join("");
   }
