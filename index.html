@@ -460,6 +460,13 @@ h1 span { display: inline; }
 .sgh .gbar { margin: 0; height: 9px; }
 .sg .wish-top strong, .sg-s .wish-top strong { line-height: 1.35; }
 .sg .chip, .sg-s .chip { display: inline-block; margin: 2px 0 2px 4px; vertical-align: middle; }
+.cstats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 720px) { .cstats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cs { background: var(--field); border: 1px solid var(--panel-line); border-radius: var(--r-sm); padding: 14px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.cs span { font: 700 12.5px/1.1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.cs b { font: 700 clamp(24px, 3vw, 32px)/1.05 var(--display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cs small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.cs-year { width: auto; min-height: 36px; padding: 6px 10px; }
 </style>
 
 <main class="wrap gate" id="gate" hidden>
@@ -549,7 +556,7 @@ h1 span { display: inline; }
       <div class="hcol">
         <section class="panel hc desk-only" data-card="calendar"><div class="panel-head"><h2>Assignment Calendar</h2><span class="cal-nav"><button class="mini" type="button" data-cal="-1" aria-label="Previous month">&lsaquo;</button><button class="mini" type="button" data-cal="1" aria-label="Next month">&rsaquo;</button></span></div><div id="cal"></div>
           <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Waiting to get paid</span></div></section>
-        <section class="panel hc half o7" data-card="career"><h2>Career Stats</h2><div id="career" class="stats"></div></section>
+        <section class="panel hc half o7" data-card="career"><div class="panel-head"><h2>Career Stats</h2><a class="more" href="#reports">View all</a></div><div id="career" class="stats"></div></section>
         <section class="panel hc desk-only" data-card="records"><h2>Personal Records</h2><div id="records"></div></section>
         <section class="panel hc desk-only" data-card="tips"><h2>Referee Bag Tips</h2>
           <ul class="tips"><li>Two whistles, one on a lanyard and one spare.</li><li>Cards, pen and a paper notepad for the score.</li><li>Flags checked and tight before every game.</li><li>Water, a snack and a rain jacket.</li></ul></section>
@@ -635,6 +642,11 @@ h1 span { display: inline; }
         <div class="t-val" id="t-year">$0.00</div>
         <div class="t-d" id="t-year-d"></div>
       </div>
+    </section>
+    <section class="panel" id="career-panel" aria-labelledby="h-career">
+      <div class="panel-head"><h2 id="h-career">Career Statistics</h2><select id="cs-year" class="cs-year" aria-label="Year"><option value="">All time</option></select></div>
+      <div class="cstats" id="cs-grid"></div>
+      <p class="note">Earnings, average and highest-paying game count paid games only. Mileage comes from the miles you enter on each game.</p>
     </section>
     <section class="panel" aria-labelledby="h-charts">
       <div class="panel-head"><h2 id="h-charts">Charts</h2></div>
@@ -1238,7 +1250,7 @@ h1 span { display: inline; }
     if (d === 1) return "Tomorrow";
     return parseD(s).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
   }
-  function shortDate(s) { var d = parseD(s); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getDate(); }
+  function mdDate(s) { var d = parseD(s); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getDate(); }
   function byDateTime(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.time || "") < (b.time || "") ? -1 : (a.time || "") > (b.time || "") ? 1 : 0; }
   function gTitle(g) {
     var h = (g.home || "").trim(), a = (g.away || "").trim();
@@ -1278,7 +1290,7 @@ h1 span { display: inline; }
     var past = data.games.filter(function (g) { return g.date <= t; }).sort(byDateTime).reverse().slice(0, 3);
     $("recent").innerHTML = past.length ? past.map(function (g) {
       var paid = g.paid !== false;
-      return '<div class="rg"><span class="st' + (paid ? "" : " pend") + '" aria-label="' + (paid ? "Paid" : "Pending") + '">' + (paid ? "&#10003;" : "&#9719;") + "</span><div><strong>" + esc(gTitle(g)) + "</strong><small>" + esc(shortDate(g.date)) + "</small></div>" + '<span class="amt' + (paid ? "" : " pend") + '">' + fmt(gNet(g)) + "</span></div>";
+      return '<div class="rg"><span class="st' + (paid ? "" : " pend") + '" aria-label="' + (paid ? "Paid" : "Pending") + '">' + (paid ? "&#10003;" : "&#9719;") + "</span><div><strong>" + esc(gTitle(g)) + "</strong><small>" + esc(mdDate(g.date)) + "</small></div>" + '<span class="amt' + (paid ? "" : " pend") + '">' + fmt(gNet(g)) + "</span></div>";
     }).join("") : '<p class="note">No games yet.</p>';
 
     var mr = periodRange("month"), mNet = Math.max(0, totalsFor(mr).net), gC = Math.round(goal * 100);
@@ -1316,8 +1328,8 @@ h1 span { display: inline; }
       var bd = best(day), bc = best(cnt), bm = best(mon);
       var mLabel = new Date(+bm.slice(0, 4), +bm.slice(5) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
       $("records").innerHTML =
-        '<div class="rec"><span>Highest paying day</span><b>' + fmt(day[bd]) + "<small>" + esc(shortDate(bd)) + "</small></b></div>" +
-        '<div class="rec"><span>Most games in a day</span><b>' + cnt[bc] + "<small>" + esc(shortDate(bc)) + "</small></b></div>" +
+        '<div class="rec"><span>Highest paying day</span><b>' + fmt(day[bd]) + "<small>" + esc(mdDate(bd)) + "</small></b></div>" +
+        '<div class="rec"><span>Most games in a day</span><b>' + cnt[bc] + "<small>" + esc(mdDate(bc)) + "</small></b></div>" +
         '<div class="rec"><span>Best month</span><b>' + fmt(mon[bm]) + "<small>" + esc(mLabel) + "</small></b></div>" +
         '<div class="rec"><span>Top association</span><b>' + esc(keys[0]) + "<small>" + fmt(by[keys[0]]) + "</small></b></div>";
     }
@@ -1523,7 +1535,7 @@ h1 span { display: inline; }
       var t = SG_TYPES[g.type], p = sgProgress(g), pace = sgPace(g), askDel = sgConfirm === g.id;
       return '<li class="sg" data-id="' + esc(g.id) + '"><div class="wish-top"><strong>' + esc(g.name) + ' <span class="chip">' + t.name + '</span></strong><span class="wish-amt">' + fmt(Math.round(g.saved * 100)) + " / " + fmt(Math.round(g.target * 100)) + "</span></div>" +
         '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="' + esc(g.name) + '"><span style="width:' + p + "%;background:" + t.color + '"></span></div>' +
-        '<p class="note">' + p + "%" + (g.deadline ? " &middot; Due " + esc(shortDate(g.deadline)) + " &middot; " + sgLeft(g.deadline) : " &middot; No deadline") + "</p>" +
+        '<p class="note">' + p + "%" + (g.deadline ? " &middot; Due " + esc(mdDate(g.deadline)) + " &middot; " + sgLeft(g.deadline) : " &middot; No deadline") + "</p>" +
         '<p class="note' + (pace.done || pace.ok ? " sg-ok" : pace.late ? " sg-late" : "") + '">' + pace.text + "</p>" +
         '<div class="sg-act"><div class="money-wrap"><input id="sg-amt-' + esc(g.id) + '" type="number" inputmode="decimal" min="0" step="1" placeholder="Amount" aria-label="Amount for ' + esc(g.name) + '"></div>' +
         '<button class="mini" type="button" data-sg-add="' + esc(g.id) + '">Add</button><button class="mini" type="button" data-sg-take="' + esc(g.id) + '">Take out</button></div>' +
@@ -1555,7 +1567,7 @@ h1 span { display: inline; }
       { name: "Gear upgrade", type: "equip", target: s3, deadline: add(3), why: "Your Spend share is about " + fmt(Math.round(sp * 100)) + " a month. Three months of it covers new flags, cards or boots." }
     ].filter(function (x) { return x.target > 0 && !sgoals.some(function (g) { return g.name === x.name; }); });
     box.innerHTML = sgSuggestions.length ? sgSuggestions.map(function (x, i) {
-      return '<div class="sg-s"><div class="wish-top"><strong>' + esc(x.name) + ' <span class="chip">' + SG_TYPES[x.type].name + '</span></strong><span class="wish-amt">' + fmt(x.target * 100) + '</span></div><p class="note">' + x.why + " Aim for " + esc(shortDate(x.deadline)) + '.</p><button class="mini" type="button" data-sg-sug="' + i + '">Add this goal</button></div>';
+      return '<div class="sg-s"><div class="wish-top"><strong>' + esc(x.name) + ' <span class="chip">' + SG_TYPES[x.type].name + '</span></strong><span class="wish-amt">' + fmt(x.target * 100) + '</span></div><p class="note">' + x.why + " Aim for " + esc(mdDate(x.deadline)) + '.</p><button class="mini" type="button" data-sg-sug="' + i + '">Add this goal</button></div>';
     }).join("") : '<p class="note">You already have all of my suggestions.</p>';
   }
   function sgSave(next, okMsg) {
@@ -1606,6 +1618,44 @@ h1 span { display: inline; }
     sgSave(next, wasEdit ? "Goal updated." : "Goal added.").then(function (ok) { if (ok) sgFormReset(); });
   }
 
+  /* Career statistics */
+  var csYear = "";
+  function fullDate(s) { return shortDate(s); }
+  function renderCareer() {
+    if (!$("cs-grid")) return;
+    var years = [];
+    data.games.forEach(function (g) { var y = (g.date || "").slice(0, 4); if (y && years.indexOf(y) < 0) years.push(y); });
+    years.sort().reverse();
+    var sel = $("cs-year"), sig = years.join("|");
+    if (sel.getAttribute("data-sig") !== sig) {
+      sel.setAttribute("data-sig", sig);
+      sel.innerHTML = '<option value="">All time</option>' + years.map(function (y) { return '<option value="' + y + '">' + y + "</option>"; }).join("");
+      if (csYear && years.indexOf(csYear) < 0) csYear = "";
+      sel.value = csYear;
+    }
+    var gs = data.games.filter(function (g) { return !csYear || g.date.slice(0, 4) === csYear; });
+    var paid = gs.filter(function (g) { return g.paid !== false; });
+    var pay = paid.reduce(function (a, g) { return a + toCents(g.fee); }, 0), exp = paid.reduce(function (a, g) { return a + toCents(g.expenses); }, 0);
+    var top = null, far = null, byDay = {};
+    paid.forEach(function (g) { if (!top || toCents(g.fee) > toCents(top.fee) || (toCents(g.fee) === toCents(top.fee) && g.date > top.date)) top = g; });
+    gs.forEach(function (g) {
+      if (gMiles(g) > 0 && (!far || gMiles(g) > gMiles(far) || (gMiles(g) === gMiles(far) && g.date > far.date))) far = g;
+      var d = byDay[g.date] || (byDay[g.date] = { date: g.date, n: 0, pay: 0 }); d.n++; if (g.paid !== false) d.pay += toCents(g.fee);
+    });
+    var busy = null;
+    Object.keys(byDay).forEach(function (k) { var d = byDay[k]; if (!busy || d.n > busy.n || (d.n === busy.n && d.date > busy.date)) busy = d; });
+    var sub = function (g) { return esc([gTitle(g), g.assoc, fullDate(g.date)].filter(Boolean).join(" · ")); };
+    var card = function (label, val, small) { return '<div class="cs"><span>' + label + "</span><b>" + val + "</b><small>" + small + "</small></div>"; };
+    var unpaidN = gs.length - paid.length;
+    $("cs-grid").innerHTML =
+      card("Total games", gs.length, gs.length ? (paid.length + " paid" + (unpaidN ? ", " + unpaidN + " not paid yet" : "")) : "Log a game to start your career total") +
+      card("Total earnings", fmt(pay), paid.length ? "Net " + fmt(pay - exp) + " after " + fmt(exp) + " expenses" : "Paid games only") +
+      card("Highest-paying game", top ? fmt(toCents(top.fee)) : "-", top ? sub(top) : "No paid games yet") +
+      card("Longest drive", far ? fmtMiles(gMiles(far)) : "-", far ? sub(far) : "Add miles to a game to track this") +
+      card("Average pay per game", paid.length ? fmt(Math.round(pay / paid.length)) : "-", paid.length ? "Across " + paid.length + (paid.length === 1 ? " paid game" : " paid games") : "No paid games yet") +
+      card("Most games in one day", busy ? busy.n : "-", busy ? esc(fullDate(busy.date)) + (busy.pay ? " · " + fmt(busy.pay) + " earned" : "") : "No games yet");
+  }
+
   function renderOwed() {
     var all = owedGames();
     var list = all.filter(function (g) {
@@ -1621,7 +1671,7 @@ h1 span { display: inline; }
     $("owed-by").innerHTML = keys.length ? keys.map(function (k) { return '<div class="by-row"><span>' + esc(k) + " · " + n[k] + (n[k] === 1 ? " game" : " games") + "</span><b>" + fmt(by[k]) + "</b></div>"; }).join("") : '<p class="note">Nothing owed for these filters.</p>';
     $("owed-list").innerHTML = list.length ? list.map(function (g) {
       var st = gStatus(g), days = -dayDiff(g.date);
-      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + st + '">' + (st === "overdue" ? "Overdue" : "Pending") + "</span><span>" + esc([shortDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ")) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Got paid</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
+      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + st + '">' + (st === "overdue" ? "Overdue" : "Pending") + "</span><span>" + esc([mdDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ")) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Got paid</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
     }).join("") : '<li><p class="empty">' + (all.length ? "No games match these filters." : "Nothing is owed to you. Every game you worked has paid you.") + "</p></li>";
 
     var odAll = all.filter(function (g) { return gStatus(g) === "overdue"; }), totAll = all.reduce(function (a, g) { return a + gNet(g); }, 0);
@@ -1665,6 +1715,7 @@ h1 span { display: inline; }
     renderHome(A);
     renderAssocFilter();
     renderOwed();
+    renderCareer();
     renderCharts();
     renderSGoals();
     renderLedger(A);
@@ -2064,6 +2115,7 @@ h1 span { display: inline; }
   $("ch-league").addEventListener("change", function () { chLeague = $("ch-league").value; chSel = null; renderCharts(); });
   $("ch-assignor").addEventListener("change", function () { chAssignor = $("ch-assignor").value; chSel = null; renderCharts(); });
   $("ch-chart").addEventListener("mouseover", function (e) { var r = e.target.closest("[data-i]"); if (r && +r.getAttribute("data-i") !== chSel) { chSel = +r.getAttribute("data-i"); renderCharts(); } });
+  $("cs-year").addEventListener("change", function () { csYear = $("cs-year").value; renderCareer(); });
   $("o-league").addEventListener("change", function () { oLeague = $("o-league").value; renderOwed(); });
   $("o-assignor").addEventListener("change", function () { oAssignor = $("o-assignor").value; renderOwed(); });
   $("o-status").addEventListener("change", function () { oStatus = $("o-status").value; renderOwed(); });
