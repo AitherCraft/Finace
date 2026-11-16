@@ -1094,7 +1094,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <div id="sec-email" class="fs" hidden>
         <p class="note" id="sec-email-note"></p>
         <div class="row"><button class="btn" type="button" id="sec-test">Send a test code</button></div>
-        <p class="note">The email must show a number code. If it only has a sign-in link, the email setup in Supabase still needs the code added (Authentication, Emails, Magic Link, add <b>{{ .Token }}</b>). Do not use the link. Type the number here.</p>
+        <p class="note">The code is a 6 digit number sent from Referee Finance. It lasts 10 minutes. Check spam if it does not show up.</p>
         <div class="field" id="sec-code-f" hidden><label for="sec-code">Code from the email</label><input id="sec-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9]*"></div>
         <div class="row"><button class="btn" type="button" id="sec-email-go">Turn on email code</button></div>
       </div>
@@ -3785,19 +3785,25 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     });
   }
   function emailErr(e) {
-    var m = String(e && e.message || "");
-    if (/rate|seconds|too many|limit/i.test(m)) return "The email service is limiting messages. Wait a minute and try again.";
+    var m = String(e && e.message || ""), c = e && e.fcode;
+    if (c === "resend_rejected") return "The email service would not deliver to this address. Until a domain is added in Resend, it can only email the address on your Resend account.";
+    if (c === "no_key") return "Email sending is not finished being set up (the Resend key is missing in Supabase).";
+    if (c === "no_email") return "Email codes need an account made with a real email address.";
     if (/failed to fetch|networkerror|load failed/i.test(m)) return "Could not reach the server. Check your connection.";
-    if (/expired|invalid|otp|token/i.test(m)) return "That code is not right, or it expired. Ask for a new one.";
     return m || "Something went wrong.";
   }
-  function sendCode(email) { return anonPost("/auth/v1/otp", { email: email, create_user: false }); }
-  function verifyCode(email, code) {
-    return anonPost("/auth/v1/verify", { type: "email", email: email, token: code }).catch(function (e) {
-      if (/invalid|expired/i.test(String(e.message))) return anonPost("/auth/v1/verify", { type: "magiclink", email: email, token: code });
-      throw e;
+  /* Codes are made, emailed (through Resend) and checked by our own Supabase function */
+  function fnCall(token, body) {
+    return fetch(SB_URL + "/functions/v1/email-code", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function (r) {
+      return r.text().then(function (t) {
+        var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+        if (!r.ok || !j || !j.ok) { var er = new Error((j && j.error) || ("Request failed (" + r.status + ")")); er.fcode = j && j.code; throw er; }
+        return j;
+      });
     });
   }
+  function sendCode(token) { return fnCall(token, { action: "send" }); }
+  function verifyCode(token, code) { return fnCall(token, { action: "verify", code: code }); }
 
   /* Sign-in step 2: email code */
   function profileSec(token) {
@@ -3809,7 +3815,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     return profileSec(j.access_token).then(function (sc) {
       if (!sc || sc.mode !== "email") return j;
       return new Promise(function (resolve, reject) {
-        codeWait = { resolve: resolve, reject: reject, email: email, at: 0 };
+        codeWait = { resolve: resolve, reject: reject, email: email, at: 0, sess: j };
         $("gate-form").hidden = true; $("gate-forgot").hidden = true; $("code-form").hidden = false; $("gate-code").value = "";
         $("code-to").textContent = email;
         sendNew();
@@ -3823,14 +3829,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var w = Math.ceil((codeWait.at + 45000 - Date.now()) / 1000);
     if (w > 0) { acctMsg("Wait " + w + " seconds before asking for another code.", true); return; }
     codeWait.at = Date.now(); acctMsg("Sending your code…");
-    sendCode(codeWait.email).then(function () { acctMsg("We emailed a code to " + codeWait.email + ". Type it below.", false); }, function (e) { acctMsg(emailErr(e), true); });
+    sendCode(codeWait.sess.access_token).then(function () { acctMsg("We emailed a code to " + codeWait.email + ". Type it below.", false); }, function (e) { acctMsg(emailErr(e), true); });
   }
   $("code-form").addEventListener("submit", function (e) {
     e.preventDefault(); if (!codeWait) return;
     var c = $("gate-code").value.replace(/\D/g, ""); if (c.length < 6) { acctMsg("Type the code from the email (6 or more digits).", true); return; }
     acctMsg("Checking…");
     var cw = codeWait;
-    verifyCode(cw.email, c).then(function (j2) { if (!j2 || !j2.access_token) throw new Error("invalid"); codeBack(); cw.resolve(j2); }, function (er) { acctMsg(emailErr(er), true); });
+    verifyCode(cw.sess.access_token, c).then(function () { codeBack(); cw.resolve(cw.sess); }, function (er) { acctMsg(emailErr(er), true); });
   });
   $("code-resend").addEventListener("click", sendNew);
   $("code-cancel").addEventListener("click", function () { var cw = codeWait; codeBack(); if (cw) { var er = new Error("cancelled"); er.cancel = true; cw.reject(er); } });
@@ -3883,14 +3889,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   $("sec-test").addEventListener("click", function () {
     var em = sbSession && sbSession.username; if (!em || em.indexOf("@") < 0) return;
     secMsg("Sending a test code…"); $("sec-test").disabled = true;
-    sendCode(em).then(function () { secTestSent = true; secRender(); secMsg("Code sent to " + em + ". Type it here to turn this on."); $("sec-code").focus(); }, function (e) { secMsg(emailErr(e), true); })
+    sendCode(sbSession.access_token).then(function () { secTestSent = true; secRender(); secMsg("Code sent to " + em + ". Type it here to turn this on."); $("sec-code").focus(); }, function (e) { secMsg(emailErr(e), true); })
       .then(function () { setTimeout(function () { $("sec-test").disabled = false; }, 45000); });
   });
   $("sec-email-go").addEventListener("click", function () {
     var em = sbSession && sbSession.username, c = $("sec-code").value.replace(/\D/g, "");
     if (c.length < 6) { secMsg("Type the code from the email (6 or more digits).", true); return; }
     secMsg("Checking…");
-    verifyCode(em, c).then(function (j) { if (!j || !j.access_token) throw new Error("invalid"); $("sec-code").value = ""; secTestSent = false; return secSave({ mode: "email" }, "Email code is on. It works, so you are set."); }, function (e) { secMsg(emailErr(e), true); });
+    verifyCode(sbSession.access_token, c).then(function () { $("sec-code").value = ""; secTestSent = false; return secSave({ mode: "email" }, "Email code is on. It works, so you are set."); }, function (e) { secMsg(emailErr(e), true); });
   });
   loadSecLocal();
   if (sec.mode === "pin") showLock();
