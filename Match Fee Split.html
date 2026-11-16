@@ -1094,6 +1094,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <div id="sec-email" class="fs" hidden>
         <p class="note" id="sec-email-note"></p>
         <div class="row"><button class="btn" type="button" id="sec-test">Send a test code</button></div>
+        <p class="note">The email must show a number code. If it only has a sign-in link, the email setup in Supabase still needs the code added (Authentication, Emails, Magic Link, add <b>{{ .Token }}</b>). Do not use the link. Type the number here.</p>
         <div class="field" id="sec-code-f" hidden><label for="sec-code">Code from the email</label><input id="sec-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9]*"></div>
         <div class="row"><button class="btn" type="button" id="sec-email-go">Turn on email code</button></div>
       </div>
