@@ -398,7 +398,7 @@ h1 span { display: inline; }
 @media (min-width: 720px) { .tiles.five { grid-template-columns: repeat(4, minmax(0, 1fr)); } .logo { width: 60px; height: 60px; } }
 @media (min-width: 960px) {
   .nav { top: 0; right: auto; bottom: 0; width: 220px; flex-direction: column; justify-content: flex-start; gap: 4px; padding: 24px 14px; border-top: 0; border-right: 1px solid var(--panel-line); }
-  .nav a { grid-auto-flow: column; justify-content: start; align-items: center; gap: 12px; font: 600 16px/1 var(--body); padding: 13px 14px; }
+  .nav a { flex: 0 0 auto; grid-auto-flow: column; justify-content: start; align-items: center; gap: 12px; font: 600 16px/1 var(--body); padding: 13px 14px; }
   .nav a[aria-current="page"] { background: var(--blue); color: var(--on-accent); }
   .nav .desk { display: grid; }
   .nav-foot { display: block; margin-top: auto; color: var(--muted); font: italic 700 22px/1.1 var(--display); padding: 12px 14px; }
@@ -467,6 +467,24 @@ h1 span { display: inline; }
 .cs b { font: 700 clamp(24px, 3vw, 32px)/1.05 var(--display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .cs small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .cs-year { width: auto; min-height: 36px; padding: 6px 10px; }
+@media (max-width: 959px) { .nav a { font-size: 11px; } }
+button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+.cal .cd.sel { background: var(--blue); color: var(--on-accent); }
+.cal.big { gap: 4px; }
+.cal.big .cd { aspect-ratio: auto; min-height: 54px; align-content: start; padding-top: 8px; border: 1px solid var(--panel-line); font-weight: 600; }
+.cal.big .cd .dots { bottom: 6px; }
+.cal.big .cd .cnt { display: none; }
+@media (min-width: 720px) { .cal.big .cd { min-height: 84px; } .cal.big .cd .cnt { display: block; position: absolute; top: 8px; right: 8px; font-size: 11.5px; color: var(--muted); font-weight: 500; } .cal.big .cd { justify-items: start; padding-left: 10px; } .cal.big .cd .dots { left: 10px; } }
+.cal-dayhead { margin: 0 0 10px; font: 700 18px/1.2 var(--body); }
+.cdr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px 0; border-top: 1px solid var(--panel-line); align-items: start; }
+.cdr:first-child { border-top: 0; padding-top: 0; }
+.cdr strong { font-weight: 600; overflow-wrap: anywhere; }
+.cdr .a-sub { margin-top: 6px; }
+.cdr .amt { font: 700 20px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.badge.upcoming { background: var(--blue); color: #021226; }
+.badge.cancelled { background: var(--red); color: #fff; }
+.badge.worked { background: var(--green); color: #04180b; }
+.cal .cd.sel .cnt { color: inherit !important; }
 </style>
 
 <main class="wrap gate" id="gate" hidden>
@@ -503,6 +521,7 @@ h1 span { display: inline; }
   <nav class="nav" id="nav" aria-label="Main">
     <a href="#home" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span>Home</span></a>
     <a href="#games" data-nav="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20.5 9.5l-5 1M3.5 9.5l5 1M16.5 20l-2.3-5.5M7.5 20l2.3-5.5"/></svg><span>Games</span></a>
+    <a href="#calendar" data-nav="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/></svg><span>Calendar</span></a>
     <a href="#money" data-nav="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.2c-.5-.8-1.5-1.2-2.6-1.2-1.5 0-2.6.8-2.6 2s1 1.7 2.7 2 2.7.8 2.7 2-1.1 2-2.7 2c-1.2 0-2.2-.5-2.7-1.4M12 6v2M12 16v2"/></svg><span>Money</span></a>
     <a href="#reports" data-nav="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Reports</span></a>
     <a class="desk" href="#goals" data-nav="goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></svg><span>Goals</span></a>
@@ -555,7 +574,7 @@ h1 span { display: inline; }
       </div>
       <div class="hcol">
         <section class="panel hc desk-only" data-card="calendar"><div class="panel-head"><h2>Assignment Calendar</h2><span class="cal-nav"><button class="mini" type="button" data-cal="-1" aria-label="Previous month">&lsaquo;</button><button class="mini" type="button" data-cal="1" aria-label="Next month">&rsaquo;</button></span></div><div id="cal"></div>
-          <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Waiting to get paid</span></div></section>
+          <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Waiting to get paid</span><span><i class="dot" style="background:var(--red)"></i>Cancelled</span></div></section>
         <section class="panel hc half o7" data-card="career"><div class="panel-head"><h2>Career Stats</h2><a class="more" href="#reports">View all</a></div><div id="career" class="stats"></div></section>
         <section class="panel hc desk-only" data-card="records"><h2>Personal Records</h2><div id="records"></div></section>
         <section class="panel hc desk-only" data-card="tips"><h2>Referee Bag Tips</h2>
@@ -576,7 +595,7 @@ h1 span { display: inline; }
       <div class="panel-head"><h2 id="h-games">Game Log</h2><span class="chip" id="games-count"></span></div>
       <div class="filters">
         <input id="f-q" type="search" placeholder="Search games, leagues, notes" aria-label="Search" autocomplete="off">
-        <select id="f-type" aria-label="Show"><option value="all">Everything</option><option value="games">Games</option><option value="unpaid">Unpaid games</option><option value="pending">Pending</option><option value="overdue">Overdue</option><option value="paid">Paid games</option><option value="income">Other income</option><option value="spending">Spending</option></select>
+        <select id="f-type" aria-label="Show"><option value="all">Everything</option><option value="games">Games</option><option value="unpaid">Unpaid games</option><option value="pending">Pending</option><option value="overdue">Overdue</option><option value="cancelled">Cancelled</option><option value="paid">Paid games</option><option value="income">Other income</option><option value="spending">Spending</option></select>
         <select id="f-assoc" aria-label="Association"><option value="">All leagues</option></select>
         <select id="f-assignor" aria-label="Assignor"><option value="">All assignors</option></select>
       </div>
@@ -598,6 +617,15 @@ h1 span { display: inline; }
     </section>
     <section class="panel" aria-labelledby="h-owed-by"><h2 id="h-owed-by">By league</h2><div id="owed-by"></div></section>
     <section class="panel" aria-labelledby="h-owed-list"><h2 id="h-owed-list">Unpaid games</h2><ul class="list tall" id="owed-list"></ul></section>
+  </div>
+
+  <div class="view" data-view="calendar" hidden>
+    <section class="panel" aria-labelledby="cal2-title">
+      <div class="panel-head"><h2 id="cal2-title">Calendar</h2><span class="cal-nav"><button class="mini" type="button" data-cal2="-1" aria-label="Previous month">&lsaquo;</button><button class="mini" type="button" data-cal2="0">Today</button><button class="mini" type="button" data-cal2="1" aria-label="Next month">&rsaquo;</button></span></div>
+      <div id="cal2"></div>
+      <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Pending payment</span><span><i class="dot" style="background:var(--red)"></i>Cancelled</span></div>
+    </section>
+    <section class="panel" aria-live="polite" aria-label="Games on the selected day"><div id="cal-day"></div></section>
   </div>
 
   <div class="view" data-view="money" hidden>
@@ -878,7 +906,7 @@ h1 span { display: inline; }
           <div class="field"><label for="g-fee">Pay (game fee)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
           <div class="field"><label for="g-exp">Expenses (gas, gear)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
           <div class="field"><label for="g-miles">Mileage (round trip)</label><input id="g-miles" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"></div>
-          <div class="field"><label for="g-status">Did you get paid?</label><select id="g-status"><option value="paid">Yes, I was paid</option><option value="pending">Not paid yet</option></select></div>
+          <div class="field"><label for="g-status">Status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Not paid yet</option><option value="cancelled">Cancelled</option></select></div>
         </div>
         <div class="field"><label for="g-notes">Notes</label><textarea id="g-notes" rows="3" maxlength="300" placeholder="Assignor, who you worked with, anything to remember"></textarea></div>
         <div class="row"><button class="btn" id="g-submit" type="submit">Add game</button><a class="btn ghost" id="g-cancel" href="#home">Done</a></div>
@@ -1258,16 +1286,16 @@ h1 span { display: inline; }
     return h || a || g.match || g.assoc || "Game";
   }
   var OVERDUE_DAYS = 7;
-  function gStatus(g) { return g.paid !== false ? "paid" : dayDiff(g.date) < -OVERDUE_DAYS ? "overdue" : "pending"; }
+  function gStatus(g) { return g.cancelled ? "cancelled" : g.paid !== false ? "paid" : dayDiff(g.date) < -OVERDUE_DAYS ? "overdue" : "pending"; }
   function gMiles(g) { var m = parseFloat(g.miles); return isFinite(m) && m > 0 ? m : 0; }
   function fmtMiles(m) { return (Math.round(m * 10) / 10).toLocaleString("en-US") + " mi"; }
-  function upcomingGames() { var t = todayStr(); return data.games.filter(function (g) { return g.date >= t; }).sort(byDateTime); }
-  function owedGames() { var t = todayStr(); return data.games.filter(function (g) { return g.paid === false && g.date < t; }).sort(byDateTime); }
+  function upcomingGames() { var t = todayStr(); return live().filter(function (g) { return g.date >= t; }).sort(byDateTime); }
+  function owedGames() { var t = todayStr(); return live().filter(function (g) { return g.paid === false && g.date < t; }).sort(byDateTime); }
   var LEAGUE_COLORS = ["var(--blue)", "var(--green)", "var(--yellow)", "var(--purple)", "var(--orange)", "var(--red)"];
 
   function renderHome(A) {
     var t = todayStr(), today = totalsFor([t, t]);
-    var todayGames = data.games.filter(function (g) { return g.date === t; }).length;
+    var todayGames = live().filter(function (g) { return g.date === t; }).length;
     $("h-today").textContent = fmt(today.net);
     $("h-today-d").textContent = todayGames ? todayGames + (todayGames === 1 ? " game today" : " games today") : "No games today";
     $("h-total").textContent = fmt(A.net);
@@ -1287,7 +1315,7 @@ h1 span { display: inline; }
       return '<div class="rg rg2"><div><strong>' + esc(gTitle(g)) + "</strong><small>" + esc(dayWord(g.date)) + (g.time ? " · " + esc(fmtTime(g.time)) : "") + "</small></div>" + '<span class="amt">' + fmt(toCents(g.fee)) + "</span></div>";
     }).join("") : '<p class="note">Nothing scheduled.</p>';
 
-    var past = data.games.filter(function (g) { return g.date <= t; }).sort(byDateTime).reverse().slice(0, 3);
+    var past = live().filter(function (g) { return g.date <= t; }).sort(byDateTime).reverse().slice(0, 3);
     $("recent").innerHTML = past.length ? past.map(function (g) {
       var paid = g.paid !== false;
       return '<div class="rg"><span class="st' + (paid ? "" : " pend") + '" aria-label="' + (paid ? "Paid" : "Pending") + '">' + (paid ? "&#10003;" : "&#9719;") + "</span><div><strong>" + esc(gTitle(g)) + "</strong><small>" + esc(mdDate(g.date)) + "</small></div>" + '<span class="amt' + (paid ? "" : " pend") + '">' + fmt(gNet(g)) + "</span></div>";
@@ -1317,8 +1345,8 @@ h1 span { display: inline; }
 
     /* Career + records */
     var paidG = data.games.filter(function (g) { return g.paid !== false; }), earned = paidG.reduce(function (a, g) { return a + gNet(g); }, 0);
-    var miles = data.games.reduce(function (a, g) { return a + gMiles(g); }, 0);
-    $("career").innerHTML = '<div><b>' + data.games.length + "</b><span>Games</span></div><div><b>" + fmt(earned) + "</b><span>Earned</span></div>" + (miles ? "<div><b>" + fmtMiles(miles) + "</b><span>Driven</span></div>" : "<div><b>" + fmt(paidG.length ? Math.round(earned / paidG.length) : 0) + "</b><span>Avg / game</span></div>");
+    var miles = live().reduce(function (a, g) { return a + gMiles(g); }, 0);
+    $("career").innerHTML = '<div><b>' + live().length + "</b><span>Games</span></div><div><b>" + fmt(earned) + "</b><span>Earned</span></div>" + (miles ? "<div><b>" + fmtMiles(miles) + "</b><span>Driven</span></div>" : "<div><b>" + fmt(paidG.length ? Math.round(earned / paidG.length) : 0) + "</b><span>Avg / game</span></div>");
     if (!paidG.length) $("records").innerHTML = '<p class="note">Your records show up after you log some paid games.</p>';
     else {
       var day = {}, cnt = {}, mon = {};
@@ -1335,21 +1363,7 @@ h1 span { display: inline; }
     }
 
     /* Calendar */
-    var cm = new Date(new Date().getFullYear(), new Date().getMonth() + calOff, 1), dim = new Date(cm.getFullYear(), cm.getMonth() + 1, 0).getDate();
-    var ch = '<div class="cal-title">' + esc(cm.toLocaleDateString("en-US", { month: "long", year: "numeric" })) + '</div><div class="cal">';
-    ["S", "M", "T", "W", "T", "F", "S"].forEach(function (d) { ch += '<div class="dh">' + d + "</div>"; });
-    for (var b = 0; b < cm.getDay(); b++) ch += "<div></div>";
-    for (var d = 1; d <= dim; d++) {
-      var ds = ymd(new Date(cm.getFullYear(), cm.getMonth(), d)), kinds = {};
-      data.games.forEach(function (g) {
-        if (g.date !== ds) return;
-        var paid = g.paid !== false;
-        kinds[ds > t ? "up" : ds === t ? (paid ? "work" : "up") : (paid ? "work" : "owed")] = 1;
-      });
-      var cols = { work: "var(--green)", up: "var(--blue)", owed: "var(--yellow)" };
-      ch += '<div class="cd' + (ds === t ? " today" : "") + '">' + d + (Object.keys(kinds).length ? '<span class="dots">' + Object.keys(kinds).map(function (k) { return '<i style="background:' + cols[k] + '"></i>'; }).join("") + "</span>" : "") + "</div>";
-    }
-    $("cal").innerHTML = ch + "</div>";
+    $("cal").innerHTML = '<div class="cal-title">' + esc(calMonth(calOff).toLocaleDateString("en-US", { month: "long", year: "numeric" })) + "</div>" + calHtml(calOff, false).html;
 
     /* Payment reminders */
     var late = owed.filter(function (g) { return dayDiff(g.date) < -7; }), lateC = late.reduce(function (a, g) { return a + gNet(g); }, 0), card = $("remind-card");
@@ -1390,7 +1404,7 @@ h1 span { display: inline; }
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   function chGames() {
-    return data.games.filter(function (g) { return (!chLeague || chMetric === "league" || (g.assoc || "") === chLeague) && (!chAssignor || (g.assignor || "") === chAssignor); });
+    return live().filter(function (g) { return (!chLeague || chMetric === "league" || (g.assoc || "") === chLeague) && (!chAssignor || (g.assignor || "") === chAssignor); });
   }
   function chBuckets() {
     var now = new Date(), n = chRange === "3m" ? 3 : chRange === "6m" ? 6 : chRange === "1y" ? 12 : 0;
@@ -1633,7 +1647,7 @@ h1 span { display: inline; }
       if (csYear && years.indexOf(csYear) < 0) csYear = "";
       sel.value = csYear;
     }
-    var gs = data.games.filter(function (g) { return !csYear || g.date.slice(0, 4) === csYear; });
+    var gs = live().filter(function (g) { return !csYear || g.date.slice(0, 4) === csYear; });
     var paid = gs.filter(function (g) { return g.paid !== false; });
     var pay = paid.reduce(function (a, g) { return a + toCents(g.fee); }, 0), exp = paid.reduce(function (a, g) { return a + toCents(g.expenses); }, 0);
     var top = null, far = null, byDay = {};
@@ -1655,6 +1669,64 @@ h1 span { display: inline; }
       card("Average pay per game", paid.length ? fmt(Math.round(pay / paid.length)) : "-", paid.length ? "Across " + paid.length + (paid.length === 1 ? " paid game" : " paid games") : "No paid games yet") +
       card("Most games in one day", busy ? busy.n : "-", busy ? esc(fullDate(busy.date)) + (busy.pay ? " · " + fmt(busy.pay) + " earned" : "") : "No games yet");
   }
+
+  /* Calendar: color-coded month, tap a day to see its games */
+  var calSel = null, cal2Off = 0;
+  var CAL_COLORS = { worked: "var(--green)", upcoming: "var(--blue)", pending: "var(--yellow)", cancelled: "var(--red)" };
+  var CAL_NAMES = { worked: "Worked", upcoming: "Upcoming", pending: "Pending payment", cancelled: "Cancelled" };
+  var CAL_ORDER = ["worked", "upcoming", "pending", "cancelled"];
+  function live() { return data.games.filter(function (g) { return !g.cancelled; }); }
+  function calKind(g) {
+    if (g.cancelled) return "cancelled";
+    var t = todayStr(), paid = g.paid !== false;
+    if (g.date > t) return "upcoming";
+    if (g.date === t) return paid ? "worked" : "upcoming";
+    return paid ? "worked" : "pending";
+  }
+  function calMonth(off) { var n = new Date(); return new Date(n.getFullYear(), n.getMonth() + off, 1); }
+  function calHtml(off, big) {
+    var cm = calMonth(off), ym = cm.getFullYear() + "-" + String(cm.getMonth() + 1).padStart(2, "0"), dim = new Date(cm.getFullYear(), cm.getMonth() + 1, 0).getDate(), t = todayStr(), by = {};
+    data.games.forEach(function (g) { if ((g.date || "").slice(0, 7) === ym) (by[g.date] = by[g.date] || []).push(g); });
+    var h = '<div class="cal' + (big ? " big" : "") + '">';
+    (big ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["S", "M", "T", "W", "T", "F", "S"]).forEach(function (d) { h += '<div class="dh">' + d + "</div>"; });
+    for (var b = 0; b < cm.getDay(); b++) h += "<div></div>";
+    for (var d = 1; d <= dim; d++) {
+      var ds = ym + "-" + String(d).padStart(2, "0"), list = by[ds] || [], kinds = {};
+      list.forEach(function (g) { kinds[calKind(g)] = 1; });
+      var ks = CAL_ORDER.filter(function (k) { return kinds[k]; });
+      h += '<button type="button" class="cd' + (ds === t ? " today" : "") + (big && ds === calSel ? " sel" : "") + '" data-goday="' + ds + '" aria-label="' + esc(parseD(ds).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })) + (list.length ? ", " + list.length + (list.length === 1 ? " game" : " games") : "") + '">' + d +
+        (ks.length ? '<span class="dots">' + ks.map(function (k) { return '<i style="background:' + CAL_COLORS[k] + '"></i>'; }).join("") + "</span>" : "") +
+        (big && list.length ? '<small class="cnt">' + list.length + (list.length === 1 ? " game" : " games") + "</small>" : "") + "</button>";
+    }
+    return { title: cm.toLocaleDateString("en-US", { month: "long", year: "numeric" }), html: h + "</div>", ym: ym };
+  }
+  function renderCalendar() {
+    if (!$("cal2")) return;
+    var c = calHtml(cal2Off, true), sel = calSel && calSel.slice(0, 7) === c.ym ? calSel : (cal2Off === 0 ? todayStr() : null);
+    calSel = sel; c = calHtml(cal2Off, true);
+    $("cal2-title").textContent = c.title; $("cal2").innerHTML = c.html;
+    if (!sel) { $("cal-day").innerHTML = '<p class="note">Tap a day to see its games.</p>'; return; }
+    var list = data.games.filter(function (g) { return g.date === sel; }).sort(byDateTime), head = parseD(sel).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    var h = '<h3 class="cal-dayhead">' + esc(head) + "</h3>";
+    h += list.length ? '<ul class="list tall">' + list.map(function (g) {
+      var k = calKind(g), unpaid = g.paid === false && !g.cancelled;
+      return '<li class="cdr"><div><strong>' + (g.time ? esc(fmtTime(g.time)) + " &middot; " : "") + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + k + '">' + CAL_NAMES[k] + "</span><span>" + esc([g.assoc, g.role, g.field].filter(Boolean).join(" · ")) + "</span></div>" +
+        (g.notes ? '<div class="game-note">' + esc(g.notes) + "</div>" : "") +
+        '<div class="a-sub"><button class="mini" type="button" data-editgame="' + esc(g.id) + '">Edit</button>' +
+        (unpaid ? '<button class="mini" type="button" data-calpaid="' + esc(g.id) + '">Got paid</button>' : "") +
+        (g.cancelled ? '<button class="mini" type="button" data-calrestore="' + esc(g.id) + '">Restore</button>' : '<button class="mini" type="button" data-calcancel="' + esc(g.id) + '">Cancel game</button>') + "</div></div>" +
+        '<span class="amt' + (g.cancelled ? " is-unpaid" : "") + '">' + fmt(toCents(g.fee)) + "</span></li>";
+    }).join("") + "</ul>" : '<p class="note">No games on this day.</p>';
+    h += '<a class="btn small" href="#add-game" data-addday="' + sel + '">Add a game on this day</a>';
+    $("cal-day").innerHTML = h;
+  }
+  function setCancelled(id, val) {
+    var g = data.games.filter(function (x) { return x.id === id; })[0];
+    if (!g) return;
+    g.cancelled = val; if (val) g.paid = false;
+    if (store) { var copy = Object.assign({}, g); delete copy.id; store.games.doc(id).set(copy).then(render, render); } else { saveLocal(); render(); }
+  }
+
 
   function renderOwed() {
     var all = owedGames();
@@ -1690,7 +1762,7 @@ h1 span { display: inline; }
   }
   function exportCsv() {
     var rows = [["Type", "Date", "Time", "Title", "Association", "Role", "Field", "Assignor", "Miles", "Amount", "Expenses", "Status", "Notes"]];
-    data.games.slice().sort(byDateTime).forEach(function (g) { rows.push(["Game", g.date, g.time || "", gTitle(g), g.assoc || "", g.role || "", g.field || "", g.assignor || "", gMiles(g) || "", (+g.fee || 0).toFixed(2), (+g.expenses || 0).toFixed(2), g.paid === false ? "Unpaid" : "Paid", g.notes || ""]); });
+    data.games.slice().sort(byDateTime).forEach(function (g) { rows.push(["Game", g.date, g.time || "", gTitle(g), g.assoc || "", g.role || "", g.field || "", g.assignor || "", gMiles(g) || "", (+g.fee || 0).toFixed(2), (+g.expenses || 0).toFixed(2), g.cancelled ? "Cancelled" : g.paid === false ? "Unpaid" : "Paid", g.notes || ""]); });
     data.income.slice().sort(byDateTime).forEach(function (x) { rows.push(["Other income", x.date, "", x.source || "", "", "", "", "", "", (+x.amount || 0).toFixed(2), "", "", ""]); });
     data.spending.slice().sort(byDateTime).forEach(function (s) { rows.push(["Spending", s.date, "", s.note || "", "", (BMAP[s.bucket] || BMAP.spend).name, "", "", "", (+s.amount || 0).toFixed(2), "", "", ""]); });
     var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
@@ -1715,6 +1787,7 @@ h1 span { display: inline; }
     renderHome(A);
     renderAssocFilter();
     renderOwed();
+    renderCalendar();
     renderCareer();
     renderCharts();
     renderSGoals();
@@ -1756,11 +1829,12 @@ h1 span { display: inline; }
     var items = [];
     S.games.forEach(function (g) {
       var fee = toCents(g.fee), ex = toCents(g.expenses), paid = g.paid !== false;
-      var st = gStatus(g), stLabel = st === "paid" ? "Paid" : st === "overdue" ? "Overdue" : "Pending";
+      var st = gStatus(g), stLabel = st === "paid" ? "Paid" : st === "overdue" ? "Overdue" : st === "cancelled" ? "Cancelled" : "Pending";
       var badge = '<button type="button" class="badge ' + (paid ? "" : st) + '" data-paid="' + esc(g.id) + '" data-val="' + (paid ? "0" : "1") + '" aria-label="' + (paid ? "Paid. Click to mark pending" : stLabel + ". Click to mark paid") + '">' + stLabel + "</button>";
+      if (g.cancelled) badge = '<span class="badge cancelled">Cancelled</span>';
       items.push({ kind: "games", id: g.id, date: g.date, created: g.created || 0, title: gTitle(g), notes: g.notes || "", editId: g.id,
-        paid: paid, status: st, assignor: g.assignor || "", assoc: g.assoc || "", badge: badge, detail: [g.assoc, g.assignor ? "Assignor " + g.assignor : "", g.role, g.field].filter(Boolean).join(" · ") + (gMiles(g) ? " · " + fmtMiles(gMiles(g)) : "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
-        amt: Math.max(0, fee - ex), sign: paid ? "+" : "", unpaid: paid ? 0 : Math.max(0, fee - ex) });
+        paid: paid, cancelled: !!g.cancelled, status: st, assignor: g.assignor || "", assoc: g.assoc || "", badge: badge, detail: [g.assoc, g.assignor ? "Assignor " + g.assignor : "", g.role, g.field].filter(Boolean).join(" · ") + (gMiles(g) ? " · " + fmtMiles(gMiles(g)) : "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
+        amt: Math.max(0, fee - ex), sign: paid ? "+" : "", unpaid: paid || g.cancelled ? 0 : Math.max(0, fee - ex) });
     });
     S.income.forEach(function (x) {
       items.push({ kind: "income", id: x.id, date: x.date, created: x.created || 0, title: x.source || "Other income",
@@ -1777,8 +1851,8 @@ h1 span { display: inline; }
     items = items.filter(function (it) {
       if (fType === "games" && it.kind !== "games") return false;
       if (fType === "paid" && !(it.kind === "games" && it.paid)) return false;
-      if (fType === "unpaid" && !(it.kind === "games" && !it.paid)) return false;
-      if ((fType === "pending" || fType === "overdue") && !(it.kind === "games" && it.status === fType)) return false;
+      if (fType === "unpaid" && !(it.kind === "games" && (it.status === "pending" || it.status === "overdue"))) return false;
+      if ((fType === "pending" || fType === "overdue" || fType === "cancelled") && !(it.kind === "games" && it.status === fType)) return false;
       if (fAssignor && it.assignor !== fAssignor) return false;
       if (fType === "income" && it.kind !== "income") return false;
       if (fType === "spending" && it.kind !== "spending") return false;
@@ -1803,7 +1877,7 @@ h1 span { display: inline; }
       return '<li class="a-row"><div class="a-date">' + esc(d) + "</div>" +
         '<div class="a-main"><strong>' + esc(it.title) + '</strong><div class="a-sub">' + it.badge + (it.detail ? "<span>" + esc(it.detail) + "</span>" : "") + act + "</div>" +
         (it.notes ? '<div class="game-note">' + esc(it.notes) + "</div>" : "") + (it.unpaid ? '<div class="unpaid-line">Unpaid &middot; ' + fmt(it.unpaid) + " not counted yet</div>" : "") + "</div>" +
-        '<div class="a-amt' + (it.unpaid ? " is-unpaid" : "") + '">' + it.sign + fmt(it.amt) + "</div></li>";
+        '<div class="a-amt' + (it.unpaid || it.cancelled ? " is-unpaid" : "") + '">' + it.sign + fmt(it.amt) + "</div></li>";
     }).join("");
   }
 
@@ -1934,7 +2008,7 @@ h1 span { display: inline; }
 
   /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
   var PAGES = { "add-game": "g-home", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "" };
-  var TABS = ["home", "games", "money", "reports", "goals", "owed"];
+  var TABS = ["home", "games", "money", "reports", "goals", "owed", "calendar"];
   function route(first) {
     var h = (location.hash || "").replace(/^#/, "");
     var view = Object.prototype.hasOwnProperty.call(PAGES, h) || TABS.indexOf(h) >= 0 ? h : "home";
@@ -2087,6 +2161,25 @@ h1 span { display: inline; }
 
   /* Dashboard events */
   document.addEventListener("click", function (e) {
+    var gd = e.target.closest("[data-goday]");
+    if (gd) {
+      var ds = gd.getAttribute("data-goday"), n = new Date(), dd = parseD(ds);
+      cal2Off = (dd.getFullYear() - n.getFullYear()) * 12 + dd.getMonth() - n.getMonth(); calSel = ds;
+      if (location.hash !== "#calendar") location.hash = "#calendar"; else renderCalendar();
+      return;
+    }
+    var c2 = e.target.closest("[data-cal2]");
+    if (c2) { var v = +c2.getAttribute("data-cal2"); if (v === 0) { cal2Off = 0; calSel = todayStr(); } else { cal2Off += v; calSel = null; } renderCalendar(); return; }
+    var eg = e.target.closest("[data-editgame]");
+    if (eg) { startEditGame(eg.getAttribute("data-editgame")); return; }
+    var cp = e.target.closest("[data-calpaid]");
+    if (cp) { setPaid(cp.getAttribute("data-calpaid"), true); return; }
+    var cc = e.target.closest("[data-calcancel]");
+    if (cc) { setCancelled(cc.getAttribute("data-calcancel"), true); return; }
+    var cr = e.target.closest("[data-calrestore]");
+    if (cr) { setCancelled(cr.getAttribute("data-calrestore"), false); return; }
+    var ad = e.target.closest("[data-addday]");
+    if (ad) { var day = ad.getAttribute("data-addday"); resetGameForm(); $("g-date").value = day; $("g-status").value = day <= todayStr() ? "paid" : "pending"; return; }
     var sb = e.target.closest("[data-sg-add],[data-sg-take],[data-sg-edit],[data-sg-ask],[data-sg-del],[data-sg-keep],[data-sg-sug]");
     if (sb) { sgClick(sb); return; }
     var ct = e.target.closest("[data-ch]");
@@ -2234,7 +2327,7 @@ h1 span { display: inline; }
     $("g-date").value = g.date; $("g-time").value = g.time || "";
     $("g-home").value = g.home || ""; $("g-away").value = g.away || ""; $("g-match").value = g.match || ""; $("g-field").value = g.field || ""; $("g-assignor").value = g.assignor || "";
     $("g-fee").value = g.fee; $("g-exp").value = g.expenses ? g.expenses : ""; $("g-miles").value = gMiles(g) || "";
-    $("g-notes").value = g.notes || ""; $("g-status").value = g.paid === false ? "pending" : "paid";
+    $("g-notes").value = g.notes || ""; $("g-status").value = g.cancelled ? "cancelled" : g.paid === false ? "pending" : "paid";
     editSwap = true; location.hash = "#add-game";
   }
   $("form-game").addEventListener("submit", function (e) {
@@ -2249,7 +2342,7 @@ h1 span { display: inline; }
       home: $("g-home").value.trim(), away: $("g-away").value.trim(), match: $("g-match").value.trim(), field: $("g-field").value.trim(), assignor: $("g-assignor").value.trim(),
       fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) ? Math.round(ex * 100) / 100 : 0,
       miles: isFinite(mi) ? Math.round(mi * 10) / 10 : 0, notes: $("g-notes").value.trim().slice(0, 300),
-      paid: $("g-status").value === "paid"
+      paid: $("g-status").value === "paid", cancelled: $("g-status").value === "cancelled"
     };
     if (editGameId) {
       var g = data.games.filter(function (x) { return x.id === editGameId; })[0];
@@ -2480,6 +2573,7 @@ h1 span { display: inline; }
   function allTimeInfo() {
     var fee = 0, exp = 0, other = 0, unpaid = 0, nets = [];
     data.games.forEach(function (g) {
+      if (g.cancelled) return;
       var n = toCents(g.fee) - toCents(g.expenses);
       if (g.paid === false) unpaid += Math.max(0, n);
       else { fee += toCents(g.fee); exp += toCents(g.expenses); nets.push([g.date, n]); }
