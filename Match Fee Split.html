@@ -508,6 +508,26 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .bag-row { padding: 9px 0; gap: 6px 10px; }
 .bag-act .mini { padding: 5px 10px; min-height: 30px; font-size: 11px; }
 @media (min-width: 720px) { .bag-row { grid-template-columns: minmax(0, 1fr) auto auto; } .bag-act { grid-column: auto; } }
+.exbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+@media (min-width: 720px) { .exbtns { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.exbtns .qbtn { min-height: 84px; }
+#print-root { display: none; }
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; zoom: 1 !important; }
+  #main, #gate, .nav { display: none !important; }
+  #print-root { display: block !important; color: #000; font: 12px/1.4 Arial, Helvetica, sans-serif; }
+  #print-root h1 { font-size: 24px; margin: 0 0 2px; color: #000; }
+  #print-root h2 { font-size: 15px; margin: 18px 0 6px; color: #000; }
+  #print-root p { margin: 0 0 10px; color: #333; }
+  #print-root table { border-collapse: collapse; width: 100%; }
+  #print-root .ps th { text-align: left; width: 220px; font-weight: 600; padding: 2px 0; }
+  #print-root .ps td { font-weight: 700; padding: 2px 0; }
+  #print-root .pt th { text-align: left; border-bottom: 1.5px solid #000; padding: 4px 6px; font-size: 11px; }
+  #print-root .pt td { border-bottom: 1px solid #ccc; padding: 4px 6px; font-size: 11px; }
+  #print-root .r { text-align: right; }
+  #print-root tr { break-inside: avoid; }
+}
 </style>
 
 <main class="wrap gate" id="gate" hidden>
@@ -593,7 +613,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
             <a class="qbtn q-blue" href="#add-game"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Game</a>
             <a class="qbtn q-purple" href="#i-spent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9m0 0l-4 4m4-4l4 4M5 4h14"/></svg>Add Expense</a>
             <a class="qbtn q-green" href="#reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>View Reports</a>
-            <button class="qbtn q-orange" type="button" data-export="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>Export Data</button>
+            <a class="qbtn q-orange" href="#export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>Export Data</a>
           </div>
         </section>
       </div>
@@ -674,6 +694,29 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     </section>
   </div>
 
+  <div class="view" data-view="export" hidden>
+    <section class="panel" aria-labelledby="h-export">
+      <h2 id="h-export">Export and reports</h2>
+      <p class="note">Pick a range and what to include, then download a file or print a report.</p>
+      <div class="grid">
+        <div class="field"><label for="ex-range">Range</label><select id="ex-range"><option value="all">All time</option><option value="month">This month</option><option value="lastmonth">Last month</option><option value="last3">Last 3 months</option><option value="year">This year</option><option value="lastyear">Last year</option></select></div>
+      </div>
+      <div class="checks">
+        <label class="check" for="ex-games"><input id="ex-games" type="checkbox" checked>Games</label>
+        <label class="check" for="ex-income"><input id="ex-income" type="checkbox" checked>Other income</label>
+        <label class="check" for="ex-spending"><input id="ex-spending" type="checkbox" checked>Spending</label>
+      </div>
+      <p class="note" id="ex-sum"></p>
+      <div class="exbtns">
+        <button class="qbtn q-red" type="button" data-exp="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h6"/></svg>PDF</button>
+        <button class="qbtn q-green" type="button" data-exp="xlsx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16"/></svg>Excel</button>
+        <button class="qbtn q-blue" type="button" data-exp="csv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>CSV</button>
+        <button class="qbtn q-purple" type="button" data-exp="print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>Print report</button>
+      </div>
+      <p class="msg" id="ex-msg" role="status"></p>
+    </section>
+  </div>
+
   <div class="view" data-view="money" hidden>
     <section class="panel p-plan" aria-labelledby="h-split">
       <div class="panel-head"><h2 id="h-split">Money Plan</h2><span class="chip" id="total-chip"></span></div>
@@ -736,7 +779,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
       <p class="note" id="ch-detail" aria-live="polite"></p>
     </section>
     <section class="panel"><div class="panel-head"><h2>Earnings Overview</h2><div class="periods sm" role="group" aria-label="Range" data-rngbox="1"></div></div><p class="note earn-sum"></p><div class="chart earn-chart" id="earn-reports"></div></section>
-    <section class="panel"><h2>Export</h2><p class="note">Download every game, other income and spending entry as a spreadsheet file (CSV).</p><div class="row"><button class="btn" type="button" data-export="1">Export data</button></div></section>
+    <section class="panel"><h2>Export and reports</h2><p class="note">Download your numbers as a PDF, Excel or CSV file, or print a report.</p><div class="row"><a class="btn" href="#export">Export options</a></div></section>
   </div>
 
   <div class="view" data-view="goals" hidden>
@@ -1026,6 +1069,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
   <p class="status" id="status"></p>
 </main>
 
+<div id="print-root" aria-hidden="true"></div>
 <script>
 (function () {
   var BUCKETS = [
@@ -1903,18 +1947,202 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
     return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
-  function exportCsv() {
-    var rows = [["Type", "Date", "Time", "Title", "Association", "Role", "Field", "Assignor", "Miles", "Amount", "Expenses", "Status", "Notes"]];
-    data.games.slice().sort(byDateTime).forEach(function (g) { rows.push(["Game", g.date, g.time || "", gTitle(g), g.assoc || "", g.role || "", g.field || "", g.assignor || "", gMiles(g) || "", (+g.fee || 0).toFixed(2), (+g.expenses || 0).toFixed(2), g.cancelled ? "Cancelled" : g.paid === false ? "Unpaid" : "Paid", g.notes || ""]); });
-    data.income.slice().sort(byDateTime).forEach(function (x) { rows.push(["Other income", x.date, "", x.source || "", "", "", "", "", "", (+x.amount || 0).toFixed(2), "", "", ""]); });
-    data.spending.slice().sort(byDateTime).forEach(function (s) { rows.push(["Spending", s.date, "", s.note || "", "", (BMAP[s.bucket] || BMAP.spend).name, "", "", "", (+s.amount || 0).toFixed(2), "", "", ""]); });
-    var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "referee-finance-" + todayStr() + ".csv";
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  /* Export options: CSV, Excel (.xlsx), PDF and a printable report */
+  var LMON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function exRange() {
+    var v = $("ex-range").value, n = new Date(), y = n.getFullYear(), m = n.getMonth(), f, t, label;
+    if (v === "month") { f = new Date(y, m, 1); t = new Date(y, m + 1, 0); label = LMON[m] + " " + y; }
+    else if (v === "lastmonth") { f = new Date(y, m - 1, 1); t = new Date(y, m, 0); label = LMON[f.getMonth()] + " " + f.getFullYear(); }
+    else if (v === "last3") { f = new Date(y, m - 2, 1); t = new Date(y, m + 1, 0); label = "Last 3 months"; }
+    else if (v === "year") { f = new Date(y, 0, 1); t = new Date(y, 11, 31); label = String(y); }
+    else if (v === "lastyear") { f = new Date(y - 1, 0, 1); t = new Date(y - 1, 11, 31); label = String(y - 1); }
+    else return { v: "all", from: "0000-01-01", to: "9999-12-31", label: "All time" };
+    return { v: v, from: ymd(f), to: ymd(t), label: label };
   }
+  function exData() {
+    var r = exRange(), inc = { games: $("ex-games").checked, income: $("ex-income").checked, spending: $("ex-spending").checked };
+    var inR = function (x) { return x.date >= r.from && x.date <= r.to; };
+    var games = inc.games ? data.games.filter(inR).sort(byDateTime) : [], income = inc.income ? data.income.filter(inR).sort(byDateTime) : [], spending = inc.spending ? data.spending.filter(inR).sort(byDateTime) : [];
+    var liveG = games.filter(function (g) { return !g.cancelled; }), paid = liveG.filter(function (g) { return g.paid !== false; }), t = todayStr();
+    var pay = paid.reduce(function (a, g) { return a + toCents(g.fee); }, 0), exp = paid.reduce(function (a, g) { return a + toCents(g.expenses); }, 0);
+    var other = income.reduce(function (a, x) { return a + toCents(x.amount); }, 0), spent = spending.reduce(function (a, x) { return a + toCents(x.amount); }, 0);
+    var owed = liveG.filter(function (g) { return g.paid === false && g.date < t; }).reduce(function (a, g) { return a + gNet(g); }, 0);
+    return { range: r, inc: inc, games: games, income: income, spending: spending,
+      sum: { games: liveG.length, paidGames: paid.length, pay: pay, exp: exp, other: other, net: pay - exp + other, spent: spent, owed: owed } };
+  }
+  function exStatus(g) { var s = gStatus(g); return s === "paid" ? "Paid" : s === "overdue" ? "Overdue" : s === "cancelled" ? "Cancelled" : "Pending"; }
+  function exSummaryRows(D) {
+    var s = D.sum;
+    return [["Range", D.range.label], ["Games worked", s.games + " (" + s.paidGames + " paid)"], ["Game pay (paid)", fmt(s.pay)], ["Game expenses", fmt(s.exp)], ["Other income", fmt(s.other)], ["Total earned (net)", fmt(s.net)], ["Spent from your buckets", fmt(s.spent)], ["Still owed to you", fmt(s.owed)]];
+  }
+  function exModel(D) {
+    var tables = [];
+    if (D.inc.games) tables.push({ title: "Games", cols: [{ h: "Date", w: 60 }, { h: "Game", w: 140 }, { h: "League", w: 90 }, { h: "Role", w: 50 }, { h: "Pay", w: 55, r: 1 }, { h: "Expenses", w: 62, r: 1 }, { h: "Status", w: 55 }],
+      rows: D.games.map(function (g) { return [g.date, gTitle(g), g.assoc || "", g.role || "", fmt(toCents(g.fee)), g.expenses ? fmt(toCents(g.expenses)) : "", exStatus(g)]; }) });
+    if (D.inc.income) tables.push({ title: "Other income", cols: [{ h: "Date", w: 70 }, { h: "Source", w: 380 }, { h: "Amount", w: 82, r: 1 }],
+      rows: D.income.map(function (x) { return [x.date, x.source || "", fmt(toCents(x.amount))]; }) });
+    if (D.inc.spending) tables.push({ title: "Spending", cols: [{ h: "Date", w: 70 }, { h: "Bucket", w: 80 }, { h: "Note", w: 300 }, { h: "Amount", w: 82, r: 1 }],
+      rows: D.spending.map(function (x) { return [x.date, (BMAP[x.bucket] || BMAP.spend).name, x.note || "", fmt(toCents(x.amount))]; }) });
+    return { title: "Referee Finance report", sub: D.range.label + " · made " + fmtDay(todayStr()), summary: exSummaryRows(D), tables: tables };
+  }
+  function fmtDay(s) { return MON[parseD(s).getMonth()] + " " + parseD(s).getDate() + ", " + s.slice(0, 4); }
+  function exFile(ext) { var r = exRange(); return "referee-finance-" + r.v + "-" + todayStr() + "." + ext; }
+  function saveBlob(blob, name) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+
+  /* CSV */
+  function exportCsv() {
+    var D = exData(), rows = [["Type", "Date", "Time", "Title", "Association", "Role", "Field", "Assignor", "Miles", "Amount", "Expenses", "Status", "Notes"]];
+    D.games.forEach(function (g) { rows.push(["Game", g.date, g.time || "", gTitle(g), g.assoc || "", g.role || "", g.field || "", g.assignor || "", gMiles(g) || "", (+g.fee || 0).toFixed(2), (+g.expenses || 0).toFixed(2), exStatus(g), g.notes || ""]); });
+    D.income.forEach(function (x) { rows.push(["Other income", x.date, "", x.source || "", "", "", "", "", "", (+x.amount || 0).toFixed(2), "", "", ""]); });
+    D.spending.forEach(function (s) { rows.push(["Spending", s.date, "", s.note || "", "", (BMAP[s.bucket] || BMAP.spend).name, "", "", "", (+s.amount || 0).toFixed(2), "", "", ""]); });
+    saveBlob(new Blob(["﻿" + rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n")], { type: "text/csv" }), exFile("csv"));
+  }
+
+  /* Excel (.xlsx): a small zip written by hand, no outside libraries */
+  var CRC_T = null;
+  function crc32(b) {
+    if (!CRC_T) { CRC_T = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC_T[n] = c >>> 0; } }
+    var c2 = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c2 = CRC_T[(c2 ^ b[i]) & 255] ^ (c2 >>> 8);
+    return (c2 ^ 0xFFFFFFFF) >>> 0;
+  }
+  function makeZip(files, mime) {
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0, csize = 0;
+    files.forEach(function (f) {
+      var name = enc.encode(f.name), body = enc.encode(f.text), crc = crc32(body);
+      var lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, body.length, true); lh.setUint32(22, body.length, true); lh.setUint16(26, name.length, true);
+      parts.push(new Uint8Array(lh.buffer), name, body);
+      var ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, body.length, true); ch.setUint32(24, body.length, true); ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+      central.push(new Uint8Array(ch.buffer), name);
+      offset += 30 + name.length + body.length; csize += 46 + name.length;
+    });
+    var end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, csize, true); end.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [new Uint8Array(end.buffer)]), { type: mime });
+  }
+  function xmlEsc(v) { return String(v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function colName(i) { var s = ""; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+  function sheetXml(rows, widths) {
+    var x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols>' +
+      widths.map(function (w, i) { return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>'; }).join("") + "</cols><sheetData>";
+    rows.forEach(function (r, ri) {
+      x += '<row r="' + (ri + 1) + '">';
+      r.forEach(function (c, ci) {
+        var ref = colName(ci) + (ri + 1);
+        if (c && typeof c === "object") x += '<c r="' + ref + '" s="2"><v>' + c.m + "</v></c>";
+        else if (typeof c === "number") x += '<c r="' + ref + '"><v>' + c + "</v></c>";
+        else if (c !== "" && c != null) x += '<c r="' + ref + '"' + (ri === 0 ? ' s="1"' : "") + ' t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(c) + "</t></is></c>";
+      });
+      x += "</row>";
+    });
+    return x + "</sheetData></worksheet>";
+  }
+  function exportXlsx() {
+    var D = exData(), M = function (c) { return { m: (c / 100).toFixed(2) }; }, sheets = [];
+    sheets.push(["Summary", [["Item", "Value"]].concat([["Range", D.range.label], ["Games worked", D.sum.games], ["Paid games", D.sum.paidGames], ["Game pay (paid)", M(D.sum.pay)], ["Game expenses", M(D.sum.exp)], ["Other income", M(D.sum.other)], ["Total earned (net)", M(D.sum.net)], ["Spent from your buckets", M(D.sum.spent)], ["Still owed to you", M(D.sum.owed)]]), [28, 24]]);
+    if (D.inc.games) sheets.push(["Games", [["Date", "Time", "Game", "League", "Role", "Field", "Assignor", "Miles", "Pay", "Expenses", "Status", "Notes"]].concat(D.games.map(function (g) {
+      return [g.date, g.time || "", gTitle(g), g.assoc || "", g.role || "", g.field || "", g.assignor || "", gMiles(g) || "", M(toCents(g.fee)), M(toCents(g.expenses)), exStatus(g), g.notes || ""]; })), [12, 8, 26, 18, 12, 12, 14, 8, 11, 11, 11, 36]]);
+    if (D.inc.income) sheets.push(["Other income", [["Date", "Source", "Amount"]].concat(D.income.map(function (x) { return [x.date, x.source || "", M(toCents(x.amount))]; })), [12, 40, 12]]);
+    if (D.inc.spending) sheets.push(["Spending", [["Date", "Bucket", "Note", "Amount"]].concat(D.spending.map(function (x) { return [x.date, (BMAP[x.bucket] || BMAP.spend).name, x.note || "", M(toCents(x.amount))]; })), [12, 12, 40, 12]]);
+    var X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', NS = "http://schemas.openxmlformats.org/", files = [];
+    files.push({ name: "[Content_Types].xml", text: X + '<Types xmlns="' + NS + 'package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      sheets.map(function (s, i) { return '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'; }).join("") + "</Types>" });
+    files.push({ name: "_rels/.rels", text: X + '<Relationships xmlns="' + NS + 'package/2006/relationships"><Relationship Id="rId1" Type="' + NS + 'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' });
+    files.push({ name: "xl/workbook.xml", text: X + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="' + NS + 'officeDocument/2006/relationships"><sheets>' +
+      sheets.map(function (s, i) { return '<sheet name="' + xmlEsc(s[0]) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>'; }).join("") + "</sheets></workbook>" });
+    files.push({ name: "xl/_rels/workbook.xml.rels", text: X + '<Relationships xmlns="' + NS + 'package/2006/relationships">' +
+      sheets.map(function (s, i) { return '<Relationship Id="rId' + (i + 1) + '" Type="' + NS + 'officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>'; }).join("") +
+      '<Relationship Id="rId' + (sheets.length + 1) + '" Type="' + NS + 'officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' });
+    files.push({ name: "xl/styles.xml", text: X + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;$&quot;#,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' });
+    sheets.forEach(function (s, i) { files.push({ name: "xl/worksheets/sheet" + (i + 1) + ".xml", text: sheetXml(s[1], s[2]) }); });
+    saveBlob(makeZip(files, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"), exFile("xlsx"));
+  }
+
+  /* PDF: written by hand with the built-in Helvetica font */
+  function pdfEsc(t) { return String(t).replace(/[^\x20-\x7E -ÿ]/g, "?").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); }
+  function pdfW(t, size) {
+    var w = 0; for (var i = 0; i < t.length; i++) { var c = t[i]; w += /[0-9$]/.test(c) ? 0.556 : /[ .,:;'|!il]/.test(c) ? 0.28 : /[A-Z]/.test(c) ? 0.68 : /[mwMW]/.test(c) ? 0.8 : 0.52; }
+    return w * size;
+  }
+  function pdfFit(t, size, max) { t = String(t); if (pdfW(t, size) <= max) return t; while (t.length > 1 && pdfW(t + "...", size) > max) t = t.slice(0, -1); return t + "..."; }
+  function buildPdf(model) {
+    var W = 612, H = 792, M = 40, pages = [], ops = "", y = H - M;
+    var newPage = function () { pages.push(ops); ops = ""; y = H - M; };
+    var text = function (t, x, yy, size, bold, right) {
+      t = pdfEsc(t); var xx = right ? x - pdfW(t, size) : x;
+      ops += "BT /" + (bold ? "F2" : "F1") + " " + size + " Tf " + xx.toFixed(1) + " " + yy.toFixed(1) + " Td (" + t + ") Tj ET\n";
+    };
+    text(model.title, M, y - 16, 20, true); y -= 34;
+    text(model.sub, M, y, 10, false); y -= 22;
+    model.summary.forEach(function (r) { text(r[0], M, y, 10.5, false); text(r[1], M + 190, y, 10.5, true); y -= 15; });
+    y -= 10;
+    model.tables.forEach(function (tb) {
+      var head = function () {
+        text(tb.title, M, y, 13, true); y -= 17; var x = M;
+        tb.cols.forEach(function (c) { text(c.h, c.r ? x + c.w - 4 : x, y, 9, true, c.r); x += c.w; });
+        ops += "0.6 w " + M + " " + (y - 4) + " m " + (W - M) + " " + (y - 4) + " l S\n"; y -= 15;
+      };
+      if (y < 110) newPage(); head();
+      if (!tb.rows.length) { text("Nothing in this range.", M, y, 9, false); y -= 22; return; }
+      tb.rows.forEach(function (row) {
+        if (y < M + 24) { newPage(); head(); }
+        var x = M; tb.cols.forEach(function (c, i) { text(pdfFit(row[i], 9, c.w - 6), c.r ? x + c.w - 4 : x, y, 9, false, c.r); x += c.w; });
+        y -= 13.5;
+      });
+      y -= 16;
+    });
+    pages.push(ops);
+    var objs = [], n = pages.length;
+    objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+    objs[2] = "<< /Type /Pages /Kids [" + pages.map(function (p, i) { return (5 + i * 2) + " 0 R"; }).join(" ") + "] /Count " + n + " >>";
+    objs[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+    objs[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+    pages.forEach(function (p, i) {
+      var stream = p + "BT /F1 8 Tf " + M + " 22 Td (" + pdfEsc("Referee Finance - page " + (i + 1) + " of " + n) + ") Tj ET\n";
+      objs[5 + i * 2] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + W + " " + H + "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + (6 + i * 2) + " 0 R >>";
+      objs[6 + i * 2] = "<< /Length " + stream.length + " >>\nstream\n" + stream + "endstream";
+    });
+    var out = "%PDF-1.4\n", offs = [];
+    for (var i = 1; i < objs.length; i++) { offs[i] = out.length; out += i + " 0 obj\n" + objs[i] + "\nendobj\n"; }
+    var xref = out.length; out += "xref\n0 " + objs.length + "\n0000000000 65535 f \n";
+    for (var j = 1; j < objs.length; j++) out += String(offs[j]).padStart(10, "0") + " 00000 n \n";
+    out += "trailer\n<< /Size " + objs.length + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF";
+    var bytes = new Uint8Array(out.length); for (var k = 0; k < out.length; k++) bytes[k] = out.charCodeAt(k) & 255;
+    return new Blob([bytes], { type: "application/pdf" });
+  }
+  function exportPdf() { saveBlob(buildPdf(exModel(exData())), exFile("pdf")); }
+
+  /* Printable report */
+  function printReport() {
+    var m = exModel(exData());
+    $("print-root").innerHTML = "<h1>" + esc(m.title) + "</h1><p>" + esc(m.sub) + "</p><table class=\"ps\">" + m.summary.map(function (r) { return "<tr><th>" + esc(r[0]) + "</th><td>" + esc(r[1]) + "</td></tr>"; }).join("") + "</table>" +
+      m.tables.map(function (tb) {
+        return "<h2>" + esc(tb.title) + "</h2><table class=\"pt\"><thead><tr>" + tb.cols.map(function (c) { return "<th" + (c.r ? ' class="r"' : "") + ">" + esc(c.h) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+          (tb.rows.length ? tb.rows.map(function (r) { return "<tr>" + r.map(function (v, i) { return "<td" + (tb.cols[i].r ? ' class="r"' : "") + ">" + esc(v) + "</td>"; }).join("") + "</tr>"; }).join("") : '<tr><td colspan="' + tb.cols.length + '">Nothing in this range.</td></tr>') + "</tbody></table>";
+      }).join("");
+    try { window.print(); } catch (e) { exMsg("Printing is not available here. Use the PDF button instead.", true); }
+  }
+  function exMsg(t, err) { var m = $("ex-msg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+  function renderExport() {
+    if (!$("ex-sum")) return;
+    var D = exData(), s = D.sum;
+    $("ex-sum").textContent = D.range.label + ": " + s.games + (s.games === 1 ? " game" : " games") + ", " + fmt(s.net) + " earned (net)" + (D.income.length || D.spending.length ? ", " + D.income.length + " other income and " + D.spending.length + " spending entries" : "") + ".";
+  }
+  function exClick(kind) {
+    try {
+      if (kind === "pdf") exportPdf(); else if (kind === "xlsx") exportXlsx(); else if (kind === "csv") exportCsv(); else printReport();
+      if (kind !== "print") exMsg("Download started.", false);
+    } catch (e) { exMsg("Could not make that file. Try again, or try a smaller range.", true); }
+  }
+
 
   function fillGoalInput() { if (document.activeElement !== $("goal-amt")) $("goal-amt").value = goal || ""; }
   function sanitizeGoal(v) { return typeof v === "number" && isFinite(v) && v >= 0 && v < 1e7 ? Math.round(v * 100) / 100 : null; }
@@ -1930,6 +2158,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     renderHome(A);
     renderAssocFilter();
     renderOwed();
+    renderExport();
     renderBag();
     renderCalendar();
     renderCareer();
@@ -2153,7 +2382,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 
   /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
   var PAGES = { "add-game": "g-match", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "" };
-  var TABS = ["home", "games", "money", "reports", "goals", "owed", "calendar", "inventory"];
+  var TABS = ["home", "games", "money", "reports", "goals", "owed", "calendar", "inventory", "export"];
   function route(first) {
     var h = (location.hash || "").replace(/^#/, "");
     var view = Object.prototype.hasOwnProperty.call(PAGES, h) || TABS.indexOf(h) >= 0 ? h : "home";
@@ -2162,7 +2391,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (el) { el.hidden = el.getAttribute("data-view") !== view; });
     Array.prototype.forEach.call(document.querySelectorAll("[data-page]"), function (el) { el.hidden = el.getAttribute("data-page") !== view; });
     $("pages").hidden = tab;
-    var nk = view === "owed" ? "money" : tab || view === "app-settings" ? view : view === "add-game" ? "games" : "money";
+    var nk = view === "owed" ? "money" : view === "export" ? "reports" : tab || view === "app-settings" ? view : view === "add-game" ? "games" : "money";
     Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function (el) {
       if (el.getAttribute("data-nav") === nk) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
     });
@@ -2337,6 +2566,8 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     if (ci) { chSel = +ci.getAttribute("data-i"); renderCharts(); return; }
     var mp = e.target.closest("[data-markpaid]");
     if (mp) { setPaid(mp.getAttribute("data-markpaid"), true); return; }
+    var xp = e.target.closest("[data-exp]");
+    if (xp) { exClick(xp.getAttribute("data-exp")); return; }
     var x = e.target.closest("[data-export]");
     if (x) { exportCsv(); return; }
     var r = e.target.closest("[data-rng]");
@@ -2355,6 +2586,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
   $("ch-league").addEventListener("change", function () { chLeague = $("ch-league").value; chSel = null; renderCharts(); });
   $("ch-assignor").addEventListener("change", function () { chAssignor = $("ch-assignor").value; chSel = null; renderCharts(); });
   $("ch-chart").addEventListener("mouseover", function (e) { var r = e.target.closest("[data-i]"); if (r && +r.getAttribute("data-i") !== chSel) { chSel = +r.getAttribute("data-i"); renderCharts(); } });
+  ["ex-range", "ex-games", "ex-income", "ex-spending"].forEach(function (id) { $(id).addEventListener("change", renderExport); });
   $("cs-year").addEventListener("change", function () { csYear = $("cs-year").value; renderCareer(); });
   $("o-league").addEventListener("change", function () { oLeague = $("o-league").value; renderOwed(); });
   $("o-assignor").addEventListener("change", function () { oAssignor = $("o-assignor").value; renderOwed(); });
