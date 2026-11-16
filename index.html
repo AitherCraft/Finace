@@ -508,6 +508,41 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .bag-row { padding: 9px 0; gap: 6px 10px; }
 .bag-act .mini { padding: 5px 10px; min-height: 30px; font-size: 11px; }
 @media (min-width: 720px) { .bag-row { grid-template-columns: minmax(0, 1fr) auto auto; } .bag-act { grid-column: auto; } }
+/* Better mobile: touch feel, motion, nav, spacing */
+html { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+a, button, label, select, summary, [role="button"] { touch-action: manipulation; }
+button, .btn, .qbtn, .nav a, .tile, .rg { transition: transform 0.12s ease, background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease; }
+button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96); }
+@keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes viewInR { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes viewInL { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+.enter { animation: viewIn 0.24s ease-out both; }
+.enter-r { animation: viewInR 0.24s ease-out both; }
+.enter-l { animation: viewInL 0.24s ease-out both; }
+@keyframes popIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.enter > .panel, .enter > .tiles, .enter > section { animation: popIn 0.3s ease-out both; }
+.enter > :nth-child(2) { animation-delay: 0.03s; } .enter > :nth-child(3) { animation-delay: 0.06s; } .enter > :nth-child(4) { animation-delay: 0.09s; }
+@media (prefers-reduced-motion: reduce) { .enter, .enter-r, .enter-l, .enter > * { animation: none !important; } button:active, .btn:active, .qbtn:active, .nav a:active { transform: none; } }
+@media (max-width: 959px) {
+  body { padding-block: 14px calc(92px + env(safe-area-inset-bottom, 0px)); }
+  .nav { background: rgba(11, 22, 48, 0.94); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35); }
+  .nav a { min-height: 54px; align-content: center; position: relative; }
+  .nav a[aria-current="page"] { background: rgba(47, 140, 255, 0.14); }
+  .nav a[aria-current="page"]::after { content: ""; position: absolute; top: -7px; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--blue); }
+  .nav a[aria-current="page"] svg { transform: translateY(-1px) scale(1.08); }
+  .nav a svg { transition: transform 0.18s ease; }
+  .panel { content-visibility: auto; contain-intrinsic-size: auto 260px; }
+  .view, .wrap { gap: 14px; }
+  input, select, textarea { font-size: 16px; }
+  .btn, .qbtn, button { min-height: 44px; }
+}
+@media (max-width: 380px) {
+  body { padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+  .tiles { gap: 8px; }
+  .tile { padding: 12px 10px; }
+  .nav a { font-size: 10.5px; }
+  .cstats { grid-template-columns: minmax(0, 1fr); }
+}
 .exbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
 @media (min-width: 720px) { .exbtns { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .exbtns .qbtn { min-height: 84px; }
@@ -2414,6 +2449,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
   /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
   var PAGES = { "add-game": "g-match", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "" };
   var TABS = ["home", "games", "money", "reports", "goals", "owed", "calendar", "inventory", "export"];
+  var MOB = ["home", "games", "calendar", "money", "reports", "app-settings"], lastView = "";
   function route(first) {
     var h = (location.hash || "").replace(/^#/, "");
     var view = Object.prototype.hasOwnProperty.call(PAGES, h) || TABS.indexOf(h) >= 0 ? h : "home";
@@ -2429,6 +2465,12 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     if (view === "add-game") { if (editSwap) editSwap = false; else if (editGameId) resetGameForm(); }
     else if (editGameId) resetGameForm();
     if (view === "can-i-afford") renderAfford();
+    var el = document.querySelector('[data-view="' + view + '"]:not([hidden])') || $("pages"), pi = MOB.indexOf(lastView), ni = MOB.indexOf(view);
+    if (!first && el && lastView !== view) {
+      el.classList.remove("enter", "enter-l", "enter-r"); void el.offsetWidth;
+      el.classList.add(pi >= 0 && ni >= 0 && window.innerWidth < 960 ? (ni > pi ? "enter-r" : "enter-l") : "enter");
+    }
+    lastView = view;
     if (!first) {
       window.scrollTo(0, 0);
       if (!tab) { var f = $(PAGES[view]); if (f) f.focus({ preventScroll: true }); }
@@ -3364,6 +3406,33 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
   /* Start with this device's copy, then switch to the private store if the viewer has one. */
   loadLocal(); draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); renderAssocs(); render();
   route(true);
+  /* Swipe left or right to move between the bottom tabs (phones only) */
+  (function () {
+    var sx = 0, sy = 0, st = 0, ok = false;
+    function scrollable(el) {
+      for (; el && el !== document.body; el = el.parentElement) {
+        var o = getComputedStyle(el).overflowX;
+        if ((o === "auto" || o === "scroll") && el.scrollWidth > el.clientWidth + 2) return true;
+      }
+      return false;
+    }
+    document.addEventListener("touchstart", function (e) {
+      ok = false;
+      if (e.touches.length !== 1 || window.innerWidth >= 960 || !$("gate").hidden) return;
+      var t = e.target; if (!t.closest || t.closest("input,select,textarea,[data-noswipe],.nav") || scrollable(t)) return;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); ok = true;
+    }, { passive: true });
+    document.addEventListener("touchend", function (e) {
+      if (!ok) return; ok = false;
+      var c = e.changedTouches[0], dx = c.clientX - sx, dy = c.clientY - sy;
+      if (Date.now() - st > 600 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      var sel = window.getSelection && String(window.getSelection()); if (sel) return;
+      var cur = (location.hash || "#home").slice(1), i = MOB.indexOf(cur === "" ? "home" : cur);
+      if (i < 0) return;
+      var n = i + (dx < 0 ? 1 : -1); if (n < 0 || n >= MOB.length) return;
+      location.hash = "#" + MOB[n];
+    }, { passive: true });
+  })();
   window.addEventListener("hashchange", function () { route(false); });
   setStatus("Saved in this browser only.");
 
