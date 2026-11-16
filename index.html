@@ -554,6 +554,8 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
 .filebtn input:focus-visible + label { outline: 2.5px solid var(--focus); outline-offset: 2px; }
 .bk-confirm { margin-top: 12px; padding: 12px; border: 1px solid var(--red); border-radius: 12px; display: grid; gap: 10px; }
 button:disabled, .btn:disabled { opacity: 0.55; }
+.more-row { list-style: none; display: grid; padding: 8px 0; }
+.more-row .btn { width: 100%; }
 .exbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
 @media (min-width: 720px) { .exbtns { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .exbtns .qbtn { min-height: 84px; }
@@ -700,8 +702,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   </div>
 
   <div class="view" data-view="owed" hidden>
-    <section class="panel" aria-labelledby="h-owed">
-      <div class="panel-head"><h2 id="h-owed">Owed to You</h2><span class="chip" id="owed-count"></span></div>
+    <section class="panel" aria-labelledby="h-owed-page">
+      <div class="panel-head"><h2 id="h-owed-page">Owed to You</h2><span class="chip" id="owed-count"></span></div>
       <p class="note">Games you worked that have not paid you yet. A game turns Overdue after 7 days.</p>
       <div class="filters">
         <select id="o-league" aria-label="League"><option value="">All leagues</option></select>
@@ -2284,6 +2286,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     }
   }
 
+  var ledgerLimit = 50, ledgerSig = "";
   function renderLedger(S) {
     var items = [];
     S.games.forEach(function (g) {
@@ -2320,12 +2323,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       return true;
     });
     items.sort(function (x, y) { return x.date < y.date ? 1 : x.date > y.date ? -1 : y.created - x.created; });
+    var sig = [fQ, fType, fAssoc, fAssignor].join("|"); if (sig !== ledgerSig) { ledgerSig = sig; ledgerLimit = 50; }
     var owed = items.reduce(function (t, it) { return t + (it.unpaid || 0); }, 0);
     $("games-count").textContent = items.length + (items.length === 1 ? " entry" : " entries") + (owed ? " · " + fmt(owed) + " unpaid" : "");
     if (!items.length) {
       $("games").innerHTML = '<li><p class="empty">' + (filtered ? "Nothing matches your search or filters." : "Nothing here yet. Add a game, other income or spending and it shows up in this list.") + '</p></li>';
       return;
     }
+    var total = items.length; items = items.slice(0, ledgerLimit);
     $("games").innerHTML = items.map(function (it) {
       var p = it.date.split("-");
       var d = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -2337,7 +2342,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         '<div class="a-main"><strong>' + esc(it.title) + '</strong><div class="a-sub">' + it.badge + (it.detail ? "<span>" + esc(it.detail) + "</span>" : "") + act + "</div>" +
         (it.notes ? '<div class="game-note">' + esc(it.notes) + "</div>" : "") + (it.unpaid ? '<div class="unpaid-line">Unpaid &middot; ' + fmt(it.unpaid) + " not counted yet</div>" : "") + "</div>" +
         '<div class="a-amt' + (it.unpaid || it.cancelled ? " is-unpaid" : "") + '">' + it.sign + fmt(it.amt) + "</div></li>";
-    }).join("");
+    }).join("") + (total > items.length ? '<li class="more-row"><button class="btn ghost" type="button" data-more="1">Show more (' + (total - items.length) + " left)</button></li>" : "");
   }
 
   function renderPeriods() {
@@ -2661,6 +2666,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (ci) { chSel = +ci.getAttribute("data-i"); renderCharts(); return; }
     var mp = e.target.closest("[data-markpaid]");
     if (mp) { setPaid(mp.getAttribute("data-markpaid"), true); return; }
+    var mo = e.target.closest("[data-more]");
+    if (mo) { var from = ledgerLimit; ledgerLimit += 50; filterChanged(); var rr = $("games").querySelectorAll(".a-row")[from], fb = rr && rr.querySelector("button"); if (fb) fb.focus({ preventScroll: true }); return; }
     var xp = e.target.closest("[data-exp]");
     if (xp) { exClick(xp.getAttribute("data-exp")); return; }
     var x = e.target.closest("[data-export]");
@@ -2673,7 +2680,9 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (f) { fType = f.getAttribute("data-setfilter"); $("f-type").value = fType; renderLedger(summarize(true)); }
   });
   function filterChanged() { renderLedger(summarize(true)); }
-  $("f-q").addEventListener("input", function () { fQ = $("f-q").value; $("top-search").value = fQ; filterChanged(); });
+  var filterTimer = null;
+  function filterSoon() { clearTimeout(filterTimer); filterTimer = setTimeout(filterChanged, 140); }
+  $("f-q").addEventListener("input", function () { fQ = $("f-q").value; $("top-search").value = fQ; filterSoon(); });
   $("f-type").addEventListener("change", function () { fType = $("f-type").value; filterChanged(); });
   $("f-assoc").addEventListener("change", function () { fAssoc = $("f-assoc").value; filterChanged(); });
   $("f-assignor").addEventListener("change", function () { fAssignor = $("f-assignor").value; filterChanged(); });
@@ -2688,7 +2697,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   $("o-status").addEventListener("change", function () { oStatus = $("o-status").value; renderOwed(); });
   $("top-search").addEventListener("input", function () {
     fQ = $("top-search").value; $("f-q").value = fQ;
-    if (location.hash !== "#games") location.hash = "#games"; else filterChanged();
+    if (location.hash !== "#games") location.hash = "#games"; else filterSoon();
   });
   $("bg-save").addEventListener("click", bagFormSubmit);
   $("bg-cancel").addEventListener("click", function () { bagFormReset(); bagMsg("", false); });
@@ -3595,6 +3604,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var r = $("sr-route"); if (r) r.textContent = n + " page";
   }
   bkInfo(); netUi();
+  document.querySelector(".skip").addEventListener("click", function (e) {
+    e.preventDefault(); var m = $("main"); m.focus({ preventScroll: true });
+    var t = document.querySelector("[data-view]:not([hidden]) h2, [data-page]:not([hidden]) h2"); if (t) t.scrollIntoView({ block: "start" });
+  });
 
   route(true);
   /* Swipe left or right to move between the bottom tabs (phones only) */
