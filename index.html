@@ -766,6 +766,11 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
       <div class="cstats" id="cs-grid"></div>
       <p class="note">Earnings, average and highest-paying game count paid games only. Mileage comes from the miles you enter on each game.</p>
     </section>
+    <section class="panel" aria-labelledby="h-pr">
+      <h2 id="h-pr">Personal Records</h2>
+      <div class="cstats" id="pr-grid"></div>
+      <p class="note">Records count paid games. Monthly earnings also include other income. Tournaments are found by a name containing Tournament, Cup, Classic, Showcase, Invitational or Festival.</p>
+    </section>
     <section class="panel" aria-labelledby="h-charts">
       <div class="panel-head"><h2 id="h-charts">Charts</h2></div>
       <div class="tabs" id="ch-tabs" role="tablist" aria-label="Chart"></div>
@@ -1436,20 +1441,12 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     var paidG = data.games.filter(function (g) { return g.paid !== false; }), earned = paidG.reduce(function (a, g) { return a + gNet(g); }, 0);
     var miles = live().reduce(function (a, g) { return a + gMiles(g); }, 0);
     $("career").innerHTML = '<div><b>' + live().length + "</b><span>Games</span></div><div><b>" + fmt(earned) + "</b><span>Earned</span></div>" + (miles ? "<div><b>" + fmtMiles(miles) + "</b><span>Driven</span></div>" : "<div><b>" + fmt(paidG.length ? Math.round(earned / paidG.length) : 0) + "</b><span>Avg / game</span></div>");
-    if (!paidG.length) $("records").innerHTML = '<p class="note">Your records show up after you log some paid games.</p>';
-    else {
-      var day = {}, cnt = {}, mon = {};
-      paidG.forEach(function (g) { day[g.date] = (day[g.date] || 0) + gNet(g); cnt[g.date] = (cnt[g.date] || 0) + 1; });
-      paidG.forEach(function (g) { var m = g.date.slice(0, 7); mon[m] = (mon[m] || 0) + gNet(g); });
-      var best = function (o) { return Object.keys(o).sort(function (a, b) { return o[b] - o[a]; })[0]; };
-      var bd = best(day), bc = best(cnt), bm = best(mon);
-      var mLabel = new Date(+bm.slice(0, 4), +bm.slice(5) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      $("records").innerHTML =
-        '<div class="rec"><span>Highest paying day</span><b>' + fmt(day[bd]) + "<small>" + esc(mdDate(bd)) + "</small></b></div>" +
-        '<div class="rec"><span>Most games in a day</span><b>' + cnt[bc] + "<small>" + esc(mdDate(bc)) + "</small></b></div>" +
-        '<div class="rec"><span>Best month</span><b>' + fmt(mon[bm]) + "<small>" + esc(mLabel) + "</small></b></div>" +
-        '<div class="rec"><span>Top association</span><b>' + esc(keys[0]) + "<small>" + fmt(by[keys[0]]) + "</small></b></div>";
-    }
+    var R = prRecords();
+    $("records").innerHTML = !R.any ? '<p class="note">Your records show up after you log some paid games.</p>' :
+      '<div class="rec"><span>Highest-paying day</span><b>' + (R.day ? fmt(R.day.pay) + "<small>" + esc(mdDate(R.day.date)) + "</small>" : "-") + "</b></div>" +
+      '<div class="rec"><span>Biggest tournament</span><b>' + (R.tour ? fmt(R.tour.pay) + "<small>" + esc(R.tour.name) + "</small>" : "-") + "</b></div>" +
+      '<div class="rec"><span>Most games in a day</span><b>' + (R.busy ? R.busy.n + "<small>" + esc(mdDate(R.busy.date)) + "</small>" : "-") + "</b></div>" +
+      '<div class="rec"><span>Highest monthly earnings</span><b>' + (R.mon ? fmt(R.mon.amt) + "<small>" + esc(R.mon.label) + "</small>" : "-") + "</b></div>";
 
     /* Calendar */
     $("cal").innerHTML = '<div class="cal-title">' + esc(calMonth(calOff).toLocaleDateString("en-US", { month: "long", year: "numeric" })) + "</div>" + calHtml(calOff, false).html;
@@ -1724,6 +1721,39 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
   /* Career statistics */
   var csYear = "";
   function fullDate(s) { return shortDate(s); }
+  /* Personal records */
+  var TOUR_RE = /tournament|tourney|\bcup\b|classic|showcase|invitational|festival/i;
+  function prRecords() {
+    var paid = live().filter(function (g) { return g.paid !== false; }), day = {}, tour = {}, mon = {}, out = { any: false };
+    paid.forEach(function (g) {
+      var n = gNet(g), d = day[g.date] || (day[g.date] = { date: g.date, pay: 0, n: 0 }); d.pay += n; d.n++;
+      var m = g.date.slice(0, 7); mon[m] = (mon[m] || 0) + n;
+      var txt = [g.match, g.assoc, g.notes].filter(Boolean).join(" ");
+      if (TOUR_RE.test(txt)) {
+        var nm = (TOUR_RE.test(g.match || "") ? g.match : TOUR_RE.test(g.assoc || "") ? g.assoc : g.match || g.assoc || "Tournament"), key = nm.toLowerCase() + "|" + m;
+        var t = tour[key] || (tour[key] = { name: nm, date: g.date, pay: 0, n: 0 }); t.pay += n; t.n++;
+      }
+    });
+    data.income.forEach(function (x) { var m = (x.date || "").slice(0, 7); if (m) mon[m] = (mon[m] || 0) + toCents(x.amount); });
+    var days = Object.keys(day).map(function (k) { return day[k]; }), tours = Object.keys(tour).map(function (k) { return tour[k]; });
+    out.day = days.slice().sort(function (a, b) { return b.pay - a.pay || (a.date < b.date ? 1 : -1); })[0] || null;
+    out.busy = days.slice().sort(function (a, b) { return b.n - a.n || (a.date < b.date ? 1 : -1); })[0] || null;
+    out.tour = tours.sort(function (a, b) { return b.pay - a.pay || (a.date < b.date ? 1 : -1); })[0] || null;
+    var ms = Object.keys(mon).sort(function (a, b) { return mon[b] - mon[a] || (a < b ? 1 : -1); })[0];
+    out.mon = ms ? { amt: mon[ms], label: new Date(+ms.slice(0, 4), +ms.slice(5) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }) } : null;
+    out.any = paid.length > 0 || !!out.mon;
+    return out;
+  }
+  function renderRecords() {
+    if (!$("pr-grid")) return;
+    var R = prRecords(), card = function (label, val, small) { return '<div class="cs"><span>' + label + "</span><b>" + val + "</b><small>" + small + "</small></div>"; };
+    $("pr-grid").innerHTML =
+      card("Highest-paying day", R.day ? fmt(R.day.pay) : "-", R.day ? esc(fullDate(R.day.date)) + " &middot; " + R.day.n + (R.day.n === 1 ? " game" : " games") : "No paid games yet") +
+      card("Biggest tournament", R.tour ? fmt(R.tour.pay) : "-", R.tour ? esc(R.tour.name) + " &middot; " + R.tour.n + (R.tour.n === 1 ? " game" : " games") : "Put Tournament, Cup, Classic or Showcase in a game name to track this") +
+      card("Most games in one day", R.busy ? R.busy.n : "-", R.busy ? esc(fullDate(R.busy.date)) + " &middot; " + fmt(R.busy.pay) : "No paid games yet") +
+      card("Highest monthly earnings", R.mon ? fmt(R.mon.amt) : "-", R.mon ? esc(R.mon.label) + " &middot; games plus other income" : "No earnings yet");
+  }
+
   function renderCareer() {
     if (!$("cs-grid")) return;
     var years = [];
@@ -2159,6 +2189,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
     renderAssocFilter();
     renderOwed();
     renderExport();
+    renderRecords();
     renderBag();
     renderCalendar();
     renderCareer();
