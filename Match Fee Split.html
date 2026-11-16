@@ -3653,9 +3653,11 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   (function () {
     try {
       document.documentElement.lang = "en";
-      var h = document.head, l = document.createElement("link"); l.rel = "manifest"; l.href = "manifest.webmanifest"; h.appendChild(l);
-      var m = document.createElement("meta"); m.name = "theme-color"; m.content = "#060d1c"; h.appendChild(m);
-      var a = document.createElement("link"); a.rel = "apple-touch-icon"; a.href = "icon-256.webp"; h.appendChild(a);
+      var h = document.head;
+      if (!h.querySelector('link[rel="manifest"]')) {
+        var l = document.createElement("link"); l.rel = "manifest"; l.href = "manifest.webmanifest"; h.appendChild(l);
+        var a = document.createElement("link"); a.rel = "apple-touch-icon"; a.href = "icon-180.png"; h.appendChild(a);
+      }
       if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && !framed()) navigator.serviceWorker.register("sw.js").catch(function () {});
     } catch (e) {}
   })();

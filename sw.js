@@ -1,8 +1,8 @@
 /* Referee Finance: keeps the app working with no connection.
    Pages: try the network first (so updates show up), fall back to the saved copy.
    Fonts and icons: saved copy first, refreshed in the background. */
-const CACHE = "rf-shell-v1";
-const SHELL = ["./", "manifest.webmanifest", "icon-256.webp"];
+const CACHE = "rf-shell-v2";
+const SHELL = ["./", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
