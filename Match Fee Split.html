@@ -543,6 +543,17 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
   .nav a { font-size: 10.5px; }
   .cstats { grid-template-columns: minmax(0, 1fr); }
 }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip { position: fixed; left: 12px; top: -60px; z-index: 100; background: var(--blue); color: var(--on-accent); padding: 10px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; transition: top 0.15s; }
+.skip:focus { top: 10px; }
+#main:focus { outline: none; }
+.offline { position: fixed; left: 0; right: 0; top: 0; z-index: 90; background: #7a4a00; color: #fff; padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px; font: 600 14px/1.3 var(--body); text-align: center; }
+.toast { position: fixed; left: 12px; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 95; max-width: 520px; margin: 0 auto; background: #3a1217; border: 1px solid var(--red); color: #fff; padding: 12px 16px; border-radius: 12px; font: 600 14px/1.35 var(--body); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5); }
+@media (min-width: 960px) { .toast { left: 236px; bottom: 24px; } }
+.filebtn { display: inline-flex; }
+.filebtn input:focus-visible + label { outline: 2.5px solid var(--focus); outline-offset: 2px; }
+.bk-confirm { margin-top: 12px; padding: 12px; border: 1px solid var(--red); border-radius: 12px; display: grid; gap: 10px; }
+button:disabled, .btn:disabled { opacity: 0.55; }
 .exbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
 @media (min-width: 720px) { .exbtns { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .exbtns .qbtn { min-height: 84px; }
@@ -595,7 +606,11 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
     <p class="msg" id="gate-msg" role="status"></p>
   </section>
 </main>
-<main class="wrap" id="main">
+<a class="skip" href="#main">Skip to content</a>
+<div id="offline" class="offline" role="status" hidden></div>
+<div id="toast" class="toast" role="alert" hidden></div>
+<div id="sr-route" class="sr" aria-live="polite"></div>
+<main class="wrap" id="main" tabindex="-1">
   <nav class="nav" id="nav" aria-label="Main">
     <a href="#home" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span>Home</span></a>
     <a href="#games" data-nav="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20.5 9.5l-5 1M3.5 9.5l5 1M16.5 20l-2.3-5.5M7.5 20l2.3-5.5"/></svg><span>Games</span></a>
@@ -1007,6 +1022,22 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
       <p class="msg" id="acct-msg" role="status"></p>
     </section>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-backup">
+      <h2 id="h-backup">Backup and restore</h2>
+      <p class="note">Download a copy of everything: games, income, spending, goals, settings and your ref bag. You can load it back later or on another device.</p>
+      <p class="note" id="bk-info"></p>
+      <div class="row">
+        <button class="btn" type="button" id="bk-save">Download backup</button>
+        <span class="filebtn"><input class="sr" type="file" id="bk-file" accept=".json,application/json"><label class="btn ghost" for="bk-file">Restore from file</label></span>
+        <button class="btn ghost" type="button" id="bk-undo" hidden>Undo restore</button>
+      </div>
+      <div id="bk-confirm" class="bk-confirm" hidden>
+        <p class="note" id="bk-sum" style="color:var(--fg)"></p>
+        <div class="row"><button class="btn red" type="button" id="bk-go">Replace everything</button><button class="btn ghost" type="button" id="bk-cancel">Cancel</button></div>
+      </div>
+      <p class="msg" id="bk-msg" role="status"></p>
+    </section>
+
 
     <section class="panel" data-page="add-game" hidden aria-labelledby="h-game">
       <h2 id="h-game">Add a game</h2>
@@ -1176,7 +1207,7 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
   var period = "all";
   var pendingRemove = null;
   var store = null;
-  var loaded = false;
+  var loaded = false, sbRetry = false;
 
   var $ = function (id) { return document.getElementById(id); };
   var money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -2213,25 +2244,14 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
   function sanitizeGoal(v) { return typeof v === "number" && isFinite(v) && v >= 0 && v < 1e7 ? Math.round(v * 100) / 100 : null; }
 
   function render() {
-    renderPeriods();
-    var S = summarize(), A = summarize(true);
-    renderTiles();
-    renderChart();
-    renderPlan(A);
-    renderAfford(A);
-    renderWishes();
-    renderHome(A);
-    renderAssocFilter();
-    renderOwed();
-    renderExport();
-    renderRecords();
-    renderBag();
-    renderCalendar();
-    renderCareer();
-    renderCharts();
-    renderSGoals();
-    renderLedger(A);
-    fillGoalInput();
+    var S, A;
+    var safe = function (f, name) { try { f(); } catch (e) { reportErr(e, name); } };
+    safe(function () { renderPeriods(); S = summarize(); A = summarize(true); }, "totals");
+    if (!A) return;
+    safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
+    safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
   function renderAfford(S) {
@@ -2384,7 +2404,7 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
 
   /* Storage: a private store when the viewer has one, this browser otherwise. */
   function saveLocal() {
-    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag })); } catch (e) {}
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag })); } catch (e) { showToast("Could not save on this device. Storage may be full or blocked. Download a backup from Settings.", 9000); }
   }
   function loadLocal() {
     try {
@@ -2401,7 +2421,9 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
       if (d && sanitizeGoal(d.goal) !== null) goal = d.goal;
       if (d && Array.isArray(d.sgoals)) sgoals = sanitizeSGoals(d.sgoals);
       if (d && Array.isArray(d.bag)) bag = sanitizeBag(d.bag);
-    } catch (e) {}
+    } catch (e) {
+      try { var bad = localStorage.getItem(LOCAL_KEY); if (bad) { localStorage.setItem(LOCAL_KEY + "-damaged", bad); localStorage.removeItem(LOCAL_KEY); setTimeout(function () { showToast("Saved data on this device was damaged, so the app started fresh. A copy was kept in case it can be recovered.", 12000); }, 300); } } catch (x) {}
+    }
   }
   function persistSplit() {
     if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag }).then(function () { return true; }, function () { return false; });
@@ -2470,7 +2492,7 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
       el.classList.remove("enter", "enter-l", "enter-r"); void el.offsetWidth;
       el.classList.add(pi >= 0 && ni >= 0 && window.innerWidth < 960 ? (ni > pi ? "enter-r" : "enter-l") : "enter");
     }
-    lastView = view;
+    lastView = view; announceView(view);
     if (!first) {
       window.scrollTo(0, 0);
       if (!tab) { var f = $(PAGES[view]); if (f) f.focus({ preventScroll: true }); }
@@ -3261,7 +3283,7 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
   function sbApply(all) {
     KINDS.forEach(function (k) { data[k] = all.entries[k]; });
     applyProfileData(all.prof);
-    loaded = true; render();
+    loaded = true; render(); cacheCloud();
   }
   function sbPull() {
     if (!sbOn || sbPending) return Promise.resolve();
@@ -3305,7 +3327,12 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
         document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") sbPull().catch(function () {}); });
       }
       return how;
-    }, function (e) { setStatus("Can't reach your account right now. It will keep trying."); throw e; });
+    }, function (e) {
+      setStatus("Can't reach your account right now. It will keep trying.");
+      if (!sbWired && !sbRetry) { sbRetry = true; window.addEventListener("online", function () { if (!sbWired && sbOn) sbStart().catch(function () {}); }); }
+      if (!sbWired) useCache();
+      throw e;
+    });
   }
   function initAccount() {
     var sess = loadSession();
@@ -3405,6 +3432,170 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
 
   /* Start with this device's copy, then switch to the private store if the viewer has one. */
   loadLocal(); draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); renderAssocs(); render();
+  /* ---------- Final polish: errors, backup and restore, offline, accessibility ---------- */
+  var lastErrAt = 0;
+  function showToast(msg, ms) {
+    var t = $("toast"); if (!t) return;
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(showToast.h); showToast.h = setTimeout(function () { t.hidden = true; }, ms || 7000);
+  }
+  function reportErr(e, what) {
+    try { console.error(what || "Error", e); } catch (x) {}
+    var n = Date.now(); if (n - lastErrAt < 5000) return; lastErrAt = n;
+    showToast("Something went wrong" + (what ? " (" + what + ")" : "") + ". Your data is safe. If it keeps happening, reload the page.");
+  }
+  window.addEventListener("error", function (ev) {
+    if (!ev || !ev.error || /ResizeObserver/i.test(String(ev.message))) return;
+    reportErr(ev.error);
+  });
+  window.addEventListener("unhandledrejection", function (ev) {
+    var m = String(ev && ev.reason && ev.reason.message || ev && ev.reason || "");
+    if (/failed to fetch|networkerror|load failed|aborted/i.test(m)) return;
+    reportErr(ev.reason);
+  });
+
+  /* Backup and restore */
+  var undoDoc = null;
+  function backupDoc() {
+    return { app: "referee-finance", version: 1, exported: new Date().toISOString(), games: data.games, income: data.income, spending: data.spending,
+      split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag };
+  }
+  function bkInfo() {
+    var t = ""; try { t = localStorage.getItem("rf-last-backup") || ""; } catch (e) {}
+    var n = data.games.length + data.income.length + data.spending.length;
+    $("bk-info").textContent = (t ? "Last backup: " + new Date(+t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ". " : "No backup downloaded yet. ") + "Your data now: " + data.games.length + " games, " + data.income.length + " other income, " + data.spending.length + " spending.";
+    $("bk-undo").hidden = !undoDoc;
+  }
+  function bkMsg(t, err) { var m = $("bk-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  function cleanEntries(arr, rep) {
+    var out = [], seen = {};
+    (Array.isArray(arr) ? arr : []).slice(0, 5000).forEach(function (e) {
+      if (!e || typeof e !== "object" || Array.isArray(e) || !/^\d{4}-\d{2}-\d{2}$/.test(String(e.date || ""))) { rep.dropped++; return; }
+      var c = JSON.parse(JSON.stringify(e)); c.id = typeof c.id === "string" && c.id && c.id.length <= 80 ? c.id : uid("r");
+      if (seen[c.id]) c.id = uid("r"); seen[c.id] = 1;
+      ["fee", "expenses", "amount", "miles"].forEach(function (f) { if (f in c && !(typeof c[f] === "number" && isFinite(c[f]))) { var v = parseFloat(c[f]); c[f] = isFinite(v) ? v : 0; } });
+      out.push(c);
+    });
+    return out;
+  }
+  function parseBackup(text) {
+    var d; try { d = JSON.parse(text); } catch (e) { return { err: "That file is not a valid backup (it could not be read)." }; }
+    if (!d || typeof d !== "object" || Array.isArray(d) || (d.app !== "referee-finance" && !Array.isArray(d.games))) return { err: "That file does not look like a Referee Finance backup." };
+    var rep = { dropped: 0 }, doc = { exported: d.exported };
+    KINDS.forEach(function (k) { doc[k] = cleanEntries(d[k], rep); });
+    doc.split = validSplit(d.split) ? d.split : split;
+    doc.start = typeof d.start === "number" && isFinite(d.start) && d.start >= 0 ? d.start : start;
+    doc.ui = d.ui ? sanitizeUi(d.ui) : ui;
+    doc.wishes = Array.isArray(d.wishes) ? sanitizeWishes(d.wishes) : wishes;
+    doc.pay = d.pay ? sanitizePay(d.pay) : pay;
+    doc.assocs = Array.isArray(d.assocs) ? sanitizeAssocs(d.assocs) : assocs;
+    doc.goal = sanitizeGoal(d.goal) !== null ? d.goal : goal;
+    doc.sgoals = Array.isArray(d.sgoals) ? sanitizeSGoals(d.sgoals) : sgoals;
+    doc.bag = Array.isArray(d.bag) ? sanitizeBag(d.bag) : bag;
+    doc.dropped = rep.dropped;
+    return { doc: doc };
+  }
+  function applyDoc(doc, persist) {
+    var prev = { games: data.games, income: data.income, spending: data.spending };
+    KINDS.forEach(function (k) { data[k] = doc[k]; });
+    split = doc.split; start = doc.start; ui = doc.ui; wishes = doc.wishes; pay = doc.pay; assocs = doc.assocs; goal = doc.goal; sgoals = doc.sgoals; bag = doc.bag;
+    draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); renderAssocs(); render();
+    if (!persist) return Promise.resolve(true);
+    if (!store) { saveLocal(); return Promise.resolve(true); }
+    var ops = [];
+    KINDS.forEach(function (k) {
+      var keep = {};
+      doc[k].forEach(function (e) { keep[e.id] = 1; ops.push(function () { return store[k].doc(e.id).set(e); }); });
+      prev[k].forEach(function (e) { if (!keep[e.id]) ops.push(function () { return store[k].doc(e.id).delete(); }); });
+    });
+    var ok = true, i = 0;
+    function next() {
+      if (i >= ops.length) return persistSplit().then(function (r) { return ok && r; });
+      var chunk = ops.slice(i, i + 20); i += 20;
+      return Promise.all(chunk.map(function (f) { return f().then(function () {}, function () { ok = false; }); })).then(next);
+    }
+    return next();
+  }
+  var pendingDoc = null;
+  function bkRead(file) {
+    bkMsg(""); $("bk-confirm").hidden = true; pendingDoc = null;
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { bkMsg("That file is too big to be a backup.", true); return; }
+    var fr = new FileReader();
+    fr.onerror = function () { bkMsg("Could not read that file.", true); };
+    fr.onload = function () {
+      var r = parseBackup(String(fr.result));
+      if (r.err) { bkMsg(r.err, true); return; }
+      pendingDoc = r.doc;
+      var d = r.doc, when = d.exported ? new Date(d.exported) : null;
+      $("bk-sum").textContent = "Backup" + (when && !isNaN(when) ? " from " + when.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "") + ": " + d.games.length + " games, " + d.income.length + " other income, " + d.spending.length + " spending. Restoring replaces everything in the app now." + (d.dropped ? " " + d.dropped + " damaged entries will be skipped." : "");
+      $("bk-confirm").hidden = false; $("bk-go").focus();
+    };
+    fr.readAsText(file);
+  }
+  function bkRestore() {
+    if (!pendingDoc) return;
+    var doc = pendingDoc; pendingDoc = null; $("bk-confirm").hidden = true; $("bk-file").value = "";
+    undoDoc = backupDoc(); undoDoc = JSON.parse(JSON.stringify(undoDoc));
+    bkMsg("Restoring…");
+    applyDoc(doc, true).then(function (ok) {
+      bkInfo();
+      bkMsg(ok ? "Restored. You can undo this until you close the page." : "Restored here, but some changes did not reach your account. Press Sync now when you are online.", !ok);
+    });
+  }
+  function bkUndo() {
+    if (!undoDoc) return;
+    var d = undoDoc; undoDoc = null;
+    applyDoc(parseBackup(JSON.stringify(d)).doc, true).then(function () { bkInfo(); bkMsg("Undone. Your earlier data is back."); });
+  }
+  $("bk-save").addEventListener("click", function () {
+    try {
+      saveBlob(new Blob([JSON.stringify(backupDoc(), null, 1)], { type: "application/json" }), "referee-finance-backup-" + todayStr() + ".json");
+      try { localStorage.setItem("rf-last-backup", String(Date.now())); } catch (e) {}
+      bkInfo(); bkMsg("Backup downloaded. Keep the file somewhere safe.");
+    } catch (e) { bkMsg("Could not make the backup file.", true); }
+  });
+  $("bk-file").addEventListener("change", function () { bkRead($("bk-file").files[0]); });
+  $("bk-go").addEventListener("click", bkRestore);
+  $("bk-cancel").addEventListener("click", function () { pendingDoc = null; $("bk-confirm").hidden = true; $("bk-file").value = ""; bkMsg(""); });
+  $("bk-undo").addEventListener("click", bkUndo);
+
+  /* Offline: banner, cached copy of the account data, installable app */
+  function netUi() {
+    var o = $("offline"), off = !navigator.onLine;
+    o.hidden = !off;
+    if (off) o.textContent = store || sbSession ? "You are offline. You can look at your data. New changes need a connection." : "You are offline. Everything still works and saves on this device.";
+  }
+  window.addEventListener("online", netUi); window.addEventListener("offline", netUi);
+  function cacheCloud() {
+    try { if (sbSession) localStorage.setItem("rf-cache-v1", JSON.stringify({ user: sbSession.username, doc: backupDoc() })); } catch (e) {}
+  }
+  function useCache() {
+    try {
+      var c = JSON.parse(localStorage.getItem("rf-cache-v1") || "null");
+      if (!c || !sbSession || c.user !== sbSession.username) return false;
+      var r = parseBackup(JSON.stringify(c.doc)); if (r.err) return false;
+      applyDoc(r.doc, false); loaded = true; return true;
+    } catch (e) { return false; }
+  }
+  (function () {
+    try {
+      document.documentElement.lang = "en";
+      var h = document.head, l = document.createElement("link"); l.rel = "manifest"; l.href = "manifest.webmanifest"; h.appendChild(l);
+      var m = document.createElement("meta"); m.name = "theme-color"; m.content = "#060d1c"; h.appendChild(m);
+      var a = document.createElement("link"); a.rel = "apple-touch-icon"; a.href = "icon-256.webp"; h.appendChild(a);
+      if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && !framed()) navigator.serviceWorker.register("sw.js").catch(function () {});
+    } catch (e) {}
+  })();
+
+  /* Accessibility: announce the page after a tab change */
+  var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", inventory: "Ref bag", export: "Export", "app-settings": "Settings", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
+  function announceView(view) {
+    var n = VIEW_NAMES[view] || "Home"; document.title = n + " - Referee Finance";
+    var r = $("sr-route"); if (r) r.textContent = n + " page";
+  }
+  bkInfo(); netUi();
+
   route(true);
   /* Swipe left or right to move between the bottom tabs (phones only) */
   (function () {
