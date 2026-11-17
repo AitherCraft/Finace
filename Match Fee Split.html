@@ -726,13 +726,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <section class="panel hc o3" data-card="goal"><div class="panel-head"><h2>Monthly Goal</h2><a class="mini" href="#goals">Edit</a></div><div id="goal-card"></div></section>
         <section class="panel hc o3" data-card="goals"><div class="panel-head"><h2>Goals</h2></div><div id="sg-home"></div></section>
         <section class="panel hc o3" data-card="wish" aria-labelledby="h-wish">
-        <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
-        <p class="note" id="wish-empty">Things you can't afford yet go here. In Can I Afford It?, if an amount doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
+        <div class="panel-head"><h2 id="h-wish">My wish list</h2><button class="mini" type="button" id="wish-add">+ Add to wish list</button></div>
+        <p class="note" id="wish-empty">Things you want to buy go here. Tap + Add to wish list, or in Can I Afford It? tap Save to my wish list. I'll tell you when you can afford it.</p>
         <form id="wish-edit" class="fs" novalidate hidden>
         <h3 id="we-title">Edit wish</h3>
         <div class="grid">
           <div class="field"><label for="we-what">What</label><input id="we-what" type="text" maxlength="80" autocomplete="off"></div>
           <div class="field"><label for="we-amt">Price</label><div class="money-wrap"><input id="we-amt" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
+          <div class="field"><label for="we-bucket">Pay from</label><select id="we-bucket"><option value="spend">Spend</option><option value="donate">Give</option><option value="save">Save</option><option value="invest">Invest</option></select></div>
           <div class="field"><label for="we-cat">Category</label><select id="we-cat"><option value="">None</option><option>Uniform</option><option>Electronics</option><option>Equipment</option><option>Training</option><option>Travel</option><option>Clothing</option><option>Other</option></select></div>
           <div class="field"><label for="we-target">Target purchase date</label><input id="we-target" type="date"></div>
         </div>
@@ -3380,18 +3381,24 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     wishes.splice(Math.min(b.at, wishes.length), 0, b.w);
     persistSplit().then(function (ok) { renderWishes(); wishMsg(ok ? "Undone. The expense was removed and " + b.w.what + " is back on your wish list." : "Could not save that. Try again.", !ok); });
   });
+  $("wish-add").addEventListener("click", function () {
+    wishEditId = null; ["we-what", "we-amt", "we-target", "we-link", "we-notes"].forEach(function (id) { $(id).value = ""; }); $("we-cat").value = ""; $("we-bucket").value = "spend";
+    $("we-title").textContent = "Add to wish list"; $("wish-edit").hidden = false; $("we-what").focus();
+  });
   $("we-cancel").addEventListener("click", function () { wishEditId = null; $("wish-edit").hidden = true; });
   $("wish-edit").addEventListener("submit", function (e) {
     e.preventDefault();
-    var w = wishes.filter(function (x) { return x.id === wishEditId; })[0]; if (!w) { $("wish-edit").hidden = true; return; }
+    var isNew = !wishEditId, w = isNew ? { id: uid("w"), bucket: $("we-bucket").value, created: Date.now() } : wishes.filter(function (x) { return x.id === wishEditId; })[0]; if (!w) { $("wish-edit").hidden = true; return; }
+    if (isNew && wishes.length >= 50) return wishMsg("The wish list holds up to 50 items. Remove one first.", true);
     var amt = parseFloat($("we-amt").value), link = $("we-link").value.trim();
     if (!$("we-what").value.trim()) return wishMsg("Type what you want.", true);
     if (!isFinite(amt) || amt <= 0) return wishMsg("Enter the price, like 45 or 129.99.", true);
     if (link && !/^https?:\/\/[^\s]+$/i.test(link)) return wishMsg("The store link should start with http:// or https://", true);
     var before = Object.assign({}, w);
     Object.assign(w, { what: $("we-what").value.trim().slice(0, 80), amount: Math.round(amt * 100) / 100, cat: $("we-cat").value, target: $("we-target").value || "", link: link.slice(0, 300), notes: $("we-notes").value.trim().slice(0, 200) });
+    if (isNew) wishes.push(w); else w.bucket = $("we-bucket").value;
     renderWishes();
-    persistSplit().then(function (ok) { if (!ok) { Object.assign(w, before); renderWishes(); wishMsg("Could not save that. Try again.", true); } else { wishMsg("Saved."); wishEditId = null; $("wish-edit").hidden = true; } });
+    persistSplit().then(function (ok) { if (!ok) { if (isNew) wishes = wishes.filter(function (x) { return x !== w; }); else Object.assign(w, before); renderWishes(); wishMsg("Could not save that. Try again.", true); } else { wishMsg(isNew ? "Added to your wish list." : "Saved."); wishEditId = null; $("wish-edit").hidden = true; } });
   });
   $("wishes").addEventListener("click", function (e) {
     var t = e.target.closest("button");
@@ -3408,7 +3415,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       return;
     }
     if (t.hasAttribute("data-wish-edit")) {
-      wishEditId = id; $("we-what").value = w.what; $("we-amt").value = w.amount; $("we-cat").value = w.cat || ""; $("we-target").value = w.target || ""; $("we-link").value = w.link || ""; $("we-notes").value = w.notes || "";
+      wishEditId = id; $("we-title").textContent = "Edit wish"; $("we-bucket").value = w.bucket; $("we-what").value = w.what; $("we-amt").value = w.amount; $("we-cat").value = w.cat || ""; $("we-target").value = w.target || ""; $("we-link").value = w.link || ""; $("we-notes").value = w.notes || "";
       $("wish-edit").hidden = false; $("we-what").focus(); return;
     }
     function drop() {
