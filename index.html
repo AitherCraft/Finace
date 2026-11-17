@@ -3954,7 +3954,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     faceCheck().then(function () { hideLock(); }, function () { lockMsg("Face ID did not work. Enter your PIN."); }).then(function () { faceBusy = false; });
   }
   $("lock-face").addEventListener("click", faceUnlock);
-  function hideLock() { lockOn = false; unlocked = true; $("lock").hidden = true; showGate(!!gateWanted); lockMsg(""); setTries({}); route(false); }
+  function hideLock() { lockOn = false; unlocked = true; $("lock").hidden = true; showGate(!!gateWanted); lockMsg(""); setTries({}); var sy = window.scrollY; route(true); try { window.scrollTo(0, sy); } catch (e) {} }
   var lockBuf = "", lockBusy = false;
   function lockLen() { return sec.pin && sec.pin.n ? sec.pin.n : 0; }
   function lockDots() {
@@ -4163,6 +4163,39 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   if (sec.mode === "pin") showLock();
   secRender();
 
+  /* Keep what you were doing: current page, scroll spot and anything typed survive locking and iOS closing the app. */
+  var DRAFT_KEY = "rf-draft-v1", draftTouched = false, draftTimer = null;
+  function draftEls() { return Array.prototype.slice.call(document.querySelectorAll('[data-page]:not([data-page="app-settings"]) input[id], [data-page]:not([data-page="app-settings"]) select[id], [data-page]:not([data-page="app-settings"]) textarea[id], #wish-edit input[id], #wish-edit select[id], #wish-edit textarea[id], [aria-labelledby="h-bagform"] input[id]')).filter(function (el) { return el.type !== "password" && el.type !== "file" && el.type !== "hidden"; }); }
+  function draftSave() {
+    try {
+      var f = {}, any = false;
+      draftEls().forEach(function (el) { var v = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; f[el.id] = v; if (v === true || (typeof v === "string" && v !== "")) any = true; });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ t: Date.now(), hash: location.hash, y: Math.round(window.scrollY), f: f, any: any, edit: editGameId || "", we: wishEditId || "", weOpen: !$("wish-edit").hidden }));
+    } catch (e) {}
+  }
+  function draftLoad() { try { var d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); return d && Date.now() - d.t < 12 * 3600 * 1000 ? d : null; } catch (e) { return null; } }
+  function draftApply(d, restoreEdit) {
+    if (draftTouched) return;
+    if (restoreEdit && d.edit && !editGameId && data.games.some(function (g) { return g.id === d.edit; })) { startEditGame(d.edit); }
+    if (d.weOpen && $("wish-edit").hidden && (!d.we || wishes.some(function (w) { return w.id === d.we; }))) { wishEditId = d.we || null; $("we-title").textContent = d.we ? "Edit wish" : "Add to wish list"; $("wish-edit").hidden = false; }
+    Object.keys(d.f || {}).forEach(function (id) {
+      var el = $(id); if (!el) return; var v = d.f[id];
+      if (el.type === "checkbox" || el.type === "radio") el.checked = !!v; else if (el.tagName === "SELECT") { if (Array.prototype.some.call(el.options, function (o) { return o.value === v; })) el.value = v; } else el.value = v;
+    });
+  }
+  (function () {
+    var d = draftLoad(); if (!d) return;
+    if (!location.hash && d.hash && d.hash !== "#") { try { history.replaceState(null, "", d.hash); } catch (e) {} }
+    route(true);
+    draftApply(d, false);
+    [400, 1200, 3000].forEach(function (ms) { setTimeout(function () { draftApply(d, true); if (ms === 400 && d.y) window.scrollTo(0, d.y); }, ms); });
+    ["input", "change"].forEach(function (ev) { document.addEventListener(ev, function (e) { if (e.isTrusted) draftTouched = true; }, true); });
+  })();
+  ["input", "change"].forEach(function (ev) { document.addEventListener(ev, function () { clearTimeout(draftTimer); draftTimer = setTimeout(draftSave, 300); }); });
+  window.addEventListener("scroll", function () { clearTimeout(draftTimer); draftTimer = setTimeout(draftSave, 600); }, { passive: true });
+  window.addEventListener("hashchange", function () { setTimeout(draftSave, 50); });
+  window.addEventListener("pagehide", draftSave);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") draftSave(); });
   route(true);
   /* Swipe left or right to move between the bottom tabs (phones only) */
   (function () {
