@@ -258,6 +258,7 @@ button.badge { cursor: pointer; min-height: 26px; }
 .prio { color: var(--blue); font-variant-numeric: tabular-nums; }
 .wish-when { font-size: 14px; color: var(--muted); }
 .wish-when.ready { color: var(--c-save); font-weight: 700; }
+.wish-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .wish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .wish-list { list-style: none; margin: 0; padding: 0; }
 .unpaid-line { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--yellow); }
@@ -718,7 +719,19 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <section class="panel hc o3" data-card="wish" aria-labelledby="h-wish">
         <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
         <p class="note" id="wish-empty">Things you can't afford yet go here. In Can I Afford It?, if an amount doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
-        <ul class="wish-list" id="wishes"></ul>
+        <form id="wish-edit" class="fs" novalidate hidden>
+        <h3 id="we-title">Edit wish</h3>
+        <div class="grid">
+          <div class="field"><label for="we-what">What</label><input id="we-what" type="text" maxlength="80" autocomplete="off"></div>
+          <div class="field"><label for="we-amt">Price</label><div class="money-wrap"><input id="we-amt" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
+          <div class="field"><label for="we-cat">Category</label><select id="we-cat"><option value="">None</option><option>Uniform</option><option>Electronics</option><option>Equipment</option><option>Training</option><option>Travel</option><option>Clothing</option><option>Other</option></select></div>
+          <div class="field"><label for="we-target">Target purchase date</label><input id="we-target" type="date"></div>
+        </div>
+        <div class="field"><label for="we-link">Store link</label><input id="we-link" type="url" inputmode="url" maxlength="300" placeholder="https://" autocomplete="off"></div>
+        <div class="field"><label for="we-notes">Notes</label><textarea id="we-notes" rows="2" maxlength="200" placeholder="Size, color, which model"></textarea></div>
+        <div class="row"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" id="we-cancel">Cancel</button></div>
+      </form>
+      <ul class="wish-list" id="wishes"></ul>
         <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
         <p class="msg" id="wish-msg" role="status"></p>
         </section>
@@ -3164,13 +3177,15 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   });
 
   /* Wish list: things you cannot afford yet, with an estimate of when you can. */
+  var WISH_CATS = ["Uniform", "Electronics", "Equipment", "Training", "Travel", "Clothing", "Other"];
   function sanitizeWishes(a) {
     var out = [];
     (a || []).forEach(function (w) {
       if (!w || typeof w !== "object" || out.length >= 50) return;
       var amt = Number(w.amount);
       if (!isFinite(amt) || amt <= 0 || !BMAP[w.bucket] || typeof w.id !== "string") return;
-      out.push({ id: w.id.slice(0, 40), what: String(w.what || "Something I want").slice(0, 80), amount: Math.round(amt * 100) / 100, bucket: w.bucket, created: Number(w.created) || 0 });
+      out.push({ id: w.id.slice(0, 40), what: String(w.what || "Something I want").slice(0, 80), amount: Math.round(amt * 100) / 100, bucket: w.bucket, created: Number(w.created) || 0,
+        cat: WISH_CATS.indexOf(w.cat) >= 0 ? w.cat : "", link: /^https?:\/\/[^\s]+$/i.test(String(w.link || "")) ? String(w.link).slice(0, 300) : "", target: /^\d{4}-\d{2}-\d{2}$/.test(String(w.target || "")) ? w.target : "", notes: String(w.notes || "").slice(0, 200) });
     });
     return out;
   }
@@ -3234,18 +3249,29 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var rows = wishes.map(function (w) {
       var k = w.bucket, st = wishStatus(w, info, aheadSum[k] || 0, aheadN[k] || 0);
       aheadSum[k] = (aheadSum[k] || 0) + toCents(w.amount); aheadN[k] = (aheadN[k] || 0) + 1;
-      return { w: w, st: st };
+      return { w: w, st: st, ahead: aheadSum[k] - toCents(w.amount) };
     });
     $("wish-empty").hidden = wishes.length > 0;
     $("wish-prio-note").hidden = wishes.length < 2;
     list.innerHTML = rows.map(function (r, n) {
-      var w = r.w;
-      return '<li class="wish"><div class="wish-top"><strong><span class="prio">#' + (n + 1) + "</span> " + esc(w.what) + '</strong><span class="wish-amt">' + fmt(toCents(w.amount)) + '</span></div>' +
+      var w = r.w, k = BUCKETS.map(function (b) { return b.k; }).indexOf(w.bucket), cost = toCents(w.amount);
+      var saved = Math.max(0, Math.min(cost, info.a.out[k] - info.used[w.bucket] - r.ahead)), pct = Math.floor(saved / cost * 100);
+      var late = w.target && w.target < todayStr() && !r.st.ok;
+      var meta = [w.cat ? '<span class="chip">' + esc(w.cat) + "</span>" : "", w.target ? '<span class="wish-when' + (late ? "" : "") + '">Target ' + esc(mdDate(w.target)) + (late ? " (past)" : "") + "</span>" : ""].filter(Boolean).join(" ");
+      var canBuy = r.st.ok && w.link;
+      return '<li class="wish"><div class="wish-top"><strong><span class="prio">#' + (n + 1) + "</span> " + esc(w.what) + '</strong><span class="wish-amt">' + fmt(cost) + '</span></div>' +
+        (meta ? '<div class="wish-meta">' + meta + "</div>" : "") +
+        '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Saved toward ' + esc(w.what) + '"><span style="width:' + pct + '%"></span></div>' +
+        '<div class="wish-when">' + fmt(saved) + " of " + fmt(cost) + " saved &middot; " + pct + "%</div>" +
         '<div class="wish-when' + (r.st.ok ? " ready" : "") + '">From ' + esc(BMAP[w.bucket].name) + ". " + esc(r.st.text) + '</div>' +
+        (w.notes ? '<div class="wish-when">' + esc(w.notes) + "</div>" : "") +
+        (w.link ? '<div class="wish-when"><a href="' + esc(w.link) + '" target="_blank" rel="noopener noreferrer">Store link</a></div>' : "") +
         '<div class="wish-actions">' +
-        '<button class="mini" type="button" data-wish-up="' + esc(w.id) + '"' + (n === 0 ? " disabled" : "") + ' aria-label="Higher priority: ' + esc(w.what) + '">&uarr; Higher</button>' +
-        '<button class="mini" type="button" data-wish-down="' + esc(w.id) + '"' + (n === rows.length - 1 ? " disabled" : "") + ' aria-label="Lower priority: ' + esc(w.what) + '">&darr; Lower</button>' +
-        (r.st.ok ? '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '">I bought it</button>' : "") +
+        '<button class="mini" type="button" data-wish-nowbuy="' + esc(w.id) + '"' + (canBuy ? "" : " disabled") + (r.st.ok && !w.link ? ' title="Add a store link to use Buy now"' : "") + '>Buy now</button>' +
+        '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '">Purchased</button>' +
+        '<button class="mini" type="button" data-wish-edit="' + esc(w.id) + '">Edit</button>' +
+        '<button class="mini" type="button" data-wish-up="' + esc(w.id) + '"' + (n === 0 ? " disabled" : "") + ' aria-label="Higher priority: ' + esc(w.what) + '">&uarr;</button>' +
+        '<button class="mini" type="button" data-wish-down="' + esc(w.id) + '"' + (n === rows.length - 1 ? " disabled" : "") + ' aria-label="Lower priority: ' + esc(w.what) + '">&darr;</button>' +
         '<button class="mini" type="button" data-wish-del="' + esc(w.id) + '">Remove</button></div></li>';
     }).join("");
     var ready = rows.filter(function (r) { return r.st.ok; });
@@ -3265,10 +3291,24 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       renderAfford(); renderWishes();
     });
   });
+  var wishEditId = null;
+  $("we-cancel").addEventListener("click", function () { wishEditId = null; $("wish-edit").hidden = true; });
+  $("wish-edit").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var w = wishes.filter(function (x) { return x.id === wishEditId; })[0]; if (!w) { $("wish-edit").hidden = true; return; }
+    var amt = parseFloat($("we-amt").value), link = $("we-link").value.trim();
+    if (!$("we-what").value.trim()) return wishMsg("Type what you want.", true);
+    if (!isFinite(amt) || amt <= 0) return wishMsg("Enter the price, like 45 or 129.99.", true);
+    if (link && !/^https?:\/\/[^\s]+$/i.test(link)) return wishMsg("The store link should start with http:// or https://", true);
+    var before = Object.assign({}, w);
+    Object.assign(w, { what: $("we-what").value.trim().slice(0, 80), amount: Math.round(amt * 100) / 100, cat: $("we-cat").value, target: $("we-target").value || "", link: link.slice(0, 300), notes: $("we-notes").value.trim().slice(0, 200) });
+    renderWishes();
+    persistSplit().then(function (ok) { if (!ok) { Object.assign(w, before); renderWishes(); wishMsg("Could not save that. Try again.", true); } else { wishMsg("Saved."); wishEditId = null; $("wish-edit").hidden = true; } });
+  });
   $("wishes").addEventListener("click", function (e) {
     var t = e.target.closest("button");
     if (!t) return;
-    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
+    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-edit") || t.getAttribute("data-wish-nowbuy") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
     var w = wishes.filter(function (x) { return x.id === id; })[0];
     if (!w) return;
     if (t.hasAttribute("data-wish-up") || t.hasAttribute("data-wish-down")) {
@@ -3279,12 +3319,17 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       persistSplit().then(function (ok) { if (!ok) { wishes = before; renderWishes(); wishMsg("Could not save the new order. Try again.", true); } else wishMsg(""); });
       return;
     }
+    if (t.hasAttribute("data-wish-nowbuy")) { if (w.link) { try { window.open(w.link, "_blank", "noopener,noreferrer"); } catch (er) {} wishMsg("Opened the store. When you have bought it, tap Purchased."); } return; }
+    if (t.hasAttribute("data-wish-edit")) {
+      wishEditId = id; $("we-what").value = w.what; $("we-amt").value = w.amount; $("we-cat").value = w.cat || ""; $("we-target").value = w.target || ""; $("we-link").value = w.link || ""; $("we-notes").value = w.notes || "";
+      $("wish-edit").hidden = false; $("we-what").focus(); return;
+    }
     function drop() {
       wishes = wishes.filter(function (x) { return x.id !== id; });
       return persistSplit().then(function (ok) { renderWishes(); return ok; });
     }
     if (t.hasAttribute("data-wish-del")) { drop().then(function (ok) { wishMsg(ok ? "Removed." : "Could not save that. Try again.", !ok); }); return; }
-    addEntry("spending", { id: uid("s"), date: ymd(new Date()), bucket: w.bucket, note: w.what, amount: w.amount, created: Date.now() }).then(function (ok) {
+    addEntry("spending", { id: uid("s"), date: ymd(new Date()), bucket: w.bucket, note: w.cat ? w.what + " (" + w.cat + ")" : w.what, amount: w.amount, created: Date.now() }).then(function (ok) {
       if (!ok) { wishMsg("Could not save that. Try again in a moment.", true); return; }
       drop().then(function () { wishMsg("Logged under " + BMAP[w.bucket].name + " and removed from your wish list."); });
     });
