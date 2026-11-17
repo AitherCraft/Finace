@@ -561,6 +561,7 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
 .filebtn input:focus-visible + label { outline: 2.5px solid var(--focus); outline-offset: 2px; }
 .bk-confirm { margin-top: 12px; padding: 12px; border: 1px solid var(--red); border-radius: 12px; display: grid; gap: 10px; }
 button:disabled, .btn:disabled { opacity: 0.55; }
+#games-count { line-height: 1.4; border-radius: 16px; padding: 8px 12px; }
 .more-row { list-style: none; display: grid; padding: 8px 0; }
 .more-row .btn { width: 100%; }
 .lockscreen { position: fixed; inset: 0; z-index: 80; background: radial-gradient(120% 60% at 50% -10%, #12306a 0%, rgba(18, 48, 106, 0) 60%), var(--bg); color: var(--fg); display: flex; flex-direction: column; align-items: center; padding: calc(26px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); overflow: auto; }
@@ -2409,7 +2410,16 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     items.sort(function (x, y) { return x.date < y.date ? 1 : x.date > y.date ? -1 : y.created - x.created; });
     var sig = [fQ, fType, fAssoc, fAssignor].join("|"); if (sig !== ledgerSig) { ledgerSig = sig; ledgerLimit = 50; }
     var owed = items.reduce(function (t, it) { return t + (it.unpaid || 0); }, 0);
-    $("games-count").textContent = items.length + (items.length === 1 ? " entry" : " entries") + (owed ? " · " + fmt(owed) + " unpaid" : "");
+    var td = todayStr(), played = 0, upc = 0, canc = 0, oth = 0;
+    items.forEach(function (it) {
+      if (it.kind !== "games") oth++; else if (it.cancelled) canc++; else if (it.date > td) upc++; else played++;
+    });
+    var cnt = played + (played === 1 ? " game played" : " games played");
+    if (upc) cnt += " · " + upc + " upcoming";
+    if (canc) cnt += " · " + canc + " cancelled";
+    if (oth) cnt += " · " + oth + (oth === 1 ? " other entry" : " other entries");
+    if (owed) cnt += " · " + fmt(owed) + " unpaid";
+    $("games-count").textContent = cnt;
     if (!items.length) {
       $("games").innerHTML = '<li><p class="empty">' + (filtered ? "Nothing matches your search or filters." : "Nothing here yet. Add a game, other income or spending and it shows up in this list.") + '</p></li>';
       return;
