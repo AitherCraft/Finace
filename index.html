@@ -715,6 +715,13 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <section class="panel hc half o4" data-card="recent"><div class="panel-head"><h2>Recent Games</h2></div><div id="recent"></div><a class="more" href="#games">View all</a></section>
         <section class="panel hc o3" data-card="goal"><div class="panel-head"><h2>Monthly Goal</h2><a class="mini" href="#goals">Edit</a></div><div id="goal-card"></div></section>
         <section class="panel hc o3" data-card="goals"><div class="panel-head"><h2>Goals</h2></div><div id="sg-home"></div></section>
+        <section class="panel hc o3" data-card="wish" aria-labelledby="h-wish">
+        <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
+        <p class="note" id="wish-empty">Things you can't afford yet go here. In Can I Afford It?, if an amount doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
+        <ul class="wish-list" id="wishes"></ul>
+        <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
+        <p class="msg" id="wish-msg" role="status"></p>
+        </section>
         <section class="panel hc o6" id="bag-card" data-card="bag"><div class="panel-head"><h2>Ref Bag</h2><a class="mini" href="#inventory">View all</a></div><div id="bag-home"></div></section>
         <section class="panel hc o6" data-card="quick" aria-labelledby="h-quick">
           <h2 id="h-quick">Quick Actions</h2>
@@ -924,13 +931,6 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <h2 id="h-sug">Suggested goals</h2>
       <p class="note">Based on what you earn and your percentages.</p>
       <div id="sg-suggest"></div>
-    </section>
-    <section class="panel p-start" aria-labelledby="h-wish">
-      <div class="panel-head"><h2 id="h-wish">My wish list</h2></div>
-      <p class="note" id="wish-empty">Things you can't afford yet go here. In Can I Afford It?, if an amount doesn't fit, tap Save to my wish list. I'll tell you when you can afford it.</p>
-      <ul class="wish-list" id="wishes"></ul>
-      <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
-      <p class="msg" id="wish-msg" role="status"></p>
     </section>
   </div>
 
