@@ -539,7 +539,6 @@ button:active, .btn:active, .qbtn:active, .nav a:active { transform: scale(0.96)
   .nav a[aria-current="page"]::after { content: ""; position: absolute; top: -7px; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--blue); }
   .nav a[aria-current="page"] svg { transform: translateY(-1px) scale(1.08); }
   .nav a svg { transition: transform 0.18s ease; }
-  .panel { content-visibility: auto; contain-intrinsic-size: auto 260px; }
   .view, .wrap { gap: 14px; }
   input, select, textarea { font-size: 16px; }
   .btn, .qbtn, button { min-height: 44px; }
@@ -1474,7 +1473,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var sub;
     if (S.demo) sub = '<span class="tag">Example</span> Splitting ' + fmt(S.net) + ". Add an entry to see your own numbers.";
     else {
-      sub = "Splitting " + fmt(S.net) + " &middot; All time";
+      var gn = live().filter(function (g) { return g.paid !== false; }).length;
+      sub = "Splitting " + fmt(S.net) + (gn ? " from " + gn + (gn === 1 ? " game" : " games") : "") + " &middot; All time";
       if (S.base) sub += " &middot; includes your " + fmt(S.base) + " starting amount";
       if (S.base + S.fee - S.exp + S.other < 0) sub += " &middot; expenses are higher than income, so nothing to split";
     }
