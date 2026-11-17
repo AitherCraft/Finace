@@ -657,6 +657,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     <button class="lk-key lk-side" type="button" id="lock-del" aria-label="Delete last digit"><svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg></button>
   </div>
   <button class="lk-unlock" type="button" id="lock-go" hidden>Unlock</button>
+  <button class="lk-unlock" type="button" id="lock-face" hidden>Use Face ID</button>
   <form id="lock-reset" class="lk-sheet" novalidate hidden>
     <p class="note" id="lock-forgot-note"></p>
     <div class="field" id="lock-pass-f"><label for="lock-pass">Account password</label><input id="lock-pass" type="password" autocomplete="current-password" maxlength="72"></div>
@@ -1112,6 +1113,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
           <div class="field"><label for="sec-new2">Type the new PIN again</label><input id="sec-new2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="7" autocomplete="new-password"></div>
         </div>
         <div class="row"><button class="btn" type="button" id="sec-pin-go">Save PIN</button></div>
+        <div id="sec-face" hidden>
+          <p class="note" id="sec-face-note"></p>
+          <div class="row"><button class="btn ghost" type="button" id="sec-face-go">Turn on Face ID</button></div>
+        </div>
         <p class="note">The PIN is asked when you open the app and after 5 minutes away. It is stored scrambled, never as the numbers you typed. It locks the screen on this app. It does not replace your account password.</p>
       </div>
       <div id="sec-email" class="fs" hidden>
@@ -3780,8 +3785,35 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     lockOn = true; unlocked = false;
     $("lock").hidden = false; $("gate").hidden = true; $("main").hidden = true;
     $("lock-reset").hidden = true; lockBuf = ""; lockDots(); lockMsg("");
+    $("lock-face").hidden = !(faceId() && faceOk()); if (faceId() && faceOk()) setTimeout(faceUnlock, 350);
     $("lock-forgot-note").textContent = sbSession || loadSession() ? "Forgot your PIN? Enter your account password and the PIN is removed." : "Forgot your PIN? You can erase this device's data and start over.";
   }
+  /* Face ID / Touch ID through the device's own lock (WebAuthn). Per device; the PIN always still works. */
+  var FACE_KEY = "rf-face-v1";
+  function faceId() { try { return localStorage.getItem(FACE_KEY) || ""; } catch (e) { return ""; } }
+  function faceSet(v) { try { if (v) localStorage.setItem(FACE_KEY, v); else localStorage.removeItem(FACE_KEY); } catch (e) {} }
+  function faceOk() { return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create && window.isSecureContext); }
+  function b64u(buf) { var b = new Uint8Array(buf), t = ""; for (var i = 0; i < b.length; i++) t += String.fromCharCode(b[i]); return btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64u(t) { t = t.replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var r = atob(t), b = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) b[i] = r.charCodeAt(i); return b; }
+  function faceEnroll() {
+    var ch = new Uint8Array(32), uid = new Uint8Array(16); crypto.getRandomValues(ch); crypto.getRandomValues(uid);
+    return navigator.credentials.create({ publicKey: { challenge: ch, rp: { name: "Referee Finance" }, user: { id: uid, name: "referee", displayName: "Referee Finance" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], timeout: 60000, attestation: "none",
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" } } })
+      .then(function (c) { if (!c) throw new Error("No result"); faceSet(b64u(c.rawId)); });
+  }
+  function faceCheck() {
+    var id = faceId(); if (!id || !faceOk()) return Promise.reject(new Error("off"));
+    var ch = new Uint8Array(32); crypto.getRandomValues(ch);
+    return navigator.credentials.get({ publicKey: { challenge: ch, timeout: 60000, userVerification: "required", allowCredentials: [{ type: "public-key", id: unb64u(id), transports: ["internal"] }] } })
+      .then(function (a) { if (!a) throw new Error("No result"); });
+  }
+  var faceBusy = false;
+  function faceUnlock() {
+    if (faceBusy || !lockOn || !faceId()) return; faceBusy = true;
+    faceCheck().then(function () { hideLock(); }, function () { lockMsg("Face ID did not work. Enter your PIN."); }).then(function () { faceBusy = false; });
+  }
+  $("lock-face").addEventListener("click", faceUnlock);
   function hideLock() { lockOn = false; unlocked = true; $("lock").hidden = true; showGate(!!gateWanted); lockMsg(""); setTries({}); route(false); }
   var lockBuf = "", lockBusy = false;
   function lockLen() { return sec.pin && sec.pin.n ? sec.pin.n : 0; }
@@ -3929,6 +3961,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (!document.querySelector('input[name="sec-mode"]:checked') && cur) cur.checked = true;
     $("sec-pin").hidden = want !== "pin"; $("sec-email").hidden = want !== "email"; $("sec-off").hidden = want !== "off" || sec.mode === "off";
     $("sec-cur-f").hidden = sec.mode !== "pin"; $("sec-offcur-f").hidden = sec.mode !== "pin";
+    if (sec.mode !== "pin" && faceId()) faceSet("");
+    $("sec-face").hidden = !(sec.mode === "pin" && want === "pin");
+    $("sec-face-note").textContent = !faceOk() ? "Face ID is not available in this browser. Open the app from your Home Screen or in Safari." : faceId() ? "Face ID is on for this device. It opens the app first and the PIN is the backup." : "Use Face ID (or Touch ID) to unlock on this device. The PIN stays as the backup.";
+    $("sec-face-go").textContent = faceId() ? "Turn off Face ID" : "Turn on Face ID"; $("sec-face-go").disabled = !faceOk();
     $("sec-email-note").textContent = acct ? "We will email a code to " + sbSession.username + " each time you sign in. First we send a test code so you know it works." : "Email codes need an account made with a real email address. Sign in with one first.";
     $("sec-test").disabled = !acct;
     $("sec-code-f").hidden = !secTestSent;
@@ -3939,6 +3975,11 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     sec = next; saveSecLocal(); unlocked = true;
     return persistSplit().then(function () { secRender(); secMsg(okText); });
   }
+  $("sec-face-go").addEventListener("click", function () {
+    if (faceId()) { faceSet(""); secRender(); secMsg("Face ID is off on this device."); return; }
+    secMsg("Follow the Face ID prompt…");
+    faceEnroll().then(function () { secRender(); secMsg("Face ID is on. Next time you open the app it asks for Face ID first."); }, function (e) { secMsg(e && e.name === "NotAllowedError" ? "Face ID was cancelled or is not allowed. Check Settings > Face ID & Passcode." : "Could not turn on Face ID: " + (e && e.message || e), true); });
+  });
   $("sec-pin-go").addEventListener("click", function () {
     var n = $("sec-new").value, n2 = $("sec-new2").value;
     if (!pinOk(n)) { secMsg("The PIN must be 4 to 7 digits, numbers only.", true); return; }
