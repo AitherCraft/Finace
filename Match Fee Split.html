@@ -1117,7 +1117,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
           <p class="note" id="sec-face-note"></p>
           <div class="row"><button class="btn ghost" type="button" id="sec-face-go">Turn on Face ID</button></div>
         </div>
-        <p class="note">The PIN is asked when you open the app and after 5 minutes away. It is stored scrambled, never as the numbers you typed. It locks the screen on this app. It does not replace your account password.</p>
+        <p class="note">The PIN is asked when you open the app and every time you leave it. It is stored scrambled, never as the numbers you typed. It locks the screen on this app. It does not replace your account password.</p>
       </div>
       <div id="sec-email" class="fs" hidden>
         <p class="note" id="sec-email-note"></p>
@@ -3785,7 +3785,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     lockOn = true; unlocked = false;
     $("lock").hidden = false; $("gate").hidden = true; $("main").hidden = true;
     $("lock-reset").hidden = true; lockBuf = ""; lockDots(); lockMsg("");
-    $("lock-face").hidden = !(faceId() && faceOk()); if (faceId() && faceOk()) setTimeout(faceUnlock, 350);
+    $("lock-face").hidden = !(faceId() && faceOk()); if (faceId() && faceOk()) setTimeout(function () { if (document.visibilityState === "visible") faceUnlock(); }, 350);
     $("lock-forgot-note").textContent = sbSession || loadSession() ? "Forgot your PIN? Enter your account password and the PIN is removed." : "Forgot your PIN? You can erase this device's data and start over.";
   }
   /* Face ID / Touch ID through the device's own lock (WebAuthn). Per device; the PIN always still works. */
@@ -3808,7 +3808,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     return navigator.credentials.get({ publicKey: { challenge: ch, timeout: 60000, userVerification: "required", allowCredentials: [{ type: "public-key", id: unb64u(id), transports: ["internal"] }] } })
       .then(function (a) { if (!a) throw new Error("No result"); });
   }
-  var faceBusy = false;
+  var faceBusy = false, faceEnrolling = false;
   function faceUnlock() {
     if (faceBusy || !lockOn || !faceId()) return; faceBusy = true;
     faceCheck().then(function () { hideLock(); }, function () { lockMsg("Face ID did not work. Enter your PIN."); }).then(function () { faceBusy = false; });
@@ -3877,8 +3877,9 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     }, function () { lockMsg("That password is not right."); });
   });
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") hiddenAt = Date.now();
+    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); if (sec.mode === "pin" && !lockOn && !faceBusy && !faceEnrolling) showLock(); }
     else if (sec.mode === "pin" && !lockOn && hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000) showLock();
+    else if (lockOn && faceId() && faceOk() && $("lock-reset").hidden) setTimeout(faceUnlock, 300);
   });
 
   /* Plain requests that use only the public key (before there is a signed-in session) */
@@ -3956,7 +3957,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var cur0 = document.querySelector('input[name="sec-mode"][value="' + sec.mode + '"]');
     if (!document.querySelector('input[name="sec-mode"]:checked') && cur0) cur0.checked = true;
     var want = secMode();
-    $("sec-state").textContent = sec.mode === "pin" ? "A PIN is on. The app asks for it when you open it or come back after 5 minutes away." : sec.mode === "email" ? "Email code is on. Signing in on a new device also needs a code we email you." : "Extra security is off.";
+    $("sec-state").textContent = sec.mode === "pin" ? "A PIN is on. The app asks for it when you open it and locks again as soon as you leave it." : sec.mode === "email" ? "Email code is on. Signing in on a new device also needs a code we email you." : "Extra security is off.";
     var cur = document.querySelector('input[name="sec-mode"][value="' + sec.mode + '"]');
     if (!document.querySelector('input[name="sec-mode"]:checked') && cur) cur.checked = true;
     $("sec-pin").hidden = want !== "pin"; $("sec-email").hidden = want !== "email"; $("sec-off").hidden = want !== "off" || sec.mode === "off";
@@ -3977,8 +3978,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   }
   $("sec-face-go").addEventListener("click", function () {
     if (faceId()) { faceSet(""); secRender(); secMsg("Face ID is off on this device."); return; }
-    secMsg("Follow the Face ID prompt…");
-    faceEnroll().then(function () { secRender(); secMsg("Face ID is on. Next time you open the app it asks for Face ID first."); }, function (e) { secMsg(e && e.name === "NotAllowedError" ? "Face ID was cancelled or is not allowed. Check Settings > Face ID & Passcode." : "Could not turn on Face ID: " + (e && e.message || e), true); });
+    secMsg("Follow the Face ID prompt…"); faceEnrolling = true;
+    faceEnroll().then(function () { faceEnrolling = false; }, function (e) { faceEnrolling = false; throw e; }).then(function () { secRender(); secMsg("Face ID is on. Next time you open the app it asks for Face ID first."); }, function (e) { secMsg(e && e.name === "NotAllowedError" ? "Face ID was cancelled or is not allowed. Check Settings > Face ID & Passcode." : "Could not turn on Face ID: " + (e && e.message || e), true); });
   });
   $("sec-pin-go").addEventListener("click", function () {
     var n = $("sec-new").value, n2 = $("sec-new2").value;
