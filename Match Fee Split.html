@@ -734,6 +734,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <ul class="wish-list" id="wishes"></ul>
         <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
         <p class="msg" id="wish-msg" role="status"></p>
+        <div class="row" id="wish-undo" hidden><button class="btn ghost" type="button" id="wish-undo-go">Undo purchase</button></div>
         </section>
         <section class="panel hc o6" id="bag-card" data-card="bag"><div class="panel-head"><h2>Ref Bag</h2><a class="mini" href="#inventory">View all</a></div><div id="bag-home"></div></section>
         <section class="panel hc o6" data-card="quick" aria-labelledby="h-quick">
@@ -3258,7 +3259,6 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       var saved = Math.max(0, Math.min(cost, info.a.out[k] - info.used[w.bucket] - r.ahead)), pct = Math.floor(saved / cost * 100);
       var late = w.target && w.target < todayStr() && !r.st.ok;
       var meta = [w.cat ? '<span class="chip">' + esc(w.cat) + "</span>" : "", w.target ? '<span class="wish-when' + (late ? "" : "") + '">Target ' + esc(mdDate(w.target)) + (late ? " (past)" : "") + "</span>" : ""].filter(Boolean).join(" ");
-      var canBuy = r.st.ok && w.link;
       return '<li class="wish"><div class="wish-top"><strong><span class="prio">#' + (n + 1) + "</span> " + esc(w.what) + '</strong><span class="wish-amt">' + fmt(cost) + '</span></div>' +
         (meta ? '<div class="wish-meta">' + meta + "</div>" : "") +
         '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Saved toward ' + esc(w.what) + '"><span style="width:' + pct + '%"></span></div>' +
@@ -3267,8 +3267,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         (w.notes ? '<div class="wish-when">' + esc(w.notes) + "</div>" : "") +
         (w.link ? '<div class="wish-when"><a href="' + esc(w.link) + '" target="_blank" rel="noopener noreferrer">Store link</a></div>' : "") +
         '<div class="wish-actions">' +
-        '<button class="mini" type="button" data-wish-nowbuy="' + esc(w.id) + '"' + (canBuy ? "" : " disabled") + (r.st.ok && !w.link ? ' title="Add a store link to use Buy now"' : "") + '>Buy now</button>' +
-        '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '">Purchased</button>' +
+        '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '"' + (r.st.ok ? "" : ' disabled title="Available once you have enough saved"') + '>Purchase</button>' +
         '<button class="mini" type="button" data-wish-edit="' + esc(w.id) + '">Edit</button>' +
         '<button class="mini" type="button" data-wish-up="' + esc(w.id) + '"' + (n === 0 ? " disabled" : "") + ' aria-label="Higher priority: ' + esc(w.what) + '">&uarr;</button>' +
         '<button class="mini" type="button" data-wish-down="' + esc(w.id) + '"' + (n === rows.length - 1 ? " disabled" : "") + ' aria-label="Lower priority: ' + esc(w.what) + '">&darr;</button>' +
@@ -3278,7 +3277,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     $("wish-alert").hidden = !ready.length;
     if (ready.length) $("wish-alert-text").textContent = ready.map(function (r) { return r.w.what + " (" + fmt(toCents(r.w.amount)) + ")"; }).join(", ") + (ready.length > 1 ? " all fit" : " fits") + " in your plan right now.";
   }
-  function wishMsg(t, err) { var m = $("wish-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  function wishMsg(t, err) { if (t && !/^Purchased/.test(t) && $("wish-undo")) $("wish-undo").hidden = true; var m = $("wish-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
   $("a-wish").addEventListener("click", function () {
     var amt = parseFloat($("a-amt").value);
     if (!isFinite(amt) || amt <= 0) return;
@@ -3291,7 +3290,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       renderAfford(); renderWishes();
     });
   });
-  var wishEditId = null;
+  var wishEditId = null, lastBuy = null;
+  $("wish-undo-go").addEventListener("click", function () {
+    var b = lastBuy; if (!b) { $("wish-undo").hidden = true; return; }
+    lastBuy = null; $("wish-undo").hidden = true;
+    removeEntry("spending", b.spId);
+    wishes.splice(Math.min(b.at, wishes.length), 0, b.w);
+    persistSplit().then(function (ok) { renderWishes(); wishMsg(ok ? "Undone. The expense was removed and " + b.w.what + " is back on your wish list." : "Could not save that. Try again.", !ok); });
+  });
   $("we-cancel").addEventListener("click", function () { wishEditId = null; $("wish-edit").hidden = true; });
   $("wish-edit").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -3308,7 +3314,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   $("wishes").addEventListener("click", function (e) {
     var t = e.target.closest("button");
     if (!t) return;
-    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-edit") || t.getAttribute("data-wish-nowbuy") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
+    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-edit") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
     var w = wishes.filter(function (x) { return x.id === id; })[0];
     if (!w) return;
     if (t.hasAttribute("data-wish-up") || t.hasAttribute("data-wish-down")) {
@@ -3319,7 +3325,6 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       persistSplit().then(function (ok) { if (!ok) { wishes = before; renderWishes(); wishMsg("Could not save the new order. Try again.", true); } else wishMsg(""); });
       return;
     }
-    if (t.hasAttribute("data-wish-nowbuy")) { if (w.link) { try { window.open(w.link, "_blank", "noopener,noreferrer"); } catch (er) {} wishMsg("Opened the store. When you have bought it, tap Purchased."); } return; }
     if (t.hasAttribute("data-wish-edit")) {
       wishEditId = id; $("we-what").value = w.what; $("we-amt").value = w.amount; $("we-cat").value = w.cat || ""; $("we-target").value = w.target || ""; $("we-link").value = w.link || ""; $("we-notes").value = w.notes || "";
       $("wish-edit").hidden = false; $("we-what").focus(); return;
@@ -3329,9 +3334,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       return persistSplit().then(function (ok) { renderWishes(); return ok; });
     }
     if (t.hasAttribute("data-wish-del")) { drop().then(function (ok) { wishMsg(ok ? "Removed." : "Could not save that. Try again.", !ok); }); return; }
-    addEntry("spending", { id: uid("s"), date: ymd(new Date()), bucket: w.bucket, note: w.cat ? w.what + " (" + w.cat + ")" : w.what, amount: w.amount, created: Date.now() }).then(function (ok) {
+    var spId = uid("s"), at0 = wishes.indexOf(w);
+    addEntry("spending", { id: spId, date: ymd(new Date()), bucket: w.bucket, note: w.cat ? w.what + " (" + w.cat + ")" : w.what, amount: w.amount, created: Date.now() }).then(function (ok) {
       if (!ok) { wishMsg("Could not save that. Try again in a moment.", true); return; }
-      drop().then(function () { wishMsg("Logged under " + BMAP[w.bucket].name + " and removed from your wish list."); });
+      drop().then(function () { lastBuy = { w: w, spId: spId, at: at0 }; wishMsg("Purchased. Logged under " + BMAP[w.bucket].name + " and moved to your expenses."); $("wish-undo").hidden = false; });
     });
   });
 
