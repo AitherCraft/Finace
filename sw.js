@@ -1,7 +1,7 @@
 /* Referee Finance: keeps the app working with no connection.
    Pages: try the network first (so updates show up), fall back to the saved copy.
    Fonts and icons: saved copy first, refreshed in the background. */
-const CACHE = "rf-shell-v3";
+const CACHE = "rf-shell-v4";
 const SHELL = ["./", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -19,7 +19,7 @@ self.addEventListener("fetch", (e) => {
   const font = /(^|\.)fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (url.origin === location.origin && (req.mode === "navigate" || /\.html?$/.test(url.pathname) || url.pathname.endsWith("/"))) {
     e.respondWith(
-      fetch(req).then((res) => {
+      fetch(req, { cache: "no-cache" }).then((res) => {
         if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req.mode === "navigate" ? "./" : req, copy)); }
         return res;
       }).catch(() => caches.match(req, { ignoreSearch: true }).then((m) => m || caches.match("./")))
