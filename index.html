@@ -1146,11 +1146,15 @@ button:disabled, .btn:disabled { opacity: 0.55; }
           <div class="field"><label for="sec-new2">Type the new PIN again</label><input id="sec-new2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="7" autocomplete="new-password"></div>
         </div>
         <div class="row"><button class="btn" type="button" id="sec-pin-go">Save PIN</button></div>
+        <div id="sec-leave" hidden>
+          <label class="check" for="sec-leave-on"><input id="sec-leave-on" type="checkbox">Lock the app when I leave it</label>
+          <p class="note">On: the PIN or Face ID is asked every time you switch away and come back. Off: it only asks when the app is opened fresh. This setting is for this device.</p>
+        </div>
         <div id="sec-face" hidden>
           <p class="note" id="sec-face-note"></p>
           <div class="row"><button class="btn ghost" type="button" id="sec-face-go">Turn on Face ID</button></div>
         </div>
-        <p class="note">The PIN is asked when you open the app and every time you leave it. It is stored scrambled, never as the numbers you typed. It locks the screen on this app. It does not replace your account password.</p>
+        <p class="note">The PIN is asked when you open the app and, unless you turn that off below, every time you leave it. It is stored scrambled, never as the numbers you typed. It locks the screen on this app. It does not replace your account password.</p>
       </div>
       <div id="sec-email" class="fs" hidden>
         <p class="note" id="sec-email-note"></p>
@@ -4016,13 +4020,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       return persistSplit().then(function () { secRender(); });
     }, function () { lockMsg("That password is not right."); });
   });
-  function leaveLock() { if (sec.mode === "pin" && !lockOn && !faceBusy && !faceEnrolling) { hiddenAt = Date.now(); showLock(); } }
+  function leaveOn() { try { return localStorage.getItem("rf-leavelock-v1") !== "0"; } catch (e) { return true; } }
+  function leaveLock() { if (leaveOn() && sec.mode === "pin" && !lockOn && !faceBusy && !faceEnrolling) { hiddenAt = Date.now(); showLock(); } }
   window.addEventListener("pagehide", leaveLock);
   window.addEventListener("freeze", leaveLock);
   window.addEventListener("pageshow", function (e) { if (e.persisted && lockOn && faceId() && faceOk()) setTimeout(faceUnlock, 300); });
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); if (sec.mode === "pin" && !lockOn && !faceBusy && !faceEnrolling) showLock(); }
-    else if (sec.mode === "pin" && !lockOn && hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000) showLock();
+    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); if (leaveOn() && sec.mode === "pin" && !lockOn && !faceBusy && !faceEnrolling) showLock(); }
+    else if (leaveOn() && sec.mode === "pin" && !lockOn && hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000) showLock();
     else if (lockOn && faceId() && faceOk() && $("lock-reset").hidden) setTimeout(faceUnlock, 300);
   });
 
@@ -4107,7 +4112,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     $("sec-pin").hidden = want !== "pin"; $("sec-email").hidden = want !== "email"; $("sec-off").hidden = want !== "off" || sec.mode === "off";
     $("sec-cur-f").hidden = sec.mode !== "pin"; $("sec-offcur-f").hidden = sec.mode !== "pin";
     if (sec.mode !== "pin" && faceId()) faceSet("");
-    $("sec-face").hidden = !(sec.mode === "pin" && want === "pin");
+    $("sec-face").hidden = !(sec.mode === "pin" && want === "pin"); $("sec-leave").hidden = $("sec-face").hidden; $("sec-leave-on").checked = leaveOn();
     $("sec-face-note").textContent = !faceOk() ? "Face ID is not available in this browser. Open the app from your Home Screen or in Safari." : faceId() ? "Face ID is on for this device. It opens the app first and the PIN is the backup." : "Use Face ID (or Touch ID) to unlock on this device. The PIN stays as the backup.";
     $("sec-face-go").textContent = faceId() ? "Turn off Face ID" : "Turn on Face ID"; $("sec-face-go").disabled = !faceOk();
     $("sec-email-note").textContent = acct ? "We will email a code to " + sbSession.username + " each time you sign in. First we send a test code so you know it works." : "Email codes need an account made with a real email address. Sign in with one first.";
@@ -4120,6 +4125,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     sec = next; saveSecLocal(); unlocked = true;
     return persistSplit().then(function () { secRender(); secMsg(okText); });
   }
+  $("sec-leave-on").addEventListener("change", function () { try { localStorage.setItem("rf-leavelock-v1", this.checked ? "1" : "0"); } catch (e) {} secMsg(this.checked ? "The app locks when you leave it." : "The app no longer locks when you leave it. It still asks for the PIN when opened fresh."); });
   $("sec-face-go").addEventListener("click", function () {
     if (faceId()) { faceSet(""); secRender(); secMsg("Face ID is off on this device."); return; }
     secMsg("Follow the Face ID prompt…"); faceEnrolling = true;
