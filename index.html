@@ -258,6 +258,15 @@ button.badge { cursor: pointer; min-height: 26px; }
 .prio { color: var(--blue); font-variant-numeric: tabular-nums; }
 .wish-when { font-size: 14px; color: var(--muted); }
 .wish-when.ready { color: var(--c-save); font-weight: 700; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.hist-row { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--panel-line); }
+.hist-row:first-child { border-top: 0; }
+.hist-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.hist-top strong { overflow-wrap: anywhere; }
+.hist-when { font-size: 13px; color: var(--muted); }
+.hist-badge { font: 700 12px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; border: 1px solid var(--panel-line); color: var(--muted); margin-right: 6px; }
+.hist-badge.removed { color: var(--red); border-color: var(--red); }
+.hist-badge.added, .hist-badge.restored { color: var(--green); border-color: var(--green); }
 .wish-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .wish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .wish-list { list-style: none; margin: 0; padding: 0; }
@@ -1109,6 +1118,15 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <div class="row"><button class="btn red" type="button" id="bk-go">Replace everything</button><button class="btn ghost" type="button" id="bk-cancel">Cancel</button></div>
       </div>
       <p class="msg" id="bk-msg" role="status"></p>
+    </section>
+
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-hist">
+      <div class="panel-head"><h2 id="h-hist">History</h2><span class="chip" id="hist-count"></span></div>
+      <p class="note">Every game, other income and expense you add, change or remove shows up here. Removed ones can be put back, and changes to a game can be undone. This list is kept on this device.</p>
+      <div class="row"><label class="sr-only" for="hist-f">Show</label><select id="hist-f"><option value="all">Everything</option><option value="added">Added</option><option value="removed">Removed</option><option value="edited">Changed</option></select><button class="mini" type="button" id="hist-clear">Clear history</button></div>
+      <ul class="list tall" id="hist-list"></ul>
+      <div class="row"><button class="btn ghost" type="button" id="hist-more" hidden>Show more</button></div>
+      <p class="msg" id="hist-msg" role="status"></p>
     </section>
 
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-sec">
@@ -2368,7 +2386,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     safe(function () { renderPeriods(); S = summarize(); A = summarize(true); }, "totals");
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
-    safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
     safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
@@ -2565,13 +2583,19 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   function setStatus(t) { $("status").textContent = t; }
   function uid(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-  function addEntry(kind, entry) {
-    if (store) return store[kind].doc(entry.id).set(entry).then(function () { return true; }, function () { return false; });
-    data[kind].push(entry); saveLocal(); render();
+  /* History: what was added, changed or removed, kept on this device so it can be put back. */
+  var HIST_KEY = "rf-hist-v1", hist = [], histLimit = 30, histClear = false;
+  try { var hr = JSON.parse(localStorage.getItem(HIST_KEY) || "[]"); if (Array.isArray(hr)) hist = hr.filter(function (h) { return h && h.e && h.id && h.k; }).slice(0, 300); } catch (e) {}
+  function histSave() { try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch (e) {} }
+  function histLog(a, k, e, prev) { hist.unshift({ id: uid("h"), t: Date.now(), a: a, k: k, e: JSON.parse(JSON.stringify(e)), prev: prev ? JSON.parse(JSON.stringify(prev)) : null }); hist = hist.slice(0, 300); histSave(); }
+  function addEntry(kind, entry, how) {
+    if (store) return store[kind].doc(entry.id).set(entry).then(function () { histLog(how || "added", kind, entry); return true; }, function () { return false; });
+    data[kind].push(entry); histLog(how || "added", kind, entry); saveLocal(); render();
     return Promise.resolve(true);
   }
   function removeEntry(kind, id) {
     pendingRemove = null;
+    var gone = data[kind].filter(function (x) { return x.id === id; })[0]; if (gone) histLog("removed", kind, gone);
     if (store) {
       store[kind].doc(id).delete().catch(function () { setStatus("Could not remove that entry. Try again."); });
       render();
@@ -2583,7 +2607,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   function setPaid(id, val) {
     var g = data.games.filter(function (x) { return x.id === id; })[0];
     if (!g) return;
-    g.paid = val;
+    var before = Object.assign({}, g); g.paid = val; histLog("edited", "games", g, before);
     if (store) {
       var copy = Object.assign({}, g); delete copy.id;
       store.games.doc(id).set(copy).catch(function () { setStatus("Could not update that game. Try again."); });
@@ -2966,7 +2990,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (editGameId) {
       var g = data.games.filter(function (x) { return x.id === editGameId; })[0];
       if (!g) { resetGameForm(); return formMsg("form-game", "That game is gone. It may have been removed on another device.", true); }
-      Object.assign(g, f);
+      var before = Object.assign({}, g); Object.assign(g, f); histLog("edited", "games", g, before);
       var done = function () { resetGameForm(); render(); location.hash = "#games"; };
       if (store) {
         var copy = Object.assign({}, g); delete copy.id;
@@ -3175,6 +3199,64 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   $("pay-lines").addEventListener("click", function (e) {
     var b = e.target.closest("[data-pay-del]"); if (!b) return;
     pay.lines.splice(+b.getAttribute("data-pay-del"), 1); savePay();
+  });
+
+  var HIST_FIELDS = [["fee", "pay"], ["expenses", "expenses"], ["date", "date"], ["time", "time"], ["role", "role"], ["assoc", "league"], ["match", "name"], ["field", "field"], ["assignor", "assignor"], ["count", "games"], ["notes", "notes"], ["paid", "paid"], ["cancelled", "cancelled"]];
+  function histVal(k, v) { return k === "fee" || k === "expenses" ? fmt(toCents(v)) : k === "paid" ? (v === false ? "not paid" : "paid") : k === "cancelled" ? (v ? "yes" : "no") : (v === undefined || v === "" ? "none" : String(v)); }
+  function histDiff(h) {
+    if (!h.prev) return "";
+    var out = []; HIST_FIELDS.forEach(function (f) { var a = h.prev[f[0]], b = h.e[f[0]]; if (JSON.stringify(a) !== JSON.stringify(b) && !((a === undefined || a === "") && (b === undefined || b === ""))) out.push(f[1] + " " + histVal(f[0], a) + " to " + histVal(f[0], b)); });
+    return out.length ? "Changed: " + out.join(", ") : "";
+  }
+  function histTitle(h) {
+    var e = h.e;
+    if (h.k === "games") return gTitle(e) + " (" + (e.date ? mdDate(e.date) : "game") + ")" + (e.count > 1 ? " · " + e.count + " games" : "");
+    if (h.k === "income") return (e.source || "Other income") + " (" + (e.date ? mdDate(e.date) : "") + ")";
+    return (e.note || (BMAP[e.bucket] ? BMAP[e.bucket].name : "Expense")) + " (" + (e.date ? mdDate(e.date) : "") + ")";
+  }
+  function histAmt(h) { var e = h.e; return h.k === "games" ? fmt(gNet(e)) : fmt(toCents(e.amount)); }
+  var HIST_LABEL = { added: "Added", removed: "Removed", edited: "Changed", restored: "Put back", reverted: "Undone" };
+  function renderHistory() {
+    var list = $("hist-list"); if (!list) return;
+    var f = $("hist-f").value, rows = hist.filter(function (h) { return f === "all" || h.a === f || (f === "added" && h.a === "restored") || (f === "edited" && h.a === "reverted"); });
+    $("hist-count").textContent = hist.length + (hist.length === 1 ? " change" : " changes");
+    if (!rows.length) { list.innerHTML = '<li><p class="empty">' + (hist.length ? "Nothing matches this filter." : "Nothing yet. Add, change or remove a game and it shows up here.") + "</p></li>"; $("hist-more").hidden = true; return; }
+    var shown = rows.slice(0, histLimit);
+    list.innerHTML = shown.map(function (h) {
+      var when = new Date(h.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      var kind = h.k === "games" ? "Game" : h.k === "income" ? "Other income" : "Expense";
+      var here = data[h.k].filter(function (x) { return x.id === h.e.id; })[0], act = "";
+      if (h.a === "removed") act = here ? '<span class="hist-when">Back in your list</span>' : '<button class="mini" type="button" data-hist-restore="' + esc(h.id) + '">Put it back</button>';
+      else if (h.a === "edited" && h.prev && here && HIST_FIELDS.every(function (f) { return JSON.stringify(here[f[0]]) === JSON.stringify(h.e[f[0]]); })) act = '<button class="mini" type="button" data-hist-undo="' + esc(h.id) + '">Undo this change</button>';
+      return '<li class="hist-row"><div class="hist-top"><strong>' + esc(histTitle(h)) + '</strong><span class="wish-amt" style="font-size:16px">' + esc(histAmt(h)) + '</span></div>' +
+        '<div class="hist-when"><span class="hist-badge ' + h.a + '">' + HIST_LABEL[h.a] + "</span>" + esc(kind) + " &middot; " + esc(when) + "</div>" +
+        (histDiff(h) ? '<div class="hist-when">' + esc(histDiff(h)) + "</div>" : "") + (act ? '<div class="wish-actions">' + act + "</div>" : "") + "</li>";
+    }).join("");
+    $("hist-more").hidden = rows.length <= histLimit;
+  }
+  function histMsg(t, err) { var m = $("hist-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  $("hist-f").addEventListener("change", function () { histLimit = 30; renderHistory(); });
+  $("hist-more").addEventListener("click", function () { histLimit += 30; renderHistory(); });
+  $("hist-clear").addEventListener("click", function () {
+    if (!histClear) { histClear = true; $("hist-clear").textContent = "Tap again to clear"; setTimeout(function () { histClear = false; $("hist-clear").textContent = "Clear history"; }, 4000); return; }
+    histClear = false; $("hist-clear").textContent = "Clear history"; hist = []; histSave(); renderHistory(); histMsg("History cleared. Your games and expenses were not touched.");
+  });
+  $("hist-list").addEventListener("click", function (e) {
+    var t = e.target.closest("button"); if (!t) return;
+    var id = t.getAttribute("data-hist-restore") || t.getAttribute("data-hist-undo");
+    var h = hist.filter(function (x) { return x.id === id; })[0]; if (!h) return;
+    if (t.hasAttribute("data-hist-restore")) {
+      if (data[h.k].some(function (x) { return x.id === h.e.id; })) { renderHistory(); return; }
+      addEntry(h.k, JSON.parse(JSON.stringify(h.e)), "restored").then(function (ok) { histMsg(ok ? "Put back: " + histTitle(h) : "Could not put that back. Try again.", !ok); renderHistory(); });
+      return;
+    }
+    var g = data.games.filter(function (x) { return x.id === h.e.id; })[0]; if (!g) return;
+    var before = Object.assign({}, g);
+    HIST_FIELDS.forEach(function (f) { if (h.prev[f[0]] === undefined) delete g[f[0]]; else g[f[0]] = h.prev[f[0]]; });
+    histLog("reverted", "games", g, before);
+    if (store) { var copy = Object.assign({}, g); delete copy.id; store.games.doc(g.id).set(copy).catch(function () { histMsg("Could not undo that. Try again.", true); }); render(); }
+    else { saveLocal(); render(); }
+    histMsg("Undone: " + histTitle(h)); renderHistory();
   });
 
   /* Wish list: things you cannot afford yet, with an estimate of when you can. */
