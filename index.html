@@ -3876,6 +3876,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       return persistSplit().then(function () { secRender(); });
     }, function () { lockMsg("That password is not right."); });
   });
+  function leaveLock() { if (sec.mode === "pin" && !lockOn && !faceBusy && !faceEnrolling) { hiddenAt = Date.now(); showLock(); } }
+  window.addEventListener("pagehide", leaveLock);
+  window.addEventListener("freeze", leaveLock);
+  window.addEventListener("pageshow", function (e) { if (e.persisted && lockOn && faceId() && faceOk()) setTimeout(faceUnlock, 300); });
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") { hiddenAt = Date.now(); if (sec.mode === "pin" && !lockOn && !faceBusy && !faceEnrolling) showLock(); }
     else if (sec.mode === "pin" && !lockOn && hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000) showLock();
