@@ -1137,8 +1137,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
           <div class="field"><label for="g-assoc">League / Association</label><select id="g-assoc"></select></div>
           <div class="field"><label for="g-date">Date</label><input id="g-date" type="date"></div>
           <div class="field"><label for="g-time">Time (optional)</label><input id="g-time" type="time"></div>
-          <div class="field multi-row"><label class="chk"><input id="g-multi" type="checkbox"> <span>Lasts more than 1 day (tournament or trip)</span></label></div>
-          <div class="field" id="g-end-wrap" hidden><label for="g-end">Last day</label><input id="g-end" type="date"></div>
+          <div class="field"><label for="g-count">Number of games</label><input id="g-count" type="number" inputmode="numeric" min="1" max="30" step="1" value="1"></div>
           <div class="field"><label for="g-role">Role</label>
             <select id="g-role">
               <option>Center</option>
@@ -1155,8 +1154,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
           <div class="field"><label for="g-assignor">Assignor</label><input id="g-assignor" type="text" maxlength="40" list="assignor-list" placeholder="Who assigned it" autocomplete="off"><datalist id="assignor-list"></datalist></div>
         </div>
         <div class="grid">
-          <div class="field"><label for="g-fee">Pay (game fee)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
-          <div class="field"><label for="g-exp">Expenses (gas, gear)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+          <div class="field"><label for="g-fee">Pay (total for all games)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+          <div class="field"><label for="g-exp">Expenses (total)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
           <div class="field"><label for="g-status">Status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Not paid yet</option><option value="cancelled">Cancelled</option></select></div>
         </div>
         <div class="field"><label for="g-notes">Notes</label><textarea id="g-notes" rows="3" maxlength="300" placeholder="Assignor, who you worked with, anything to remember"></textarea></div>
@@ -1481,7 +1480,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var sub;
     if (S.demo) sub = '<span class="tag">Example</span> Splitting ' + fmt(S.net) + ". Add an entry to see your own numbers.";
     else {
-      var gn = live().filter(function (g) { return g.paid !== false; }).length;
+      var gn = live().filter(function (g) { return g.paid !== false; }).reduce(function (a, g) { return a + gN(g); }, 0);
       sub = "Splitting " + fmt(S.net) + (gn ? " from " + gn + (gn === 1 ? " game" : " games") : "") + " &middot; All time";
       if (S.base) sub += " &middot; includes your " + fmt(S.base) + " starting amount";
       if (S.base + S.fee - S.exp + S.other < 0) sub += " &middot; expenses are higher than income, so nothing to split";
@@ -1546,7 +1545,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var d = parseD(g.date); for (var i = 1; i < 31; i++) { d.setDate(d.getDate() + 1); var y = ymd(d); out.push(y); if (y >= g.endDate) break; }
     return out;
   }
-  function gSpan(g) { var n = gDays(g).length; return n > 1 ? mdDate(g.date) + " – " + mdDate(g.endDate) + " (" + n + " days)" : ""; }
+  function gN(g) { var n = Math.floor(+g.count); return isFinite(n) && n > 1 ? Math.min(n, 30) : 1; }
+  function gSpan(g) { var n = gDays(g).length, a = gN(g) > 1 ? gN(g) + " games" : ""; return n > 1 ? mdDate(g.date) + " – " + mdDate(g.endDate) + (a ? " (" + a + ")" : " (" + n + " days)") : a; }
   function gMiles(g) { var m = parseFloat(g.miles); return isFinite(m) && m > 0 ? m : 0; }
   function fmtMiles(m) { return (Math.round(m * 10) / 10).toLocaleString("en-US") + " mi"; }
   function upcomingGames() { var t = todayStr(); return live().filter(function (g) { return g.date >= t; }).sort(byDateTime); }
@@ -1680,7 +1680,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     gs.forEach(function (g) {
       bs.forEach(function (b) {
         if (g.date < b.from || g.date > b.to) return;
-        b.games++; b.exp += toCents(g.expenses); b.miles += gMiles(g);
+        b.games += gN(g); b.exp += toCents(g.expenses); b.miles += gMiles(g);
         if (g.paid !== false) { b.paid++; b.pay += toCents(g.fee); }
       });
     });
@@ -1721,7 +1721,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     chGames().forEach(function (g) {
       if (g.date < from || g.date > to) return;
       var k = g.assoc || "No league", o = by[k] || (by[k] = { name: k, pay: 0, exp: 0, miles: 0, games: 0 });
-      o.games++; o.exp += toCents(g.expenses); o.miles += gMiles(g); if (g.paid !== false) o.pay += toCents(g.fee);
+      o.games += gN(g); o.exp += toCents(g.expenses); o.miles += gMiles(g); if (g.paid !== false) o.pay += toCents(g.fee);
     });
     return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.pay - a.pay || b.games - a.games; });
   }
@@ -1892,12 +1892,12 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   function prRecords() {
     var paid = live().filter(function (g) { return g.paid !== false; }), day = {}, tour = {}, mon = {}, out = { any: false };
     paid.forEach(function (g) {
-      var n = gNet(g), d = day[g.date] || (day[g.date] = { date: g.date, pay: 0, n: 0 }); d.pay += n; d.n++;
+      var n = gNet(g), d = day[g.date] || (day[g.date] = { date: g.date, pay: 0, n: 0 }); d.pay += n; d.n += gN(g);
       var m = g.date.slice(0, 7); mon[m] = (mon[m] || 0) + n;
       var txt = [g.match, g.assoc, g.notes].filter(Boolean).join(" ");
       if (TOUR_RE.test(txt)) {
         var nm = (TOUR_RE.test(g.match || "") ? g.match : TOUR_RE.test(g.assoc || "") ? g.assoc : g.match || g.assoc || "Tournament"), key = nm.toLowerCase() + "|" + m;
-        var t = tour[key] || (tour[key] = { name: nm, date: g.date, pay: 0, n: 0 }); t.pay += n; t.n++;
+        var t = tour[key] || (tour[key] = { name: nm, date: g.date, pay: 0, n: 0 }); t.pay += n; t.n += gN(g);
       }
     });
     data.income.forEach(function (x) { var m = (x.date || "").slice(0, 7); if (m) mon[m] = (mon[m] || 0) + toCents(x.amount); });
@@ -1939,7 +1939,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     paid.forEach(function (g) { if (!top || toCents(g.fee) > toCents(top.fee) || (toCents(g.fee) === toCents(top.fee) && g.date > top.date)) top = g; });
     gs.forEach(function (g) {
       if (gMiles(g) > 0 && (!far || gMiles(g) > gMiles(far) || (gMiles(g) === gMiles(far) && g.date > far.date))) far = g;
-      var d = byDay[g.date] || (byDay[g.date] = { date: g.date, n: 0, pay: 0 }); d.n++; if (g.paid !== false) d.pay += toCents(g.fee);
+      var d = byDay[g.date] || (byDay[g.date] = { date: g.date, n: 0, pay: 0 }); d.n += gN(g); if (g.paid !== false) d.pay += toCents(g.fee);
     });
     var busy = null;
     Object.keys(byDay).forEach(function (k) { var d = byDay[k]; if (!busy || d.n > busy.n || (d.n === busy.n && d.date > busy.date)) busy = d; });
@@ -2164,7 +2164,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var other = income.reduce(function (a, x) { return a + toCents(x.amount); }, 0), spent = spending.reduce(function (a, x) { return a + toCents(x.amount); }, 0);
     var owed = liveG.filter(function (g) { return g.paid === false && g.date < t; }).reduce(function (a, g) { return a + gNet(g); }, 0);
     return { range: r, inc: inc, games: games, income: income, spending: spending,
-      sum: { games: liveG.length, paidGames: paid.length, pay: pay, exp: exp, other: other, net: pay - exp + other, spent: spent, owed: owed } };
+      sum: { games: liveG.reduce(function (a, g) { return a + gN(g); }, 0), paidGames: paid.reduce(function (a, g) { return a + gN(g); }, 0), pay: pay, exp: exp, other: other, net: pay - exp + other, spent: spent, owed: owed } };
   }
   function exStatus(g) { var s = gStatus(g); return s === "paid" ? "Paid" : s === "overdue" ? "Overdue" : s === "cancelled" ? "Cancelled" : "Pending"; }
   function exSummaryRows(D) {
@@ -2392,7 +2392,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       var st = gStatus(g), stLabel = st === "paid" ? "Paid" : st === "overdue" ? "Overdue" : st === "cancelled" ? "Cancelled" : "Pending";
       var badge = '<button type="button" class="badge ' + (paid ? "" : st) + '" data-paid="' + esc(g.id) + '" data-val="' + (paid ? "0" : "1") + '" aria-label="' + (paid ? "Paid. Click to mark pending" : stLabel + ". Click to mark paid") + '">' + stLabel + "</button>";
       if (g.cancelled) badge = '<span class="badge cancelled">Cancelled</span>';
-      items.push({ kind: "games", id: g.id, date: g.date, created: g.created || 0, title: gTitle(g), notes: g.notes || "", editId: g.id,
+      items.push({ kind: "games", count: gN(g), id: g.id, date: g.date, created: g.created || 0, title: gTitle(g), notes: g.notes || "", editId: g.id,
         paid: paid, cancelled: !!g.cancelled, status: st, assignor: g.assignor || "", assoc: g.assoc || "", badge: badge, detail: [gSpan(g), g.assoc, g.assignor ? "Assignor " + g.assignor : "", g.role, g.field].filter(Boolean).join(" · ") + (gMiles(g) ? " · " + fmtMiles(gMiles(g)) : "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
         amt: Math.max(0, fee - ex), sign: paid ? "+" : "", unpaid: paid || g.cancelled ? 0 : Math.max(0, fee - ex) });
     });
@@ -2425,7 +2425,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var owed = items.reduce(function (t, it) { return t + (it.unpaid || 0); }, 0);
     var td = todayStr(), played = 0, upc = 0, canc = 0, oth = 0;
     items.forEach(function (it) {
-      if (it.kind !== "games") oth++; else if (it.cancelled) canc++; else if (it.date > td) upc++; else played++;
+      var k = it.count || 1;
+      if (it.kind !== "games") oth++; else if (it.cancelled) canc += k; else if (it.date > td) upc += k; else played += k;
     });
     var cnt = played + (played === 1 ? " game played" : " games played");
     if (upc) cnt += " · " + upc + " upcoming";
@@ -2908,14 +2909,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     $("g-cancel").setAttribute("href", editing ? "#games" : "#home");
     $("game-sub").textContent = editing ? "Change anything about this assignment, then save." : "Log an assignment: who, where, what you earn and how far you drove.";
   }
-  function multiShow() {
-    var on = $("g-multi").checked; $("g-end-wrap").hidden = !on;
-    if (on) { $("g-end").min = $("g-date").value || ""; if (!$("g-end").value || $("g-end").value < $("g-date").value) $("g-end").value = $("g-date").value; }
-  }
-  $("g-multi").addEventListener("change", multiShow);
-  $("g-date").addEventListener("change", multiShow);
   function resetGameForm() {
-    editGameId = null; gameFormMode(false); $("g-multi").checked = false; $("g-end").value = ""; $("g-end-wrap").hidden = true;
+    editGameId = null; gameFormMode(false); $("g-count").value = "1";
     ["g-match", "g-field", "g-assignor", "g-fee", "g-exp", "g-notes", "g-time"].forEach(function (id) { $(id).value = ""; });
     $("g-date").value = todayStr(); $("g-status").value = "paid"; $("g-role").value = "Center";
     formMsg("form-game", "", false);
@@ -2928,7 +2923,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (g.assoc) $("g-assoc").value = g.assoc;
     setOpt($("g-role"), g.role || "Center");
     $("g-date").value = g.date; $("g-time").value = g.time || "";
-    if (g.endDate && g.endDate > g.date) { $("g-multi").checked = true; multiShow(); $("g-end").value = g.endDate; }
+    $("g-count").value = gN(g);
     $("g-match").value = g.match || ""; $("g-field").value = g.field || ""; $("g-assignor").value = g.assignor || "";
     $("g-fee").value = g.fee; $("g-exp").value = g.expenses ? g.expenses : "";
     $("g-notes").value = g.notes || ""; $("g-status").value = g.cancelled ? "cancelled" : g.paid === false ? "pending" : "paid";
@@ -2940,12 +2935,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (!date) return formMsg("form-game", "Pick the date of the game.", true);
     if (!isFinite(fee) || fee < 0) return formMsg("form-game", "Enter the pay for the game, like 55 or 62.50.", true);
     if ($("g-exp").value !== "" && (!isFinite(ex) || ex < 0)) return formMsg("form-game", "Expenses must be zero or more.", true);
-    var multi = $("g-multi").checked, endD = multi ? $("g-end").value : "";
-    if (multi && !endD) return formMsg("form-game", "Pick the last day of the game.", true);
-    if (multi && endD < date) return formMsg("form-game", "The last day can't be before the first day.", true);
-    if (multi && (parseD(endD) - parseD(date)) / 864e5 > 30) return formMsg("form-game", "A game can last up to 31 days.", true);
+    var cnt = $("g-count").value === "" ? 1 : Number($("g-count").value);
+    if (!isFinite(cnt) || cnt < 1 || cnt > 30 || Math.floor(cnt) !== cnt) return formMsg("form-game", "Number of games must be a whole number from 1 to 30.", true);
     var f = {
-      endDate: endD && endD > date ? endD : "", date: date, time: $("g-time").value || "", role: $("g-role").value, assoc: $("g-assoc").value,
+      count: cnt, date: date, time: $("g-time").value || "", role: $("g-role").value, assoc: $("g-assoc").value,
       match: $("g-match").value.trim(), field: $("g-field").value.trim(), assignor: $("g-assignor").value.trim(),
       fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) ? Math.round(ex * 100) / 100 : 0,
       notes: $("g-notes").value.trim().slice(0, 300),
