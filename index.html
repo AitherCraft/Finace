@@ -279,6 +279,17 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-stats div { background: var(--panel-2, rgba(255,255,255,0.04)); border: 1px solid var(--panel-line); border-radius: var(--r-sm); padding: 10px 12px; display: grid; gap: 4px; }
 .wish-stats span { font-size: 13px; color: var(--muted); }
 .wish-stats strong { font-size: 18px; overflow-wrap: anywhere; }
+.rp-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--blue); color: var(--fg); font: 700 14px/1 var(--display); text-decoration: none; background: rgba(46, 134, 255, 0.15); flex: 0 0 auto; margin-right: 8px; }
+.rp-head { display: flex; gap: 14px; align-items: center; }
+.rp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 20px/1 var(--display); background: rgba(46, 134, 255, 0.2); border: 2px solid var(--blue); flex: 0 0 auto; }
+.rp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.rp-badge { display: grid; gap: 4px; padding: 12px; border-radius: var(--r-sm); border: 1px dashed var(--panel-line); opacity: 0.55; filter: grayscale(0.7); }
+.rp-badge.on { opacity: 1; filter: none; border: 1px solid var(--blue); background: rgba(46, 134, 255, 0.10); }
+.rp-ico { font-size: 28px; }
+.rp-prog { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.rp-badge.on .rp-prog { color: var(--green); }
+.row-line { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--panel-line); list-style: none; }
+.row-line:first-child { border-top: 0; }
 .wish-group { list-style: none; padding: 14px 0 4px; }
 .wish-group h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .wish-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -714,7 +725,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <p class="tagline" id="tagline">Track <b>&bull;</b> Plan <b>&bull;</b> Earn</p>
       </div>
     </div>
-    <div class="hero-right"><input class="top-search" id="top-search" type="search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
+    <div class="hero-right"><a class="rp-btn" href="#profile" id="rp-open" aria-label="Referee profile"><span id="rp-ini">R</span></a><input class="top-search" id="top-search" type="search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
   </header>
 
   <div class="view" data-view="home">
@@ -977,6 +988,27 @@ button:disabled, .btn:disabled { opacity: 0.55; }
 
   <div class="pages" id="pages" hidden>
     <a class="back" href="#home">&larr; Back to dashboard</a>
+
+    <section class="panel" data-page="profile" hidden aria-labelledby="h-profile">
+      <div class="rp-head"><div class="rp-avatar" id="rp-avatar" aria-hidden="true">R</div><div><h2 id="h-profile">Referee profile</h2><p class="page-sub" id="rp-line"></p></div></div>
+      <div class="wish-stats" id="rp-stats"></div>
+      <h3>About you</h3>
+      <form id="form-rp" novalidate class="fs">
+        <div class="grid">
+          <div class="field"><label for="rp-name">Your name</label><input id="rp-name" type="text" maxlength="40" autocomplete="off" placeholder="First and last name"></div>
+          <div class="field"><label for="rp-cert">USSF certification</label><input id="rp-cert" type="text" maxlength="60" autocomplete="off" placeholder="e.g. Grade 8 Regional Referee"></div>
+          <div class="field"><label for="rp-level">Referee level</label><select id="rp-level"><option value="">Not set</option><option>Recreational</option><option>Club / travel</option><option>High school</option><option>College</option><option>Semi-pro</option><option>Professional</option></select></div>
+          <div class="field"><label for="rp-since">Officiating since (year)</label><input id="rp-since" type="number" inputmode="numeric" min="1970" max="2100" step="1" placeholder="e.g. 2022"></div>
+        </div>
+        <div class="field"><label for="rp-favs">Favorite leagues</label><input id="rp-favs" type="text" maxlength="160" autocomplete="off" placeholder="Separate with commas, up to 5"></div>
+        <div class="row"><button class="btn" type="submit">Save profile</button><a class="btn ghost" href="#home">Done</a></div>
+        <p class="msg" id="rp-msg" role="status"></p>
+      </form>
+      <h3>Leagues you work most</h3>
+      <ul class="list" id="rp-leagues"></ul>
+      <div class="panel-head"><h3>Badges</h3><span class="chip" id="rp-badge-count"></span></div>
+      <div class="rp-badges" id="rp-badges"></div>
+    </section>
 
     <section class="panel savebar" data-page="app-settings" hidden aria-labelledby="h-settings">
       <div class="panel-head"><h2 id="h-settings">Settings</h2><span class="chip ok" id="ui-state">Saved</span></div>
@@ -1346,7 +1378,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     { id: "p4", row: "u1314caysa", role: "avg", count: 1 }
   ] };
   var pay = JSON.parse(JSON.stringify(DEFAULT_PAY));
-  var assocs = [];
+  var assocs = [], rp = {};
   var ui = JSON.parse(JSON.stringify(DEFAULT_UI));
   var draftUi = JSON.parse(JSON.stringify(DEFAULT_UI));
   var LOCAL_KEY = "match-fee-split-v1";
@@ -2408,7 +2440,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     safe(function () { renderPeriods(); S = summarize(); A = summarize(true); }, "totals");
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
-    safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
     safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
@@ -2576,7 +2608,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
 
   /* Storage: a private store when the viewer has one, this browser otherwise. */
   function saveLocal() {
-    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag })); } catch (e) { showToast("Could not save on this device. Storage may be full or blocked. Download a backup from Settings.", 9000); }
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, rp: rp })); } catch (e) { showToast("Could not save on this device. Storage may be full or blocked. Download a backup from Settings.", 9000); }
   }
   function loadLocal() {
     try {
@@ -2592,13 +2624,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       if (d && Array.isArray(d.assocs)) assocs = sanitizeAssocs(d.assocs);
       if (d && sanitizeGoal(d.goal) !== null) goal = d.goal;
       if (d && Array.isArray(d.sgoals)) sgoals = sanitizeSGoals(d.sgoals);
+      if (d && d.rp && typeof d.rp === "object") rp = sanitizeRp(d.rp);
       if (d && Array.isArray(d.bag)) bag = sanitizeBag(d.bag);
     } catch (e) {
       try { var bad = localStorage.getItem(LOCAL_KEY); if (bad) { localStorage.setItem(LOCAL_KEY + "-damaged", bad); localStorage.removeItem(LOCAL_KEY); setTimeout(function () { showToast("Saved data on this device was damaged, so the app started fresh. A copy was kept in case it can be recovered.", 12000); }, 300); } } catch (x) {}
     }
   }
   function persistSplit() {
-    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, sec: sec }).then(function () { return true; }, function () { return false; });
+    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, rp: rp, sec: sec }).then(function () { return true; }, function () { return false; });
     saveLocal();
     return Promise.resolve(true);
   }
@@ -2647,7 +2680,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   }
 
   /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
-  var PAGES = { "add-game": "g-match", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "" };
+  var PAGES = { "add-game": "g-match", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "", "profile": "" };
   var TABS = ["home", "games", "money", "reports", "goals", "owed", "calendar", "inventory", "export"];
   var MOB = ["home", "games", "calendar", "money", "reports", "app-settings"], lastView = "";
   function route(first) {
@@ -2658,7 +2691,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (el) { el.hidden = el.getAttribute("data-view") !== view; });
     Array.prototype.forEach.call(document.querySelectorAll("[data-page]"), function (el) { el.hidden = el.getAttribute("data-page") !== view; });
     $("pages").hidden = tab;
-    var nk = view === "owed" ? "money" : view === "export" ? "reports" : tab || view === "app-settings" ? view : view === "add-game" ? "games" : "money";
+    var nk = view === "owed" ? "money" : view === "export" ? "reports" : tab || view === "app-settings" ? view : view === "profile" ? "home" : view === "add-game" ? "games" : "money";
     Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function (el) {
       if (el.getAttribute("data-nav") === nk) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
     });
@@ -3073,6 +3106,76 @@ button:disabled, .btn:disabled { opacity: 0.55; }
 
   function sameJson(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
   function editingIn(id) { var el = document.activeElement, box = $(id); return !!(el && box && box !== el && box.contains(el) && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)); }
+  /* Referee profile */
+  var RP_LEVELS = ["Recreational", "Club / travel", "High school", "College", "Semi-pro", "Professional"];
+  function sanitizeRp(o) {
+    o = o && typeof o === "object" ? o : {};
+    var since = Math.floor(Number(o.since)), yr = new Date().getFullYear();
+    return { name: String(o.name || "").trim().slice(0, 40), cert: String(o.cert || "").trim().slice(0, 60), level: RP_LEVELS.indexOf(o.level) >= 0 ? o.level : "",
+      since: since >= 1970 && since <= yr ? since : 0, favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5) };
+  }
+  function rpStats() {
+    var td = todayStr(), played = 0, earned = 0, byDay = {}, leagues = {}, roles = {}, weeks = {}, paidN = 0, unpaidN = 0, first = "";
+    live().forEach(function (g) {
+      var n = gN(g);
+      if (g.date > td) return;
+      played += n; byDay[g.date] = (byDay[g.date] || 0) + n;
+      if (g.paid !== false) { earned += toCents(g.fee); paidN += n; } else unpaidN += n;
+      var lg = g.assoc || "No league"; if (g.assoc) leagues[lg] = (leagues[lg] || 0) + n;
+      if (g.role) roles[g.role] = 1;
+      var d = parseD(g.date), wk = Math.floor((d.getTime() / 864e5 + 3) / 7); weeks[wk] = 1;
+      if (!first || g.date < first) first = g.date;
+    });
+    var ks = Object.keys(weeks).map(Number).sort(function (a, b) { return a - b; }), best = 0, run = 0, prev = null;
+    ks.forEach(function (k) { run = prev !== null && k === prev + 1 ? run + 1 : 1; prev = k; if (run > best) best = run; });
+    var maxDay = 0; Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxDay) maxDay = byDay[k]; });
+    return { played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first };
+  }
+  var RP_BADGES = [
+    { i: "🥇", n: "First Whistle", d: "Referee your first game", v: function (s) { return s.played; }, t: 1 },
+    { i: "🔟", n: "Ten Games", d: "Referee 10 games", v: function (s) { return s.played; }, t: 10 },
+    { i: "🏅", n: "Quarter Century", d: "Referee 25 games", v: function (s) { return s.played; }, t: 25 },
+    { i: "💯", n: "Century", d: "Referee 100 games", v: function (s) { return s.played; }, t: 100 },
+    { i: "🏆", n: "Veteran", d: "Referee 250 games", v: function (s) { return s.played; }, t: 250 },
+    { i: "💵", n: "First $100", d: "Earn $100 in game fees", v: function (s) { return s.earned / 100; }, t: 100, m: 1 },
+    { i: "💰", n: "Thousand Club", d: "Earn $1,000 in game fees", v: function (s) { return s.earned / 100; }, t: 1000, m: 1 },
+    { i: "💎", n: "Five Grand", d: "Earn $5,000 in game fees", v: function (s) { return s.earned / 100; }, t: 5000, m: 1 },
+    { i: "🔥", n: "Tournament Day", d: "Referee 4 games in one day", v: function (s) { return s.maxDay; }, t: 4 },
+    { i: "📅", n: "Four-Week Streak", d: "Referee in 4 weeks in a row", v: function (s) { return s.streak; }, t: 4 },
+    { i: "🗓️", n: "Twelve-Week Streak", d: "Referee in 12 weeks in a row", v: function (s) { return s.streak; }, t: 12 },
+    { i: "🎭", n: "All-Rounder", d: "Work as Center, assistant and 4th official", v: function (s) { return (s.roles.Center ? 1 : 0) + ((s.roles.AR1 || s.roles.AR2) ? 1 : 0) + (s.roles["4th"] ? 1 : 0); }, t: 3 },
+    { i: "🌎", n: "Multi-League", d: "Work games in 3 different leagues", v: function (s) { return s.nLeagues; }, t: 3 },
+    { i: "✅", n: "Paid in Full", d: "5 or more games played and none unpaid", v: function (s) { return s.unpaidN === 0 ? s.paidN : 0; }, t: 5 }
+  ];
+  function renderProfile() {
+    var box = $("form-rp"); if (!box) return;
+    var st = rpStats(), name = rp.name || "", ini = name ? name.split(/\s+/).map(function (x) { return x.charAt(0); }).join("").slice(0, 2).toUpperCase() : "R";
+    $("rp-avatar").textContent = ini; $("rp-ini").textContent = ini;
+    $("rp-line").textContent = [rp.level, rp.cert].filter(Boolean).join(" · ") || "Add your certification and level below.";
+    var yrs = rp.since ? new Date().getFullYear() - rp.since : (st.first ? new Date().getFullYear() - Number(st.first.slice(0, 4)) : null);
+    $("rp-stats").innerHTML = [["🎽 Total games", st.played], ["💵 Lifetime earnings", fmt(st.earned)], ["📆 Years officiating", yrs === null ? "—" : yrs < 1 ? "First year" : yrs + (yrs === 1 ? " year" : " years")], ["🌎 Leagues worked", st.nLeagues]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("");
+    if (!editingIn("form-rp") && document.activeElement !== box) {
+      if ($("rp-name").value !== name) $("rp-name").value = name; $("rp-cert").value = rp.cert || ""; $("rp-level").value = rp.level || ""; $("rp-since").value = rp.since || ""; $("rp-favs").value = (rp.favs || []).join(", ");
+    }
+    var top = Object.keys(st.leagues).sort(function (a, b) { return st.leagues[b] - st.leagues[a]; }).slice(0, 5);
+    $("rp-leagues").innerHTML = top.length ? top.map(function (l) { var fav = (rp.favs || []).some(function (f) { return f.toLowerCase() === l.toLowerCase(); }); return '<li class="row-line"><span>' + (fav ? "⭐ " : "") + esc(l) + '</span><strong>' + st.leagues[l] + (st.leagues[l] === 1 ? " game" : " games") + "</strong></li>"; }).join("") : '<li><p class="empty">Log games with a league and your most-worked leagues show here. Favorites you list above get a star.</p></li>';
+    var got = 0;
+    $("rp-badges").innerHTML = RP_BADGES.map(function (b) {
+      var v = b.v(st), ok = v >= b.t; if (ok) got++;
+      var prog = ok ? "Earned" : (b.m ? fmt(Math.round(v * 100)) + " of " + fmt(b.t * 100) : Math.floor(v) + " of " + b.t);
+      return '<div class="rp-badge' + (ok ? " on" : "") + '"><span class="rp-ico" aria-hidden="true">' + b.i + '</span><strong>' + esc(b.n) + '</strong><span class="hist-when">' + esc(b.d) + '</span><span class="rp-prog">' + esc(prog) + "</span></div>";
+    }).join("");
+    $("rp-badge-count").textContent = got + " of " + RP_BADGES.length;
+  }
+  $("form-rp").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var since = $("rp-since").value === "" ? 0 : Number($("rp-since").value);
+    if ($("rp-since").value !== "" && (!isFinite(since) || since < 1970 || since > new Date().getFullYear() || Math.floor(since) !== since)) return rpMsg("Type the year you started, like 2022.", true);
+    var before = rp;
+    rp = sanitizeRp({ name: $("rp-name").value, cert: $("rp-cert").value, level: $("rp-level").value, since: since, favs: $("rp-favs").value.split(",") }); render();
+    persistSplit().then(function (ok) { if (!ok) { rp = before; render(); rpMsg("Could not save that. Try again.", true); } else rpMsg("Profile saved."); });
+  });
+  function rpMsg(t, err) { var m = $("rp-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
   /* Associations and seasons: games are logged against an association, and estimates only count weekends inside a season. */
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   function sanitizeAssocs(a) {
@@ -3653,6 +3756,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (Array.isArray(d.wishes)) { var nw = sanitizeWishes(d.wishes); if (!sameJson(nw, wishes)) { wishes = nw; renderWishes(); } }
     if (sanitizeGoal(d.goal) !== null && d.goal !== goal) { goal = d.goal; fillGoalInput(); render(); }
     if (Array.isArray(d.sgoals)) { var ng = sanitizeSGoals(d.sgoals); if (!sameJson(ng, sgoals)) { sgoals = ng; render(); } }
+    if (d.rp && typeof d.rp === "object") { var nr = sanitizeRp(d.rp); if (!sameJson(nr, rp)) { rp = nr; render(); } }
     if (Array.isArray(d.bag)) { var nb = sanitizeBag(d.bag); if (!sameJson(nb, bag)) { bag = nb; render(); } }
     if (d.sec) { var nsec = sanitizeSec(d.sec); if (!sameJson(nsec, sec)) { sec = nsec; saveSecLocal(); secRender(); if (sec.mode === "pin" && wasFirst && !lockOn) showLock(); } }
     if (d.ui) { var eu = uiDirty(); ui = sanitizeUi(d.ui); if (!eu) { draftUi = clone(ui); fillUiInputs(); applyUi(ui); } }
@@ -3691,14 +3795,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
-    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs), goal: goal, sgoals: sgoals.slice(), bag: bag.slice() };
+    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs), goal: goal, sgoals: sgoals.slice(), bag: bag.slice(), rp: clone(rp) };
     var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length + mine.assocs.length > 0 || mine.goal > 0 || mine.sgoals.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
     sbOn = true; store = makeSbStore(); acctRender();
     setStatus("Syncing with your account…");
     return sbFetchAll().then(function (all) {
       var cloudEmpty = !all.count && !(all.prof && Object.keys(all.prof).length);
       if (cloudEmpty && hasMine) {
-        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay, assocs: mine.assocs, goal: mine.goal, sgoals: mine.sgoals, bag: mine.bag, sec: sec })];
+        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay, assocs: mine.assocs, goal: mine.goal, sgoals: mine.sgoals, bag: mine.bag, rp: mine.rp, sec: sec })];
         KINDS.forEach(function (k) { mine[k].forEach(function (e) { ups.push(store[k].doc(e.id).set(e)); }); });
         return Promise.all(ups).then(function () { loaded = true; acctStatus(); return "moved"; });
       }
@@ -3846,7 +3950,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var undoDoc = null;
   function backupDoc() {
     return { app: "RefLedger", version: 1, exported: new Date().toISOString(), games: data.games, income: data.income, spending: data.spending,
-      split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag };
+      split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, rp: rp };
   }
   function bkInfo() {
     var t = ""; try { t = localStorage.getItem("rf-last-backup") || ""; } catch (e) {}
@@ -3880,13 +3984,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     doc.goal = sanitizeGoal(d.goal) !== null ? d.goal : goal;
     doc.sgoals = Array.isArray(d.sgoals) ? sanitizeSGoals(d.sgoals) : sgoals;
     doc.bag = Array.isArray(d.bag) ? sanitizeBag(d.bag) : bag;
+    doc.rp = d.rp && typeof d.rp === "object" ? sanitizeRp(d.rp) : rp;
     doc.dropped = rep.dropped;
     return { doc: doc };
   }
   function applyDoc(doc, persist) {
     var prev = { games: data.games, income: data.income, spending: data.spending };
     KINDS.forEach(function (k) { data[k] = doc[k]; });
-    split = doc.split; start = doc.start; ui = doc.ui; wishes = doc.wishes; pay = doc.pay; assocs = doc.assocs; goal = doc.goal; sgoals = doc.sgoals; bag = doc.bag;
+    split = doc.split; start = doc.start; ui = doc.ui; wishes = doc.wishes; pay = doc.pay; assocs = doc.assocs; goal = doc.goal; sgoals = doc.sgoals; bag = doc.bag; rp = doc.rp;
     draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); renderAssocs(); render();
     if (!persist) return Promise.resolve(true);
     if (!store) { saveLocal(); return Promise.resolve(true); }
@@ -3979,7 +4084,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   })();
 
   /* Accessibility: announce the page after a tab change */
-  var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", inventory: "Ref bag", export: "Export", "app-settings": "Settings", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
+  var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", inventory: "Ref bag", export: "Export", "app-settings": "Settings", profile: "Referee profile", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
   function announceView(view) {
     var n = VIEW_NAMES[view] || "Home"; document.title = n + " - RefLedger";
     var r = $("sr-route"); if (r) r.textContent = n + " page";
@@ -4375,6 +4480,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         if (d && Array.isArray(d.wishes)) { var nw = sanitizeWishes(d.wishes); if (!sameJson(nw, wishes)) { wishes = nw; renderWishes(); } }
         if (d && sanitizeGoal(d.goal) !== null && d.goal !== goal) { goal = d.goal; fillGoalInput(); render(); }
         if (d && Array.isArray(d.sgoals)) { var ng = sanitizeSGoals(d.sgoals); if (!sameJson(ng, sgoals)) { sgoals = ng; render(); } }
+        if (d && d.rp && typeof d.rp === "object") { var nr = sanitizeRp(d.rp); if (!sameJson(nr, rp)) { rp = nr; render(); } }
         if (d && Array.isArray(d.bag)) { var nb = sanitizeBag(d.bag); if (!sameJson(nb, bag)) { bag = nb; render(); } }
         if (d && d.ui) {
           var editingUi = uiDirty();
