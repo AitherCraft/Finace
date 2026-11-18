@@ -279,6 +279,13 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-stats div { background: var(--panel-2, rgba(255,255,255,0.04)); border: 1px solid var(--panel-line); border-radius: var(--r-sm); padding: 10px 12px; display: grid; gap: 4px; }
 .wish-stats span { font-size: 13px; color: var(--muted); }
 .wish-stats strong { font-size: 18px; overflow-wrap: anywhere; }
+.lay-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--panel-line); list-style: none; }
+.lay-row:first-child { border-top: 0; }
+.lay-grip { font-size: 22px; padding: 6px 10px; cursor: grab; touch-action: none; user-select: none; color: var(--muted); }
+.lay-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.lay-name em { color: var(--muted); font-style: normal; font-size: 13px; }
+.lay-row.off .lay-name { opacity: 0.55; }
+.lay-row.dragging { background: rgba(46, 134, 255, 0.15); border-radius: var(--r-sm); box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
 .rp-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--blue); color: var(--fg); font: 700 14px/1 var(--display); text-decoration: none; background: rgba(46, 134, 255, 0.15); flex: 0 0 auto; margin-right: 8px; }
 .rp-head { display: flex; gap: 14px; align-items: center; }
 .rp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 20px/1 var(--display); background: rgba(46, 134, 255, 0.2); border: 2px solid var(--blue); flex: 0 0 auto; }
@@ -340,6 +347,7 @@ html[data-hide~="earnings"] [data-card="earnings"],
 html[data-hide~="reminders"] [data-card="reminders"],
 html[data-hide~="owed"] [data-card="owed"],
 html[data-hide~="goals"] [data-card="goals"],
+html[data-hide~="wish"] [data-card="wish"],
 html[data-hide~="bag"] [data-card="bag"] { display: none; }
 @media (min-width: 960px) { .grid2:has(> .p-start:only-child) { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 960px) {
@@ -1020,6 +1028,12 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <p class="msg" id="ui-msg" role="status"></p>
     </section>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-layout">
+      <div class="panel-head"><h2 id="h-layout">Customize Home</h2><button class="mini" type="button" id="lay-reset">Reset order</button></div>
+      <p class="note">Drag a card by the ☰ handle to move it, or use the arrows. Tap the eye to show or hide a card. Then tap Save settings. The summary tiles stay at the top.</p>
+      <ul class="list" id="lay-list"></ul>
+    </section>
+
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-colors">
       <h2 id="h-colors">Colors</h2>
       <div class="presets" id="presets" role="group" aria-label="Color themes">
@@ -1083,6 +1097,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <label class="check" for="show-reminders"><input id="show-reminders" type="checkbox" data-ui>Collect your pay card</label>
         <label class="check" for="show-owed"><input id="show-owed" type="checkbox" data-ui>Owed to you card</label>
         <label class="check" for="show-goals"><input id="show-goals" type="checkbox" data-ui>Goals progress</label>
+        <label class="check" for="show-wish"><input id="show-wish" type="checkbox" data-ui>Wish list</label>
         <label class="check" for="show-bag"><input id="show-bag" type="checkbox" data-ui>Ref bag</label>
       </div>
     </section>
@@ -1337,14 +1352,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }
+    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true },
-    name: "RefLedger", tagline: "Track \u2022 Plan \u2022 Earn"
+    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true },
+    name: "RefLedger", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
   var PRESETS = [
     { id: "night", c: { bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff" } },
@@ -2721,6 +2736,37 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   }
   function rgba(h, a) { var c = h2r(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+  /* Home layout: the order of the cards on Home. Empty means the standard order. */
+  var HOME_BOX = document.querySelector(".hcols"), HOME_COLS = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll(".hcol")) : [];
+  var HOME_ORIG = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll("[data-card]")) : [];
+  var HOME_HOME = HOME_ORIG.map(function (c) { return { el: c, col: HOME_COLS.indexOf(c.parentNode) }; });
+  var CARD_KEYS = HOME_ORIG.map(function (c) { return c.getAttribute("data-card"); });
+  var CARD_LABEL = { next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
+  var curOrder = [], deskMq = window.matchMedia ? window.matchMedia("(min-width: 960px)") : null;
+  function defaultOrder() {
+    return HOME_ORIG.map(function (c, i) { var m = /(?:^|\s)o(\d)(?:\s|$)/.exec(c.className); return { k: c.getAttribute("data-card"), n: m ? +m[1] : 99, i: i }; })
+      .sort(function (a, b) { return a.n - b.n || a.i - b.i; }).map(function (x) { return x.k; });
+  }
+  /* Phones use CSS order. Desktop has three columns, so cards are dealt into the columns in list order. */
+  function applyOrder(order) {
+    if (!HOME_BOX || !HOME_COLS.length) return;
+    curOrder = order || [];
+    var list = curOrder.length ? curOrder : null, byKey = {}, desk = !!(deskMq && deskMq.matches);
+    HOME_ORIG.forEach(function (c) { byKey[c.getAttribute("data-card")] = c; });
+    if (!list) {
+      HOME_HOME.forEach(function (h) { h.el.style.order = ""; if (h.col >= 0) HOME_COLS[h.col].appendChild(h.el); });
+      return;
+    }
+    list.forEach(function (k, i) { if (byKey[k]) byKey[k].style.order = String(i + 1); });
+    if (!desk) return;
+    var n = 0, hidden = (ui && ui.show) || {};
+    list.forEach(function (k) {
+      var el = byKey[k]; if (!el) return;
+      var skip = el.classList.contains("mob-only") || (draftUi && draftUi.show && draftUi.show[k] === false);
+      HOME_COLS[skip ? 0 : n % HOME_COLS.length].appendChild(el); if (!skip) n++;
+    });
+  }
+  if (deskMq && deskMq.addEventListener) deskMq.addEventListener("change", function () { applyOrder(curOrder); });
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
@@ -2732,6 +2778,11 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (raw.show && typeof raw.show === "object") SECTIONS.forEach(function (s) { if (typeof raw.show[s.k] === "boolean") u.show[s.k] = raw.show[s.k]; });
     if (typeof raw.name === "string" && raw.name.trim()) u.name = /^referee\s+finance$/i.test(raw.name.trim()) ? "RefLedger" : raw.name.trim().slice(0, 40);
     if (typeof raw.tagline === "string") u.tagline = raw.tagline.slice(0, 60);
+    if (Array.isArray(raw.order) && raw.order.length) {
+      var seen = {}, ord = raw.order.filter(function (k) { if (CARD_KEYS.indexOf(k) < 0 || seen[k]) return false; seen[k] = 1; return true; });
+      defaultOrder().forEach(function (k) { if (!seen[k]) ord.push(k); });
+      u.order = ord;
+    }
     return u;
   }
   function applyUi(u) {
@@ -2757,6 +2808,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     st.setProperty("--glow-a", u.glow ? rgba(u.accent, dark ? 0.30 : 0.18) : "transparent");
     st.setProperty("--glow-b", u.glow ? rgba(u.accent, dark ? 0.22 : 0.12) : "transparent");
     st.colorScheme = dark ? "dark" : "light";
+    applyOrder(u.order);
     root.setAttribute("data-size", u.size);
     root.setAttribute("data-round", u.round);
     root.setAttribute("data-density", u.density);
@@ -2798,6 +2850,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     SECTIONS.forEach(function (s) { $("show-" + s.k).checked = draftUi.show[s.k]; });
     $("set-name").value = draftUi.name;
     $("set-tagline").value = draftUi.tagline;
+    renderLayout();
     syncPresetButtons();
     updateUiState();
   }
@@ -2814,6 +2867,56 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     raw.tagline = $("set-tagline").value;
     return sanitizeUi(raw);
   }
+  function renderLayout() {
+    var box = $("lay-list"); if (!box) return;
+    var ord = draftUi.order && draftUi.order.length ? draftUi.order : defaultOrder();
+    box.innerHTML = ord.map(function (k, i) {
+      var lb = esc(CARD_LABEL[k] || k), hideable = SECTIONS.some(function (x) { return x.k === k; }), off = hideable && draftUi.show[k] === false;
+      return '<li class="lay-row' + (off ? " off" : "") + '" data-lay-key="' + k + '"><span class="lay-grip" data-lay-grip aria-hidden="true">☰</span><span class="lay-name">' + (i + 1) + ". " + lb + (off ? ' <em>(hidden)</em>' : "") + '</span><span class="wish-actions">' +
+        (hideable ? '<button class="mini" type="button" data-lay-eye="' + k + '" aria-pressed="' + (!off) + '" aria-label="' + (off ? "Show " : "Hide ") + lb + '">' + (off ? "Show" : "Hide") + "</button>" : "") +
+        '<button class="mini" type="button" data-lay-up="' + k + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Move ' + lb + ' up">&uarr;</button><button class="mini" type="button" data-lay-down="' + k + '"' + (i === ord.length - 1 ? " disabled" : "") + ' aria-label="Move ' + lb + ' down">&darr;</button></span></li>';
+    }).join("");
+  }
+  function layMove(k, d) {
+    var ord = (draftUi.order && draftUi.order.length ? draftUi.order : defaultOrder()).slice(), i = ord.indexOf(k), j = i + d;
+    if (i < 0 || j < 0 || j >= ord.length) return;
+    ord.splice(i, 1); ord.splice(j, 0, k);
+    draftUi = sanitizeUi(Object.assign(clone(draftUi), { order: ord })); applyUi(draftUi); renderLayout(); updateUiState();
+  }
+  document.addEventListener("click", function (e) {
+    var eye = e.target.closest && e.target.closest("[data-lay-eye]");
+    if (eye) { var ek = eye.getAttribute("data-lay-eye"), cb = $("show-" + ek); if (cb) { cb.checked = !cb.checked; onUiInput(); renderLayout(); } return; }
+  });
+  /* Drag to reorder (mouse, finger or pen) */
+  (function () {
+    var drag = null;
+    document.addEventListener("pointerdown", function (e) {
+      var g = e.target.closest && e.target.closest("[data-lay-grip]"); if (!g) return;
+      var li = g.closest(".lay-row"); if (!li) return;
+      drag = { li: li, id: e.pointerId }; li.classList.add("dragging"); try { g.setPointerCapture(e.pointerId); } catch (er) {} e.preventDefault();
+    });
+    document.addEventListener("pointermove", function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var box = $("lay-list"), rows = Array.prototype.slice.call(box.querySelectorAll(".lay-row"));
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i]; if (r === drag.li) continue; var b = r.getBoundingClientRect();
+        if (e.clientY >= b.top && e.clientY <= b.bottom) { if (e.clientY < b.top + b.height / 2) box.insertBefore(drag.li, r); else box.insertBefore(drag.li, r.nextSibling); break; }
+      }
+      var edge = 70; if (e.clientY < edge) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - edge - 70) window.scrollBy(0, 12);
+    });
+    function end(e) {
+      if (!drag || (e && e.pointerId !== drag.id)) return;
+      var ord = Array.prototype.map.call($("lay-list").querySelectorAll(".lay-row"), function (r) { return r.getAttribute("data-lay-key"); });
+      drag.li.classList.remove("dragging"); drag = null;
+      draftUi = sanitizeUi(Object.assign(clone(draftUi), { order: ord })); applyUi(draftUi); renderLayout(); updateUiState();
+    }
+    document.addEventListener("pointerup", end); document.addEventListener("pointercancel", end);
+  })();
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-lay-up],[data-lay-down],#lay-reset"); if (!b) return;
+    if (b.id === "lay-reset") { draftUi = Object.assign(clone(draftUi), { order: [] }); applyUi(draftUi); renderLayout(); updateUiState(); return; }
+    var up = b.getAttribute("data-lay-up"); layMove(up || b.getAttribute("data-lay-down"), up ? -1 : 1);
+  });
   function onUiInput() {
     draftUi = readUi();
     applyUi(draftUi);
