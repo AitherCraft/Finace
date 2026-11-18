@@ -1,4 +1,4 @@
-/* Referee Finance: keeps the app working with no connection.
+/* RefLedger: keeps the app working with no connection.
    Pages: try the network first (so updates show up), fall back to the saved copy.
    Fonts and icons: saved copy first, refreshed in the background. */
 const CACHE = "rf-shell-v4";
