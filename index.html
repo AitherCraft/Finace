@@ -3423,6 +3423,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         (w.link ? '<div class="wish-when"><a href="' + esc(w.link) + '" target="_blank" rel="noopener noreferrer">Store link</a></div>' : "") +
         '<div class="wish-actions">' +
         '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '"' + (r.st.ok ? "" : ' disabled title="Available once you have enough saved"') + '>Purchase</button>' +
+        (w.link ? '<button class="mini" type="button" data-wish-setprice="' + esc(w.id) + '">Type price</button>' : "") +
         (w.link && sbSession ? '<button class="mini" type="button" data-wish-check="' + esc(w.id) + '">Check price</button>' : "") +
         '<button class="mini" type="button" data-wish-edit="' + esc(w.id) + '">Edit</button>' +
         '<button class="mini" type="button" data-wish-up="' + esc(w.id) + '"' + (n === 0 ? " disabled" : "") + ' aria-label="Higher priority: ' + esc(w.what) + '">&uarr;</button>' +
@@ -3490,7 +3491,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   $("wishes").addEventListener("click", function (e) {
     var t = e.target.closest("button");
     if (!t) return;
-    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-edit") || t.getAttribute("data-wish-check") || t.getAttribute("data-wish-useprice") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
+    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-edit") || t.getAttribute("data-wish-check") || t.getAttribute("data-wish-setprice") || t.getAttribute("data-wish-useprice") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
     var w = wishes.filter(function (x) { return x.id === id; })[0];
     if (!w) return;
     if (t.hasAttribute("data-wish-up") || t.hasAttribute("data-wish-down")) {
@@ -3500,6 +3501,11 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       wishes[at] = wishes[to]; wishes[to] = w; renderWishes();
       persistSplit().then(function (ok) { if (!ok) { wishes = before; renderWishes(); wishMsg("Could not save the new order. Try again.", true); } else wishMsg(""); });
       return;
+    }
+    if (t.hasAttribute("data-wish-setprice")) {
+      var ans = window.prompt("What is the price now? (for " + w.what + ")", String(w.seen || w.amount)); if (ans === null) return;
+      var np = parseFloat(String(ans).replace(/[^0-9.]/g, "")); if (!isFinite(np) || np <= 0) return wishMsg("Type the price as a number, like 49.99.", true);
+      if (!w.base) w.base = w.amount; w.seen = Math.round(np * 100) / 100; w.chk = Date.now(); renderWishes(); persistSplit(); wishMsg("Price noted: " + fmt(toCents(w.seen)) + "."); return;
     }
     if (t.hasAttribute("data-wish-check")) { t.disabled = true; wishMsg("Checking the price…"); checkPrice(w, true); return; }
     if (t.hasAttribute("data-wish-useprice")) {
