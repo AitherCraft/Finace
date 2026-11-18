@@ -3427,10 +3427,11 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       return persistSplit().then(function (ok) { renderWishes(); return ok; });
     }
     if (t.hasAttribute("data-wish-del")) { drop().then(function (ok) { wishMsg(ok ? "Removed." : "Could not save that. Try again.", !ok); }); return; }
+    if (w.link) { try { window.open(w.link, "_blank", "noopener,noreferrer"); } catch (er) {} }
     var spId = uid("s"), at0 = wishes.indexOf(w);
     addEntry("spending", { id: spId, date: ymd(new Date()), bucket: w.bucket, note: w.cat ? w.what + " (" + w.cat + ")" : w.what, amount: w.amount, created: Date.now() }).then(function (ok) {
       if (!ok) { wishMsg("Could not save that. Try again in a moment.", true); return; }
-      drop().then(function () { lastBuy = { w: w, spId: spId, at: at0 }; wishMsg("Purchased. Logged under " + BMAP[w.bucket].name + " and moved to your expenses."); $("wish-undo").hidden = false; });
+      drop().then(function () { lastBuy = { w: w, spId: spId, at: at0 }; wishMsg((w.link ? "Store opened. " : "") + "Purchased. Logged under " + BMAP[w.bucket].name + " and moved to your expenses."); $("wish-undo").hidden = false; });
     });
   });
 
