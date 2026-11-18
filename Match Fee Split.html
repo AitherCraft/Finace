@@ -3359,9 +3359,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     return '<div class="wish-price ' + (d < 0 ? "down" : "up") + '"><span>' + esc(t) + " Now " + esc(fmt(toCents(w.seen))) + ", was " + esc(fmt(toCents(w.base))) + ".</span>" +
       (toCents(w.seen) !== toCents(w.amount) ? ' <button class="mini" type="button" data-wish-useprice="' + esc(w.id) + '">Use ' + esc(fmt(toCents(w.seen))) + "</button>" : "") + "</div>";
   }
-  function priceCall(link) {
+  function priceCall(link, retried) {
     if (!sbSession || !sbSession.access_token) return Promise.reject(new Error("Sign in to check prices."));
     return fetch(SB_URL + "/functions/v1/price-check", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + sbSession.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ url: link }) }).then(function (r) {
+      if (r.status === 401 && !retried) return sbRefresh().then(function () { return priceCall(link, true); });
       return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {} if (!r.ok || !j || !j.ok) throw new Error(r.status === 401 ? "Sign in again to check prices." : (j && j.error) || "Could not check that price."); return j; });
     });
   }
@@ -3374,7 +3375,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       w.seen = j.price; w.chk = Date.now(); if (!w.base) w.base = toCents(w.amount) / 100;
       renderWishes(); persistSplit();
       if (manual) wishMsg(j.price === w.base ? (toCents(j.price) === toCents(w.amount) ? "Price checked. No change since you added it." : "Price checked: " + fmt(toCents(j.price)) + ". Tap Use to update your saved price.") : "Price checked: " + fmt(toCents(j.price)) + ".");
-    }, function (e) { delete priceBusy[w.id]; w.chk = Date.now(); if (manual) wishMsg(String(e.message || e), true); });
+    }, function (e) { delete priceBusy[w.id]; if (!/Sign in/i.test(String(e && e.message))) w.chk = Date.now(); if (manual) wishMsg(String(e.message || e), true); });
   }
   function priceAuto() {
     if (!sbSession) return;
@@ -3563,10 +3564,10 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   function emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 120; }
   function authEmail(v) { return v.indexOf("@") >= 0 ? v : userEmail(v); }
   function userOk(u) { return /^[a-z0-9._-]{3,30}$/.test(u); }
-  function userEmail(u) { return u + "@RefLedger.app"; }
+  function userEmail(u) { return u + "@referee-finance.app"; } /* internal sign-in address; kept so existing accounts still work */
   function loadSession() {
     try {
-      var r = localStorage.getItem(SB_SESSION_KEY), x = r && JSON.parse(r);
+      var r = localStorage.getItem(SB_SESSION_KEY) || localStorage.getItem("referee-finance-account-v1"), x = r && JSON.parse(r);
       if (x && x.access_token && x.refresh_token && x.user_id) return x;
     } catch (e) {}
     return null;
@@ -3576,7 +3577,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   }
   function setSession(j, name) {
     var em = j.user && j.user.email ? String(j.user.email) : "";
-    var nm = name || (em ? em.replace("@RefLedger.app", "") : (sbSession && sbSession.username) || "");
+    var nm = name || (em ? em.replace(/@(referee-finance|RefLedger)\.app$/i, "") : (sbSession && sbSession.username) || "");
     sbSession = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: (j.user && j.user.id) || (sbSession && sbSession.user_id), username: nm };
     saveSession(sbSession);
   }
