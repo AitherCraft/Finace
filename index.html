@@ -2361,7 +2361,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     objs[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
     objs[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
     pages.forEach(function (p, i) {
-      var stream = p + "BT /F1 8 Tf " + M + " 22 Td (" + pdfEsc("Referee Finance - page " + (i + 1) + " of " + n) + ") Tj ET\n";
+      var stream = p + "BT /F1 8 Tf " + M + " 22 Td (" + pdfEsc("RefLedger - page " + (i + 1) + " of " + n) + ") Tj ET\n";
       objs[5 + i * 2] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + W + " " + H + "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + (6 + i * 2) + " 0 R >>";
       objs[6 + i * 2] = "<< /Length " + stream.length + " >>\nstream\n" + stream + "endstream";
     });
@@ -3556,14 +3556,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   /* Account sync: username + password through the Supabase project, shared by every device that signs in. */
   var SB_URL = "https://yamchkpoqulhhlotkenb.supabase.co";
   var SB_KEY = "sb_publishable_6kB2Y2IUpiPaB96M6auPGg_i6WyWq0B";
-  var SB_SESSION_KEY = "referee-finance-account-v1";
+  var SB_SESSION_KEY = "RefLedger-account-v1";
   var sbLastSig = "", sbOn = false, sbSession = null, sbPending = 0, sbRefreshing = null, sbTimer = null, sbWired = false;
 
   function cleanUser(v) { return String(v || "").trim().toLowerCase(); }
   function emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 120; }
   function authEmail(v) { return v.indexOf("@") >= 0 ? v : userEmail(v); }
   function userOk(u) { return /^[a-z0-9._-]{3,30}$/.test(u); }
-  function userEmail(u) { return u + "@referee-finance.app"; }
+  function userEmail(u) { return u + "@RefLedger.app"; }
   function loadSession() {
     try {
       var r = localStorage.getItem(SB_SESSION_KEY), x = r && JSON.parse(r);
@@ -3576,7 +3576,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   }
   function setSession(j, name) {
     var em = j.user && j.user.email ? String(j.user.email) : "";
-    var nm = name || (em ? em.replace("@referee-finance.app", "") : (sbSession && sbSession.username) || "");
+    var nm = name || (em ? em.replace("@RefLedger.app", "") : (sbSession && sbSession.username) || "");
     sbSession = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: (j.user && j.user.id) || (sbSession && sbSession.user_id), username: nm };
     saveSession(sbSession);
   }
@@ -3844,7 +3844,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   /* Backup and restore */
   var undoDoc = null;
   function backupDoc() {
-    return { app: "referee-finance", version: 1, exported: new Date().toISOString(), games: data.games, income: data.income, spending: data.spending,
+    return { app: "RefLedger", version: 1, exported: new Date().toISOString(), games: data.games, income: data.income, spending: data.spending,
       split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag };
   }
   function bkInfo() {
@@ -3867,7 +3867,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   }
   function parseBackup(text) {
     var d; try { d = JSON.parse(text); } catch (e) { return { err: "That file is not a valid backup (it could not be read)." }; }
-    if (!d || typeof d !== "object" || Array.isArray(d) || (d.app !== "referee-finance" && !Array.isArray(d.games))) return { err: "That file does not look like a Referee Finance backup." };
+    if (!d || typeof d !== "object" || Array.isArray(d) || (d.app !== "RefLedger" && !Array.isArray(d.games))) return { err: "That file does not look like a RefLedger backup." };
     var rep = { dropped: 0 }, doc = { exported: d.exported };
     KINDS.forEach(function (k) { doc[k] = cleanEntries(d[k], rep); });
     doc.split = validSplit(d.split) ? d.split : split;
@@ -3937,7 +3937,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   }
   $("bk-save").addEventListener("click", function () {
     try {
-      saveBlob(new Blob([JSON.stringify(backupDoc(), null, 1)], { type: "application/json" }), "referee-finance-backup-" + todayStr() + ".json");
+      saveBlob(new Blob([JSON.stringify(backupDoc(), null, 1)], { type: "application/json" }), "RefLedger-backup-" + todayStr() + ".json");
       try { localStorage.setItem("rf-last-backup", String(Date.now())); } catch (e) {}
       bkInfo(); bkMsg("Backup downloaded. Keep the file somewhere safe.");
     } catch (e) { bkMsg("Could not make the backup file.", true); }
@@ -3980,7 +3980,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   /* Accessibility: announce the page after a tab change */
   var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", inventory: "Ref bag", export: "Export", "app-settings": "Settings", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
   function announceView(view) {
-    var n = VIEW_NAMES[view] || "Home"; document.title = n + " - Referee Finance";
+    var n = VIEW_NAMES[view] || "Home"; document.title = n + " - RefLedger";
     var r = $("sr-route"); if (r) r.textContent = n + " page";
   }
   bkInfo(); netUi();
@@ -4053,7 +4053,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   function unb64u(t) { t = t.replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var r = atob(t), b = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) b[i] = r.charCodeAt(i); return b; }
   function faceEnroll() {
     var ch = new Uint8Array(32), uid = new Uint8Array(16); crypto.getRandomValues(ch); crypto.getRandomValues(uid);
-    return navigator.credentials.create({ publicKey: { challenge: ch, rp: { name: "Referee Finance" }, user: { id: uid, name: "referee", displayName: "Referee Finance" },
+    return navigator.credentials.create({ publicKey: { challenge: ch, rp: { name: "RefLedger" }, user: { id: uid, name: "referee", displayName: "RefLedger" },
       pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], timeout: 60000, attestation: "none",
       authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" } } })
       .then(function (c) { if (!c) throw new Error("No result"); faceSet(b64u(c.rawId)); });
