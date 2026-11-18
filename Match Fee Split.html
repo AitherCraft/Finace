@@ -275,6 +275,10 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-price { font-weight: 700; border-radius: var(--r-sm); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 .wish-price.down { color: var(--green); background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.45); }
 .wish-price.up { color: var(--orange); background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.5); }
+.wish-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 4px 0 8px; }
+.wish-stats div { background: var(--panel-2, rgba(255,255,255,0.04)); border: 1px solid var(--panel-line); border-radius: var(--r-sm); padding: 10px 12px; display: grid; gap: 4px; }
+.wish-stats span { font-size: 13px; color: var(--muted); }
+.wish-stats strong { font-size: 18px; overflow-wrap: anywhere; }
 .wish-group { list-style: none; padding: 14px 0 4px; }
 .wish-group h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .wish-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -752,6 +756,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <div class="field"><label for="we-notes">Notes</label><textarea id="we-notes" rows="2" maxlength="200" placeholder="Size, color, which model"></textarea></div>
         <div class="row"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" id="we-cancel">Cancel</button></div>
       </form>
+      <div class="wish-stats" id="wish-stats" hidden></div>
       <label class="check" for="wish-group-on"><input id="wish-group-on" type="checkbox" checked>Group by category</label>
       <ul class="wish-list" id="wishes"></ul>
         <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
@@ -3431,6 +3436,13 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         '<button class="mini" type="button" data-wish-down="' + esc(w.id) + '"' + (n === rows.length - 1 ? " disabled" : "") + ' aria-label="Lower priority: ' + esc(w.what) + '">&darr;</button>' +
         '<button class="mini" type="button" data-wish-del="' + esc(w.id) + '">Remove</button></div></li>';
     }
+    var tot = 0, sv = 0, rdy = 0, near = null;
+    rows.forEach(function (r) {
+      var k = BUCKETS.map(function (b) { return b.k; }).indexOf(r.w.bucket), c = toCents(r.w.amount), sa = Math.max(0, Math.min(c, info.a.out[k] - info.used[r.w.bucket] - r.ahead));
+      tot += c; sv += sa; if (r.st.ok) rdy++; else if (!near || c - sa < near.left) near = { name: r.w.what, left: c - sa };
+    });
+    var ws = $("wish-stats"); ws.hidden = !rows.length;
+    ws.innerHTML = '<div><span>🛒 Items</span><strong>' + rows.length + '</strong></div><div><span>💲 Total wish list</span><strong>' + esc(fmt(tot)) + '</strong></div><div><span>💰 Saved</span><strong>' + esc(fmt(sv)) + '</strong></div><div><span>🎯 Closest item</span><strong>' + (near ? esc(near.name) : "All ready") + '</strong></div><div><span>✅ Ready to buy</span><strong>' + rdy + '</strong></div>';
     var WISH_ICON = { Uniform: "👕", Electronics: "📱", Equipment: "🎒", Training: "🎓", Travel: "✈️", Clothing: "👔", Other: "📦", "": "🏷️" };
     var WISH_PLURAL = { Uniform: "Uniforms", Electronics: "Electronics", Equipment: "Equipment", Training: "Training", Travel: "Travel", Clothing: "Clothing", Other: "Other", "": "No category" };
     var grouped = wishGroupOn();
