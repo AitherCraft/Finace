@@ -3347,7 +3347,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   function dollars(c) { return c % 100 === 0 ? "$" + (c / 100).toLocaleString("en-US") : fmt(c); }
   function priceBanner(w) {
     if (!w.link || !w.base || !w.seen) return "";
-    var d = toCents(w.seen) - toCents(w.base); if (d === 0) return "";
+    var d = toCents(w.seen) - toCents(w.base);
+    if (d === 0) return toCents(w.seen) === toCents(w.amount) ? "" : '<div class="wish-price"><span>Current price is ' + esc(fmt(toCents(w.seen))) + ", but your saved price is " + esc(fmt(toCents(w.amount))) + ".</span> " + '<button class="mini" type="button" data-wish-useprice="' + esc(w.id) + '">Use ' + esc(fmt(toCents(w.seen))) + "</button></div>";
     var t = d < 0 ? "⬇️ Price dropped " + dollars(-d) + "!" : "⬆️ Price increased " + dollars(d);
     return '<div class="wish-price ' + (d < 0 ? "down" : "up") + '"><span>' + esc(t) + " Now " + esc(fmt(toCents(w.seen))) + ", was " + esc(fmt(toCents(w.base))) + ".</span>" +
       (toCents(w.seen) !== toCents(w.amount) ? ' <button class="mini" type="button" data-wish-useprice="' + esc(w.id) + '">Use ' + esc(fmt(toCents(w.seen))) + "</button>" : "") + "</div>";
@@ -3364,7 +3365,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     return priceCall(w.link).then(function (j) {
       w.seen = j.price; w.chk = Date.now(); if (!w.base) w.base = toCents(w.amount) / 100;
       renderWishes(); persistSplit();
-      if (manual) wishMsg(j.price === w.base ? "Price checked. No change since you added it." : "Price checked: " + fmt(toCents(j.price)) + ".");
+      if (manual) wishMsg(j.price === w.base ? (toCents(j.price) === toCents(w.amount) ? "Price checked. No change since you added it." : "Price checked: " + fmt(toCents(j.price)) + ". Tap Use to update your saved price.") : "Price checked: " + fmt(toCents(j.price)) + ".");
     }, function (e) { w.chk = Date.now(); if (manual) wishMsg(String(e.message || e), true); });
   }
   function priceAuto() {
