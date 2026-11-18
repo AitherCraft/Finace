@@ -1,6 +1,6 @@
 {
-  "name": "Referee Finance",
-  "short_name": "Referee Finance",
+  "name": "RefLedger",
+  "short_name": "RefLedger",
   "description": "Track referee pay, what you are owed, and split it into Give, Save, Invest and Spend.",
   "start_url": "./",
   "scope": "./",
