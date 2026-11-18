@@ -272,6 +272,9 @@ button.badge { cursor: pointer; min-height: 26px; }
 .chip.prio-medium { color: #f1c40f; border-color: #f1c40f; }
 .chip.prio-low { color: #2ecc71; border-color: #2ecc71; }
 .wish-tip { font-size: 14px; color: var(--fg); background: rgba(46, 134, 255, 0.10); border: 1px solid rgba(46, 134, 255, 0.35); border-radius: var(--r-sm); padding: 8px 12px; }
+.wish-price { font-weight: 700; border-radius: var(--r-sm); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.wish-price.down { color: var(--green); background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.45); }
+.wish-price.up { color: var(--orange); background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.5); }
 .wish-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .wish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .wish-list { list-style: none; margin: 0; padding: 0; }
@@ -3280,7 +3283,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       var amt = Number(w.amount);
       if (!isFinite(amt) || amt <= 0 || !BMAP[w.bucket] || typeof w.id !== "string") return;
       out.push({ id: w.id.slice(0, 40), what: String(w.what || "Something I want").slice(0, 80), amount: Math.round(amt * 100) / 100, bucket: w.bucket, created: Number(w.created) || 0,
-        cat: WISH_CATS.indexOf(w.cat) >= 0 ? w.cat : "", link: /^https?:\/\/[^\s]+$/i.test(String(w.link || "")) ? String(w.link).slice(0, 300) : "", target: /^\d{4}-\d{2}-\d{2}$/.test(String(w.target || "")) ? w.target : "", notes: String(w.notes || "").slice(0, 200), prio: WISH_PRIO[w.prio] ? w.prio : "medium" });
+        cat: WISH_CATS.indexOf(w.cat) >= 0 ? w.cat : "", link: /^https?:\/\/[^\s]+$/i.test(String(w.link || "")) ? String(w.link).slice(0, 300) : "", target: /^\d{4}-\d{2}-\d{2}$/.test(String(w.target || "")) ? w.target : "", notes: String(w.notes || "").slice(0, 200), prio: WISH_PRIO[w.prio] ? w.prio : "medium",
+        base: Number(w.base) > 0 ? Math.round(Number(w.base) * 100) / 100 : 0, seen: Number(w.seen) > 0 ? Math.round(Number(w.seen) * 100) / 100 : 0, chk: Number(w.chk) > 0 ? Number(w.chk) : 0 });
     });
     return out;
   }
@@ -3336,6 +3340,36 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var when = new Date(info.now.getTime() + days * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", year: days > 300 ? "numeric" : undefined });
     return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. " + (info.plan ? "At your pay scale (" + fmt(info.weekend) + " a weekend, " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month)" : "At your recent pace") + " you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." + (skip ? " This skips the off-season." : "") };
   }
+  /* Price tracking: the signed-in server reads the product page; "base" is the price when the link was added. */
+  function dollars(c) { return c % 100 === 0 ? "$" + (c / 100).toLocaleString("en-US") : fmt(c); }
+  function priceBanner(w) {
+    if (!w.link || !w.base || !w.seen) return "";
+    var d = toCents(w.seen) - toCents(w.base); if (d === 0) return "";
+    var t = d < 0 ? "⬇️ Price dropped " + dollars(-d) + "!" : "⬆️ Price increased " + dollars(d);
+    return '<div class="wish-price ' + (d < 0 ? "down" : "up") + '"><span>' + esc(t) + " Now " + esc(fmt(toCents(w.seen))) + ", was " + esc(fmt(toCents(w.base))) + ".</span>" +
+      (toCents(w.seen) !== toCents(w.amount) ? ' <button class="mini" type="button" data-wish-useprice="' + esc(w.id) + '">Use ' + esc(fmt(toCents(w.seen))) + "</button>" : "") + "</div>";
+  }
+  function priceCall(link) {
+    if (!sbSession || !sbSession.access_token) return Promise.reject(new Error("Sign in to check prices."));
+    return fetch(SB_URL + "/functions/v1/price-check", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + sbSession.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ url: link }) }).then(function (r) {
+      return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {} if (!r.ok || !j || !j.ok) throw new Error(r.status === 401 ? "Sign in again to check prices." : (j && j.error) || "Could not check that price."); return j; });
+    });
+  }
+  var priceTried = {};
+  function checkPrice(w, manual) {
+    priceTried[w.id] = 1;
+    return priceCall(w.link).then(function (j) {
+      w.seen = j.price; w.chk = Date.now(); if (!w.base) w.base = toCents(w.amount) / 100;
+      renderWishes(); persistSplit();
+      if (manual) wishMsg(j.price === w.base ? "Price checked. No change since you added it." : "Price checked: " + fmt(toCents(j.price)) + ".");
+    }, function (e) { w.chk = Date.now(); if (manual) wishMsg(String(e.message || e), true); });
+  }
+  function priceAuto() {
+    if (!sbSession) return;
+    var due = wishes.filter(function (w) { return w.link && !priceTried[w.id] && Date.now() - (w.chk || 0) > 12 * 3600 * 1000; })[0];
+    if (!due) return;
+    checkPrice(due, false).then(function () { setTimeout(priceAuto, 1500); });
+  }
   /* Smart suggestions: plain-language ideas for getting to a wish sooner. */
   function wishTips(w, info, ahead, st) {
     var i = -1; BUCKETS.forEach(function (b, n) { if (b.k === w.bucket) i = n; });
@@ -3378,16 +3412,19 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Saved toward ' + esc(w.what) + '"><span style="width:' + pct + '%"></span></div>' +
         '<div class="wish-when">' + fmt(saved) + " of " + fmt(cost) + " saved &middot; " + pct + "%</div>" +
         '<div class="wish-when' + (r.st.ok ? " ready" : "") + '">From ' + esc(BMAP[w.bucket].name) + ". " + esc(r.st.text) + '</div>' +
+        priceBanner(w) +
         r.tips.map(function (t) { return '<div class="wish-tip">💡 ' + esc(t) + "</div>"; }).join("") +
         (w.notes ? '<div class="wish-when">' + esc(w.notes) + "</div>" : "") +
         (w.link ? '<div class="wish-when"><a href="' + esc(w.link) + '" target="_blank" rel="noopener noreferrer">Store link</a></div>' : "") +
         '<div class="wish-actions">' +
         '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '"' + (r.st.ok ? "" : ' disabled title="Available once you have enough saved"') + '>Purchase</button>' +
+        (w.link && sbSession ? '<button class="mini" type="button" data-wish-check="' + esc(w.id) + '">Check price</button>' : "") +
         '<button class="mini" type="button" data-wish-edit="' + esc(w.id) + '">Edit</button>' +
         '<button class="mini" type="button" data-wish-up="' + esc(w.id) + '"' + (n === 0 ? " disabled" : "") + ' aria-label="Higher priority: ' + esc(w.what) + '">&uarr;</button>' +
         '<button class="mini" type="button" data-wish-down="' + esc(w.id) + '"' + (n === rows.length - 1 ? " disabled" : "") + ' aria-label="Lower priority: ' + esc(w.what) + '">&darr;</button>' +
         '<button class="mini" type="button" data-wish-del="' + esc(w.id) + '">Remove</button></div></li>';
     }).join("");
+    setTimeout(priceAuto, 800);
     var ready = rows.filter(function (r) { return r.st.ok; });
     $("wish-alert").hidden = !ready.length;
     if (ready.length) $("wish-alert-text").textContent = ready.map(function (r) { return r.w.what + " (" + fmt(toCents(r.w.amount)) + ")"; }).join(", ") + (ready.length > 1 ? " all fit" : " fits") + " in your plan right now.";
@@ -3428,6 +3465,9 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (link && !/^https?:\/\/[^\s]+$/i.test(link)) return wishMsg("The store link should start with http:// or https://", true);
     var before = Object.assign({}, w);
     Object.assign(w, { what: $("we-what").value.trim().slice(0, 80), amount: Math.round(amt * 100) / 100, cat: $("we-cat").value, prio: $("we-prio").value, target: $("we-target").value || "", link: link.slice(0, 300), notes: $("we-notes").value.trim().slice(0, 200) });
+    if (!w.link) { w.base = 0; w.seen = 0; w.chk = 0; }
+    else if (isNew || link !== (before.link || "") || !w.base) { w.base = w.amount; w.seen = w.amount; w.chk = 0; delete priceTried[w.id]; }
+    else if (w.amount !== before.amount) w.seen = w.amount;
     if (isNew) wishes.push(w); else w.bucket = $("we-bucket").value;
     renderWishes();
     persistSplit().then(function (ok) { if (!ok) { if (isNew) wishes = wishes.filter(function (x) { return x !== w; }); else Object.assign(w, before); renderWishes(); wishMsg("Could not save that. Try again.", true); } else { wishMsg(isNew ? "Added to your wish list." : "Saved."); wishEditId = null; $("wish-edit").hidden = true; } });
@@ -3435,7 +3475,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   $("wishes").addEventListener("click", function (e) {
     var t = e.target.closest("button");
     if (!t) return;
-    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-edit") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
+    var id = t.getAttribute("data-wish-del") || t.getAttribute("data-wish-buy") || t.getAttribute("data-wish-edit") || t.getAttribute("data-wish-check") || t.getAttribute("data-wish-useprice") || t.getAttribute("data-wish-up") || t.getAttribute("data-wish-down");
     var w = wishes.filter(function (x) { return x.id === id; })[0];
     if (!w) return;
     if (t.hasAttribute("data-wish-up") || t.hasAttribute("data-wish-down")) {
@@ -3444,6 +3484,12 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       var before = wishes.slice();
       wishes[at] = wishes[to]; wishes[to] = w; renderWishes();
       persistSplit().then(function (ok) { if (!ok) { wishes = before; renderWishes(); wishMsg("Could not save the new order. Try again.", true); } else wishMsg(""); });
+      return;
+    }
+    if (t.hasAttribute("data-wish-check")) { t.disabled = true; wishMsg("Checking the price…"); checkPrice(w, true); return; }
+    if (t.hasAttribute("data-wish-useprice")) {
+      var oldAmt = w.amount; w.amount = w.seen; renderWishes();
+      persistSplit().then(function (ok) { if (!ok) { w.amount = oldAmt; renderWishes(); wishMsg("Could not save that. Try again.", true); } else wishMsg("Price updated to " + fmt(toCents(w.amount)) + "."); });
       return;
     }
     if (t.hasAttribute("data-wish-edit")) {
