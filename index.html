@@ -271,6 +271,7 @@ button.badge { cursor: pointer; min-height: 26px; }
 .chip.prio-high { color: #ff9f43; border-color: #ff9f43; }
 .chip.prio-medium { color: #f1c40f; border-color: #f1c40f; }
 .chip.prio-low { color: #2ecc71; border-color: #2ecc71; }
+.wish-tip { font-size: 14px; color: var(--fg); background: rgba(46, 134, 255, 0.10); border: 1px solid rgba(46, 134, 255, 0.35); border-radius: var(--r-sm); padding: 8px 12px; }
 .wish-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .wish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .wish-list { list-style: none; margin: 0; padding: 0; }
@@ -3335,6 +3336,26 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var when = new Date(info.now.getTime() + days * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric", year: days > 300 ? "numeric" : undefined });
     return { ok: false, text: (lead ? lead + "you need " : "You need ") + fmt(need) + " more. " + (info.plan ? "At your pay scale (" + fmt(info.weekend) + " a weekend, " + pay.wk + (pay.wk === 1 ? " weekend" : " weekends") + " a month)" : "At your recent pace") + " you can afford this around " + when + " (about " + (days < 14 ? days + " days" : Math.round(days / 7) + " weeks") + ")." + (skip ? " This skips the off-season." : "") };
   }
+  /* Smart suggestions: plain-language ideas for getting to a wish sooner. */
+  function wishTips(w, info, ahead, st) {
+    var i = -1; BUCKETS.forEach(function (b, n) { if (b.k === w.bucket) i = n; });
+    var total = info.a.pcts.reduce(function (t, v) { return t + v; }, 0) || 1, share = info.a.pcts[i] / total;
+    var avail = info.a.out[i] - info.used[w.bucket], cost = toCents(w.amount), need = ahead + cost - avail, tips = [];
+    if (st.ok) { tips.push("You have enough. Buying this leaves " + fmt(avail - ahead - cost) + " in " + BMAP[w.bucket].name + "."); return tips; }
+    var weekly = info.perWeek * share; if (weekly <= 0 || need <= 0) return tips;
+    var weeks = need / weekly;
+    if (info.plan && info.weekend * share > 0) {
+      var wk = Math.max(1, Math.ceil(need / (info.weekend * share)));
+      tips.push(wk === 1 ? "One more weekend of games will cover this purchase." : wk <= 12 ? wk + " more weekends of games will cover this purchase." : "This is about " + Math.round(wk / pay.wk) + " months of games away at your pay scale.");
+    } else if (weeks <= 52) tips.push("At your recent pace this is about " + Math.max(1, Math.ceil(weeks)) + (Math.ceil(weeks) <= 1 ? " week" : " weeks") + " of games away.");
+    var pct = info.a.pcts[i], bump = 5, newShare = Math.min(1, (pct + bump) / total), nw = info.perWeek * newShare;
+    if (nw > weekly && w.bucket !== "donate") { var sooner = Math.round(weeks - need / nw); if (sooner >= 1) tips.push("If you moved " + bump + "% more of each paycheck into " + BMAP[w.bucket].name + " (" + pct + "% to " + (pct + bump) + "%), you would get this about " + sooner + (sooner === 1 ? " week" : " weeks") + " sooner."); }
+    if (w.target && w.target >= todayStr()) {
+      var left = dayDiff(w.target), eta = Math.ceil(weeks * 7);
+      tips.push(eta <= left ? "You are on track for your target date." : "At this pace you will miss your target date by about " + Math.max(1, Math.round((eta - left) / 7)) + " weeks. Save " + fmt(Math.ceil(need / Math.max(1, left / 7))) + " a week in " + BMAP[w.bucket].name + " to make it.");
+    }
+    return tips.slice(0, 3);
+  }
   function renderWishes() {
     var list = $("wishes");
     if (!list) return;
@@ -3343,7 +3364,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var rows = wishes.map(function (w) {
       var k = w.bucket, st = wishStatus(w, info, aheadSum[k] || 0, aheadN[k] || 0);
       aheadSum[k] = (aheadSum[k] || 0) + toCents(w.amount); aheadN[k] = (aheadN[k] || 0) + 1;
-      return { w: w, st: st, ahead: aheadSum[k] - toCents(w.amount) };
+      return { w: w, st: st, ahead: aheadSum[k] - toCents(w.amount), tips: wishTips(w, info, aheadSum[k] - toCents(w.amount), st) };
     });
     $("wish-empty").hidden = wishes.length > 0;
     $("wish-prio-note").hidden = wishes.length < 2;
@@ -3357,6 +3378,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Saved toward ' + esc(w.what) + '"><span style="width:' + pct + '%"></span></div>' +
         '<div class="wish-when">' + fmt(saved) + " of " + fmt(cost) + " saved &middot; " + pct + "%</div>" +
         '<div class="wish-when' + (r.st.ok ? " ready" : "") + '">From ' + esc(BMAP[w.bucket].name) + ". " + esc(r.st.text) + '</div>' +
+        r.tips.map(function (t) { return '<div class="wish-tip">💡 ' + esc(t) + "</div>"; }).join("") +
         (w.notes ? '<div class="wish-when">' + esc(w.notes) + "</div>" : "") +
         (w.link ? '<div class="wish-when"><a href="' + esc(w.link) + '" target="_blank" rel="noopener noreferrer">Store link</a></div>' : "") +
         '<div class="wish-actions">' +
