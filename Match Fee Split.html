@@ -3350,6 +3350,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   }
   /* Price tracking: the signed-in server reads the product page; "base" is the price when the link was added. */
   function dollars(c) { return c % 100 === 0 ? "$" + (c / 100).toLocaleString("en-US") : fmt(c); }
+  function agoText(t) { var m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " hr ago" : Math.round(m / 1440) + " days ago"; }
   function priceBanner(w) {
     if (!w.link || !w.base || !w.seen) return "";
     var d = toCents(w.seen) - toCents(w.base);
@@ -3364,18 +3365,20 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {} if (!r.ok || !j || !j.ok) throw new Error(r.status === 401 ? "Sign in again to check prices." : (j && j.error) || "Could not check that price."); return j; });
     });
   }
-  var priceTried = {};
+  var priceTried = {}, priceBusy = {};
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") setTimeout(priceAuto, 1500); });
+  setInterval(function () { if (document.visibilityState === "visible") priceAuto(); }, 15 * 60 * 1000);
   function checkPrice(w, manual) {
-    priceTried[w.id] = 1;
-    return priceCall(w.link).then(function (j) {
+    priceTried[w.id] = 1; priceBusy[w.id] = 1;
+    return priceCall(w.link).then(function (j) { delete priceBusy[w.id];
       w.seen = j.price; w.chk = Date.now(); if (!w.base) w.base = toCents(w.amount) / 100;
       renderWishes(); persistSplit();
       if (manual) wishMsg(j.price === w.base ? (toCents(j.price) === toCents(w.amount) ? "Price checked. No change since you added it." : "Price checked: " + fmt(toCents(j.price)) + ". Tap Use to update your saved price.") : "Price checked: " + fmt(toCents(j.price)) + ".");
-    }, function (e) { w.chk = Date.now(); if (manual) wishMsg(String(e.message || e), true); });
+    }, function (e) { delete priceBusy[w.id]; w.chk = Date.now(); if (manual) wishMsg(String(e.message || e), true); });
   }
   function priceAuto() {
     if (!sbSession) return;
-    var due = wishes.filter(function (w) { return w.link && !priceTried[w.id] && Date.now() - (w.chk || 0) > 12 * 3600 * 1000; })[0];
+    var due = wishes.filter(function (w) { return w.link && !priceBusy[w.id] && Date.now() - (w.chk || 0) > 60 * 60 * 1000; })[0];
     if (!due) return;
     checkPrice(due, false).then(function () { setTimeout(priceAuto, 1500); });
   }
@@ -3426,7 +3429,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         priceBanner(w) +
         r.tips.map(function (t) { return '<div class="wish-tip">💡 ' + esc(t) + "</div>"; }).join("") +
         (w.notes ? '<div class="wish-when">' + esc(w.notes) + "</div>" : "") +
-        (w.link ? '<div class="wish-when"><a href="' + esc(w.link) + '" target="_blank" rel="noopener noreferrer">Store link</a></div>' : "") +
+        (w.link ? '<div class="wish-when"><a href="' + esc(w.link) + '" target="_blank" rel="noopener noreferrer">Store link</a>' + (w.chk ? " &middot; price checked " + esc(agoText(w.chk)) : "") + "</div>" : "") +
         '<div class="wish-actions">' +
         '<button class="mini" type="button" data-wish-buy="' + esc(w.id) + '"' + (r.st.ok ? "" : ' disabled title="Available once you have enough saved"') + '>Purchase</button>' +
         (w.link ? '<button class="mini" type="button" data-wish-setprice="' + esc(w.id) + '">Type price</button>' : "") +
