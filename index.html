@@ -275,6 +275,8 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-price { font-weight: 700; border-radius: var(--r-sm); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 .wish-price.down { color: var(--green); background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.45); }
 .wish-price.up { color: var(--orange); background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.5); }
+.wish-group { list-style: none; padding: 14px 0 4px; }
+.wish-group h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .wish-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .wish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .wish-list { list-style: none; margin: 0; padding: 0; }
@@ -750,6 +752,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <div class="field"><label for="we-notes">Notes</label><textarea id="we-notes" rows="2" maxlength="200" placeholder="Size, color, which model"></textarea></div>
         <div class="row"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" id="we-cancel">Cancel</button></div>
       </form>
+      <label class="check" for="wish-group-on"><input id="wish-group-on" type="checkbox" checked>Group by category</label>
       <ul class="wish-list" id="wishes"></ul>
         <p class="note" id="wish-prio-note">Top of the list is your first priority. Use the arrows to reorder. Higher priorities get the money from the same bucket first, and the dates for lower ones include them.</p>
         <p class="msg" id="wish-msg" role="status"></p>
@@ -3390,6 +3393,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     }
     return tips.slice(0, 3);
   }
+  function wishGroupOn() { try { return localStorage.getItem("rf-wishgroup-v1") !== "0"; } catch (e) { return true; } }
+  $("wish-group-on").addEventListener("change", function () { try { localStorage.setItem("rf-wishgroup-v1", this.checked ? "1" : "0"); } catch (e) {} renderWishes(); });
   function renderWishes() {
     var list = $("wishes");
     if (!list) return;
@@ -3402,7 +3407,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     });
     $("wish-empty").hidden = wishes.length > 0;
     $("wish-prio-note").hidden = wishes.length < 2;
-    list.innerHTML = rows.map(function (r, n) {
+    function rowHtml(r, n) {
       var w = r.w, k = BUCKETS.map(function (b) { return b.k; }).indexOf(w.bucket), cost = toCents(w.amount);
       var saved = Math.max(0, Math.min(cost, info.a.out[k] - info.used[w.bucket] - r.ahead)), pct = Math.floor(saved / cost * 100);
       var late = w.target && w.target < todayStr() && !r.st.ok;
@@ -3423,7 +3428,17 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         '<button class="mini" type="button" data-wish-up="' + esc(w.id) + '"' + (n === 0 ? " disabled" : "") + ' aria-label="Higher priority: ' + esc(w.what) + '">&uarr;</button>' +
         '<button class="mini" type="button" data-wish-down="' + esc(w.id) + '"' + (n === rows.length - 1 ? " disabled" : "") + ' aria-label="Lower priority: ' + esc(w.what) + '">&darr;</button>' +
         '<button class="mini" type="button" data-wish-del="' + esc(w.id) + '">Remove</button></div></li>';
+    }
+    var WISH_ICON = { Uniform: "👕", Electronics: "📱", Equipment: "🎒", Training: "🎓", Travel: "✈️", Clothing: "👔", Other: "📦", "": "🏷️" };
+    var WISH_PLURAL = { Uniform: "Uniforms", Electronics: "Electronics", Equipment: "Equipment", Training: "Training", Travel: "Travel", Clothing: "Clothing", Other: "Other", "": "No category" };
+    var grouped = wishGroupOn();
+    if (!grouped) list.innerHTML = rows.map(rowHtml).join("");
+    else list.innerHTML = WISH_CATS.concat([""]).map(function (c) {
+      var items = rows.map(function (r, n) { return { r: r, n: n }; }).filter(function (x) { return (x.r.w.cat || "") === c; });
+      if (!items.length) return "";
+      return '<li class="wish-group" role="presentation"><h3>' + WISH_ICON[c] + " " + WISH_PLURAL[c] + " (" + items.length + ")</h3></li>" + items.map(function (x) { return rowHtml(x.r, x.n); }).join("");
     }).join("");
+    $("wish-group-on").checked = grouped;
     setTimeout(priceAuto, 800);
     var ready = rows.filter(function (r) { return r.st.ok; });
     $("wish-alert").hidden = !ready.length;
