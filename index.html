@@ -275,6 +275,8 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-price { font-weight: 700; border-radius: var(--r-sm); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 .wish-price.down { color: var(--green); background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.45); }
 .wish-price.up { color: var(--orange); background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.5); }
+.ins { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 9px 0; border-top: 1px solid var(--panel-line); font-size: 15px; line-height: 1.35; }
+.ins:first-child { border-top: 0; } .ins small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 .nf-toast { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 120; background: var(--panel); border: 1px solid var(--blue); border-radius: var(--r-sm); padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.45); display: grid; gap: 2px; max-width: 480px; margin: 0 auto; }
 .nf-toast strong { font-size: 15px; } .nf-toast span { font-size: 13px; color: var(--muted); }
 .nf-item { padding: 9px 0; border-top: 1px solid var(--panel-line); display: grid; gap: 2px; }
@@ -369,7 +371,8 @@ html[data-hide~="goals"] [data-card="goals"],
 html[data-hide~="wish"] [data-card="wish"],
 html[data-hide~="bag"] [data-card="bag"],
 html[data-hide~="mywid"] [data-card="mywid"],
-html[data-hide~="season"] [data-card="season"] { display: none; }
+html[data-hide~="season"] [data-card="season"],
+html[data-hide~="insights"] [data-card="insights"] { display: none; }
 @media (min-width: 960px) { .grid2:has(> .p-start:only-child) { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 960px) {
   html[data-hide~="chart"] .grid2:has(.p-chart),
@@ -776,6 +779,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     <div class="hcols">
       <div class="hcol">
         <section class="panel hc o1" data-card="mywid" id="mw-card" hidden><div class="panel-head"><h2>My widgets</h2><a class="mini" href="#app-settings">Edit</a></div><div class="mw-grid" id="mw-grid"></div></section>
+        <section class="panel hc o3" data-card="insights" id="ins-card" hidden><div class="panel-head"><h2>Insights</h2><span class="chip">From your numbers</span></div><div id="ins-body"></div></section>
         <section class="panel hc o3" data-card="season" id="sz-card" hidden><div class="panel-head"><h2>Season</h2><span class="chip" id="sz-chip"></span></div><div id="sz-body"></div></section>
         <section class="panel hc o2 mob-only" data-card="next"><h2>Next Game</h2><div id="next-game"></div></section>
         <section class="panel hc half o4" data-card="recent"><div class="panel-head"><h2>Recent Games</h2></div><div id="recent"></div><a class="more" href="#games">View all</a></section>
@@ -1164,6 +1168,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <label class="check" for="show-goals"><input id="show-goals" type="checkbox" data-ui>Goals progress</label>
         <label class="check" for="show-wish"><input id="show-wish" type="checkbox" data-ui>Wish list</label>
         <label class="check" for="show-mywid"><input id="show-mywid" type="checkbox" data-ui>My widgets</label>
+        <label class="check" for="show-insights"><input id="show-insights" type="checkbox" data-ui>Insights</label>
         <label class="check" for="show-season"><input id="show-season" type="checkbox" data-ui>Season</label>
         <label class="check" for="show-bag"><input id="show-bag" type="checkbox" data-ui>Ref bag</label>
       </div>
@@ -1419,13 +1424,13 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }
+    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true },
+    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true },
     widgets: [], season: "auto",
     name: "RefVault", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
@@ -2523,7 +2528,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     safe(function () { renderPeriods(); S = summarize(); A = summarize(true); }, "totals");
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
-    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
     safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
@@ -2809,7 +2814,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var HOME_ORIG = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll("[data-card]")) : [];
   var HOME_HOME = HOME_ORIG.map(function (c) { return { el: c, col: HOME_COLS.indexOf(c.parentNode) }; });
   var CARD_KEYS = HOME_ORIG.map(function (c) { return c.getAttribute("data-card"); });
-  var CARD_LABEL = { season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
+  var CARD_LABEL = { insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
   var curOrder = [], deskMq = window.matchMedia ? window.matchMedia("(min-width: 960px)") : null;
   function defaultOrder() {
     return HOME_ORIG.map(function (c, i) { var m = /(?:^|\s)o(\d)(?:\s|$)/.exec(c.className); return { k: c.getAttribute("data-card"), n: m ? +m[1] : 99, i: i }; })
@@ -3090,6 +3095,53 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   });
   setTimeout(function () { nfRun(); }, 4000); setInterval(function () { nfRun(); }, 300000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { nfRun(); }, 800); });
+  /* Insights: plain-language reads of your own numbers, worked out on this device */
+  function insightList() {
+    var out = [], t = todayStr(), now = new Date(), S = seasonInfo();
+    if (S.none) return out;
+    var mr = periodRange("month"), earned = Math.max(0, totalsFor(mr).net);
+    var dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), dom = now.getDate();
+    var up = upcomingGames().filter(function (g) { return g.date >= mr[0] && g.date <= mr[1]; }), upC = up.reduce(function (a, g) { return a + gNet(g); }, 0);
+    if (up.length) out.push(["💵", "You'll likely earn about " + fmt(earned + upC) + " this month.", fmt(earned) + " so far plus " + up.length + " scheduled " + (up.length === 1 ? "game" : "games") + " (" + fmt(upC) + ")."]);
+    else if (S.off) out.push(["💵", "You'll likely earn about " + fmt(earned) + " this month.", "You're in the off-season and have nothing scheduled."]);
+    else if (dom >= 7) out.push(["💵", "You'll likely earn about " + fmt(Math.round(earned / dom * dim)) + " this month.", "Based on your pace so far (" + fmt(earned) + " in " + dom + " days)."]);
+    var gC = Math.round(goal * 100);
+    if (gC > 0) { var have = earned + upC; out.push(["🎯", have >= gC ? "You're on track to hit your " + fmt(gC) + " goal this month." : "You're " + fmt(gC - have) + " short of your " + fmt(gC) + " monthly goal.", have >= gC ? "Counting " + fmt(earned) + " earned and " + fmt(upC) + " scheduled." : (S.inW > 0 ? "About " + Math.ceil((gC - have) / Math.max(1, S.inW * 4.33 / 6)) + " more games at your usual pay would close it." : "Schedule more games to close the gap.")]); }
+    /* wish list: weekends until the closest unaffordable item */
+    try {
+      var info = allTimeInfo(), wk = info.weekend || info.perWeek, best = null;
+      wishes.forEach(function (w) {
+        var i = -1; BUCKETS.forEach(function (b, n) { if (b.k === w.bucket) i = n; }); if (i < 0) return;
+        var tot = info.a.pcts.reduce(function (a, v) { return a + v; }, 0) || 1, share = info.a.pcts[i] / tot, need = toCents(w.amount) - (info.a.out[i] - info.used[w.bucket]);
+        if (need <= 0 || wk * share <= 0) return;
+        var n = Math.ceil(need / (wk * share)); if (!best || n < best.n) best = { n: n, what: w.what, need: need };
+      });
+      if (best && best.n <= 26) out.push(["🛒", best.n <= 1 ? "You can afford your " + best.what + " after one more weekend." : "You can afford your " + best.what + " after " + best.n + " more weekends.", "You still need " + fmt(best.need) + " in that bucket" + (S.off ? " (off-season slows this)." : ".")]);
+      else if (wishSum && wishSum.rdy) out.push(["🟢", wishSum.rdy === 1 ? "You can afford 1 wish list item right now." : "You can afford " + wishSum.rdy + " wish list items right now.", "Tap Purchase on your wish list when you're ready."]);
+    } catch (e) { /* skip */ }
+    /* this season vs last */
+    var sn = S.seasons, c = sn.length && sn[sn.length - 1].cur ? sn[sn.length - 1] : null, prev = c ? sn[sn.length - 2] : null;
+    if (c && prev) {
+      var days = Math.max(1, Math.round((pdate(t) - pdate(c.s + "-01")) / 864e5)), pst = prev.s + "-01", pe = ymd(new Date(pdate(pst).getTime() + days * 864e5)), pn = 0;
+      S.gs.forEach(function (g) { if (g.date >= pst && g.date <= pe) pn += gNet(g); });
+      if (pn > 0 && days >= 14) { var p = Math.round((c.net - pn) / pn * 100); out.push([p >= 0 ? "📈" : "📉", p === 0 ? "You're earning the same as this point last season." : "You're earning " + Math.abs(p) + "% " + (p > 0 ? "more" : "less") + " than last season.", "Compared at the same point of the season (" + prev.name + ")."]); }
+    }
+    /* month over month */
+    var lm = new Date(now.getFullYear(), now.getMonth() - 1, 1), lr = [ymd(lm), ymd(new Date(lm.getFullYear(), lm.getMonth(), Math.min(dom, new Date(lm.getFullYear(), lm.getMonth() + 1, 0).getDate())))], lastC = totalsFor(lr).net;
+    if (dom >= 10 && lastC > 0 && !c) { var q = Math.round((earned - lastC) / lastC * 100); if (Math.abs(q) >= 5) out.push([q > 0 ? "📈" : "📉", "You're " + Math.abs(q) + "% " + (q > 0 ? "ahead of" : "behind") + " last month.", fmt(earned) + " vs " + fmt(lastC) + " by this day last month."]); }
+    /* best day */
+    var byDow = [0, 0, 0, 0, 0, 0, 0], names = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+    S.gs.forEach(function (g) { byDow[pdate(g.date).getDay()] += gNet(g); });
+    var bi = byDow.indexOf(Math.max.apply(null, byDow)); if (S.gs.length >= 8 && byDow[bi] > 0) out.push(["⚽", names[bi] + " are your best earning day.", fmt(byDow[bi]) + " earned on " + names[bi].toLowerCase() + " so far."]);
+    var o = owedGames(); if (o.length) out.push(["⏳", fmt(o.reduce(function (a, g) { return a + gNet(g); }, 0)) + " is still owed to you.", o.length + (o.length === 1 ? " game is" : " games are") + " waiting on pay."]);
+    if (S.off && S.offW !== null) out.push(["🌤️", "It's the off-season. Expect about " + fmt(Math.round(S.offW)) + " a week.", S.est ? "That's a rough guess until you have a full quiet season logged." : "Based on your past quiet months."]);
+    return out.slice(0, 6);
+  }
+  function renderInsights() {
+    var card = $("ins-card"); if (!card) return;
+    var l = insightList(); card.hidden = !l.length;
+    $("ins-body").innerHTML = l.map(function (x) { return '<div class="ins"><span aria-hidden="true">' + x[0] + "</span><div>" + esc(x[1]) + "<small>" + esc(x[2]) + "</small></div></div>"; }).join("");
+  }
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
@@ -3139,7 +3191,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     st.setProperty("--glow-b", u.glow ? rgba(u.accent, dark ? 0.22 : 0.12) : "transparent");
     st.colorScheme = dark ? "dark" : "light";
     curSeasonMode = u.season || "auto";
-    try { renderSeason(); } catch (e) { /* data not ready yet */ }
+    try { renderSeason(); renderInsights(); } catch (e) { /* data not ready yet */ }
     curWidgets = u.widgets || [];
     try { renderMyWidgets(); } catch (e) { /* data not ready yet */ }
     applyOrder(u.order);
