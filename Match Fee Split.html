@@ -277,6 +277,15 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-price.up { color: var(--orange); background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.5); }
 .ins { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 9px 0; border-top: 1px solid var(--panel-line); font-size: 15px; line-height: 1.35; }
 .ins:first-child { border-top: 0; } .ins small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.wx-now { display: flex; align-items: center; gap: 12px; }
+.wx-now .wx-ic { font-size: 44px; line-height: 1; }
+.wx-now strong { font: 700 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.wx-now small, .wx-sub { color: var(--muted); font-size: 13px; }
+.wx-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 12px 0 4px; text-align: center; font-size: 12px; }
+.wx-days div { background: var(--panel-2, rgba(255,255,255,.04)); border-radius: 10px; padding: 7px 2px; display: grid; gap: 2px; }
+.wx-days b { font-weight: 600; color: var(--muted); } .wx-days span { font-size: 18px; } .wx-days em { font-style: normal; color: var(--muted); }
+.wx-game { padding: 9px 0; border-top: 1px solid var(--panel-line); font-size: 14px; display: grid; gap: 2px; }
+.wx-game small { color: var(--muted); } .wx-game .tip { color: var(--yellow); font-size: 13px; }
 .ai-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
 .ai-chips button { border: 1px solid var(--panel-line); background: transparent; color: var(--fg); border-radius: 999px; padding: 8px 12px; font: 600 13px/1.2 var(--body); cursor: pointer; text-align: left; }
 .ai-log { display: grid; gap: 10px; max-height: 52vh; overflow-y: auto; padding: 4px 0 10px; }
@@ -380,7 +389,8 @@ html[data-hide~="wish"] [data-card="wish"],
 html[data-hide~="bag"] [data-card="bag"],
 html[data-hide~="mywid"] [data-card="mywid"],
 html[data-hide~="season"] [data-card="season"],
-html[data-hide~="insights"] [data-card="insights"] { display: none; }
+html[data-hide~="insights"] [data-card="insights"],
+html[data-hide~="weather"] [data-card="weather"] { display: none; }
 @media (min-width: 960px) { .grid2:has(> .p-start:only-child) { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 960px) {
   html[data-hide~="chart"] .grid2:has(.p-chart),
@@ -789,6 +799,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <div class="hcol">
         <section class="panel hc o1" data-card="mywid" id="mw-card" hidden><div class="panel-head"><h2>My widgets</h2><a class="mini" href="#app-settings">Edit</a></div><div class="mw-grid" id="mw-grid"></div></section>
         <section class="panel hc o3" data-card="insights" id="ins-card" hidden><div class="panel-head"><h2>Insights</h2><span class="chip">From your numbers</span></div><div id="ins-body"></div><div id="ai-body"></div><div class="wish-actions"><button class="mini" type="button" id="ai-ask">✨ Refresh AI insights</button></div><p class="msg" id="ai-msg" role="status"></p></section>
+        <section class="panel hc o3" data-card="weather" id="wx-card"><div class="panel-head"><h2>Weather</h2><span class="chip" id="wx-place"></span></div><div id="wx-body"></div></section>
         <section class="panel hc o3" data-card="season" id="sz-card" hidden><div class="panel-head"><h2>Season</h2><span class="chip" id="sz-chip"></span></div><div id="sz-body"></div></section>
         <section class="panel hc o2 mob-only" data-card="next"><h2>Next Game</h2><div id="next-game"></div></section>
         <section class="panel hc half o4" data-card="recent"><div class="panel-head"><h2>Recent Games</h2></div><div id="recent"></div><a class="more" href="#games">View all</a></section>
@@ -1111,6 +1122,15 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <div id="nf-inbox"></div>
     </section>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-wx">
+      <h2 id="h-wx">Weather</h2>
+      <p class="note">Shows the forecast on Home and the weather for each upcoming game, with tips like bringing a rain jacket. Forecasts come from Open-Meteo. Your location is only used to look up the weather and is kept on this device.</p>
+      <div class="field"><label for="wx-q">Search a city or town</label><input id="wx-q" type="search" autocomplete="off" placeholder="e.g. Liberty Hill, Texas"></div>
+      <div class="wish-actions"><button class="btn" type="button" id="wx-search">Search</button><button class="mini" type="button" id="wx-geo">Use my location</button><button class="mini" type="button" id="wx-clear">Remove</button></div>
+      <div id="wx-results"></div>
+      <p class="msg" id="wx-msg" role="status"></p>
+    </section>
+
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-sz">
       <h2 id="h-sz">Seasonal mode</h2>
       <p class="note">RefVault spots your off-season from your games (a long gap with nothing coming up, or months that were quiet in past years) and slows your savings forecasts to match. If you entered season dates under Associations, those are used instead. Override it here, then tap Save settings.</p>
@@ -1199,6 +1219,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <label class="check" for="show-goals"><input id="show-goals" type="checkbox" data-ui>Goals progress</label>
         <label class="check" for="show-wish"><input id="show-wish" type="checkbox" data-ui>Wish list</label>
         <label class="check" for="show-mywid"><input id="show-mywid" type="checkbox" data-ui>My widgets</label>
+        <label class="check" for="show-weather"><input id="show-weather" type="checkbox" data-ui>Weather</label>
         <label class="check" for="show-insights"><input id="show-insights" type="checkbox" data-ui>Insights</label>
         <label class="check" for="show-season"><input id="show-season" type="checkbox" data-ui>Season</label>
         <label class="check" for="show-bag"><input id="show-bag" type="checkbox" data-ui>Ref bag</label>
@@ -1455,13 +1476,13 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }
+    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }, { k: "weather", label: "Weather" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true },
+    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
     widgets: [], season: "auto",
     name: "RefVault", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
@@ -2559,7 +2580,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     safe(function () { renderPeriods(); S = summarize(); A = summarize(true); }, "totals");
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
-    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
     safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
@@ -2845,7 +2866,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var HOME_ORIG = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll("[data-card]")) : [];
   var HOME_HOME = HOME_ORIG.map(function (c) { return { el: c, col: HOME_COLS.indexOf(c.parentNode) }; });
   var CARD_KEYS = HOME_ORIG.map(function (c) { return c.getAttribute("data-card"); });
-  var CARD_LABEL = { insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
+  var CARD_LABEL = { weather: "Weather", insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
   var curOrder = [], deskMq = window.matchMedia ? window.matchMedia("(min-width: 960px)") : null;
   function defaultOrder() {
     return HOME_ORIG.map(function (c, i) { var m = /(?:^|\s)o(\d)(?:\s|$)/.exec(c.className); return { k: c.getAttribute("data-card"), n: m ? +m[1] : 99, i: i }; })
@@ -2896,6 +2917,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     streak: { g: 2, n: "Week streak", i: "🔥", f: function () { var s = rpStats(); return [String(s.streak), s.streak === 1 ? "week in a row" : "weeks in a row"]; } },
     next_game: { g: 2, n: "Next game", i: "📅", f: function () { var g = upcomingGames()[0]; return g ? [dayWord(g.date), gTitle(g)] : ["None", "Nothing scheduled"]; } },
     season_state: { g: 2, n: "Season status", i: "📅", f: function () { var S = seasonInfo(); return S.none ? ["-", "Log games first"] : [S.off ? "Off-season" : "In season", S.offW !== null ? "Off-season pace " + fmt(Math.round(S.offW)) + "/wk" : ""]; } },
+    wx_now: { g: 2, n: "Weather now", i: "🌤️", f: function () { var w = wxData && wxData.current; return w ? [Math.round(w.temperature_2m) + "°F", wxInfo(w.weather_code, w.is_day).t + ", wind " + Math.round(w.wind_speed_10m) + " mph"] : ["-", "Set your location in Settings"]; } },
     goal_pct: { g: 3, n: "Monthly goal progress", i: "🎯", f: function () { var gC = Math.round(goal * 100); if (gC <= 0) return ["Not set", "Set a monthly goal"]; var n = Math.max(0, mwEarn("month")); return [Math.min(100, Math.round(n / gC * 100)) + "%", fmt(n) + " of " + fmt(gC)]; } },
     wish_n: { g: 3, n: "Wish list items", i: "🛒", f: function () { return [String(wishSum.n), "On your list"]; } },
     wish_total: { g: 3, n: "Wish list total", i: "💲", f: function () { return [fmt(wishSum.tot), "All items"]; } },
@@ -3290,6 +3312,89 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       else gcMsg("");
     }, function (err) { gcMsg(String(err.message || err), true); }).then(function () { b.disabled = false; });
   });
+  /* Weather: Open-Meteo forecast for your location, plus the weather at each upcoming game */
+  var WX_LOC = "rf-wx-v1", WX_DATA = "rf-wxdata-v1", wxLoc = null, wxData = null, wxAt = 0, wxBusy = false;
+  try { wxLoc = JSON.parse(localStorage.getItem(WX_LOC) || "null"); if (!wxLoc || !isFinite(wxLoc.lat) || !isFinite(wxLoc.lon)) wxLoc = null; } catch (e) { wxLoc = null; }
+  try { var wd = JSON.parse(localStorage.getItem(WX_DATA) || "null"); if (wd && wd.d && wd.k === (wxLoc && wxLoc.lat + "," + wxLoc.lon)) { wxData = wd.d; wxAt = wd.t; } } catch (e) {}
+  function wxInfo(c, day) {
+    c = +c; day = day !== 0;
+    if (c === 0) return { i: day ? "☀️" : "🌙", t: "Clear" }; if (c === 1) return { i: day ? "🌤️" : "🌙", t: "Mostly clear" }; if (c === 2) return { i: day ? "⛅" : "☁️", t: "Partly cloudy" }; if (c === 3) return { i: "☁️", t: "Overcast" };
+    if (c === 45 || c === 48) return { i: "🌫️", t: "Fog" }; if (c >= 51 && c <= 57) return { i: "🌦️", t: "Drizzle" }; if (c >= 61 && c <= 67) return { i: "🌧️", t: "Rain" };
+    if (c >= 71 && c <= 77) return { i: "❄️", t: "Snow" }; if (c >= 80 && c <= 82) return { i: "🌦️", t: "Showers" }; if (c === 85 || c === 86) return { i: "🌨️", t: "Snow showers" }; if (c >= 95) return { i: "⛈️", t: "Thunderstorms" };
+    return { i: "🌡️", t: "Mixed" };
+  }
+  function wxSave() { try { localStorage.setItem(WX_LOC, JSON.stringify(wxLoc)); localStorage.setItem(WX_DATA, JSON.stringify({ t: wxAt, k: wxLoc && wxLoc.lat + "," + wxLoc.lon, d: wxData })); } catch (e) {} }
+  function wxLoad(force) {
+    if (!wxLoc || wxBusy) return; if (!force && wxData && Date.now() - wxAt < 30 * 60 * 1000) return;
+    wxBusy = true;
+    var u = "https://api.open-meteo.com/v1/forecast?latitude=" + wxLoc.lat + "&longitude=" + wxLoc.lon +
+      "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_gusts_10m" +
+      "&hourly=temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,precipitation_probability,showers,visibility,weather_code,uv_index" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,rain_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max" +
+      "&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=7";
+    fetch(u).then(function (r) { if (!r.ok) throw new Error("weather " + r.status); return r.json(); }).then(function (j) {
+      if (!j || !j.hourly || !j.daily) throw new Error("bad data"); wxData = j; wxAt = Date.now(); wxSave();
+    }).catch(function () { /* keep the last forecast */ }).then(function () { wxBusy = false; try { renderWeather(); renderMyWidgets(); } catch (e) { /* ok */ } });
+  }
+  function wxGameTips(h) {
+    var t = [];
+    if (h.weather_code >= 95) t.push("Thunderstorms possible. Check league rules on lightning delays.");
+    else if (h.precipitation_probability >= 50 || (h.weather_code >= 51 && h.weather_code <= 82)) t.push("Rain likely. Bring a rain jacket and a dry change of socks.");
+    if (h.apparent_temperature <= 20) t.push("Very cold. Pack gloves, a hat and extra layers."); else if (h.apparent_temperature <= 38) t.push("Cold. Dress in layers.");
+    if (h.temperature_2m >= 92) t.push("Hot. Bring extra water and a cooling towel."); else if (h.temperature_2m >= 85) t.push("Warm. Bring plenty of water.");
+    if (h.wind_gusts_10m >= 25) t.push("Gusty winds up to " + Math.round(h.wind_gusts_10m) + " mph.");
+    if (h.visibility < 3000) t.push("Low visibility (fog).");
+    if (h.uv_index >= 6) t.push("High UV. Wear sunscreen.");
+    return t;
+  }
+  function wxHourAt(date, time) {
+    if (!wxData) return -1; var tm = /^(\d{1,2}):/.exec(time || ""), hh = tm ? +tm[1] : 9, key = date + "T" + (hh < 10 ? "0" : "") + hh + ":00";
+    return wxData.hourly.time.indexOf(key);
+  }
+  function renderWeather() {
+    var card = $("wx-card"); if (!card) return;
+    if (!wxLoc) { $("wx-place").textContent = ""; $("wx-body").innerHTML = '<p class="note">Add your location to see the forecast and the weather for your games.</p><a class="btn small" href="#app-settings">Set location</a>'; return; }
+    $("wx-place").textContent = wxLoc.name || "My location";
+    if (!wxData) { $("wx-body").innerHTML = '<p class="note">Loading the forecast...</p>'; wxLoad(false); return; }
+    var c = wxData.current || {}, d = wxData.daily, h = wxData.hourly, cur = wxInfo(c.weather_code, c.is_day), html = "";
+    var tm = function (iso) { var p = /T(\d{2}):(\d{2})/.exec(iso || ""); if (!p) return ""; var hr = +p[1]; return (hr % 12 || 12) + ":" + p[2] + (hr >= 12 ? " PM" : " AM"); };
+    html += '<div class="wx-now"><span class="wx-ic" aria-hidden="true">' + cur.i + '</span><div><strong>' + Math.round(c.temperature_2m) + '°F</strong><br><small>' + esc(cur.t) + ", feels like " + Math.round(c.apparent_temperature) + '°F</small></div></div>';
+    html += '<p class="wx-sub">Today: high ' + Math.round(d.temperature_2m_max[0]) + "°, low " + Math.round(d.temperature_2m_min[0]) + "°. Rain chance " + d.precipitation_probability_max[0] + "%. Wind " + Math.round(c.wind_speed_10m) + " mph, gusts " + Math.round(c.wind_gusts_10m) + " mph. Humidity " + Math.round(c.relative_humidity_2m) + "%. Sunrise " + tm(d.sunrise[0]) + ", sunset " + tm(d.sunset[0]) + ".</p>";
+    html += '<div class="wx-days">' + d.time.map(function (ds, i) { var w = wxInfo(d.weather_code[i], 1); return "<div><b>" + (i === 0 ? "Today" : parseD(ds).toLocaleDateString(undefined, { weekday: "short" })) + "</b><span aria-hidden=\"true\">" + w.i + "</span><em title=\"" + esc(w.t) + "\">" + Math.round(d.temperature_2m_max[i]) + "°</em><em>" + Math.round(d.temperature_2m_min[i]) + "°</em></div>"; }).join("") + "</div>";
+    var gl = upcomingGames().map(function (g) { return { g: g, i: wxHourAt(g.date, g.time) }; }).filter(function (x) { return x.i >= 0; }).slice(0, 5);
+    if (gl.length) html += "<h3>Your games</h3>" + gl.map(function (x) {
+      var g = x.g, i = x.i, row = { weather_code: h.weather_code[i], precipitation_probability: h.precipitation_probability[i], apparent_temperature: h.apparent_temperature[i], temperature_2m: h.temperature_2m[i], wind_gusts_10m: h.wind_gusts_10m[i], visibility: h.visibility[i], uv_index: h.uv_index[i] }, w = wxInfo(row.weather_code, 1), tips = wxGameTips(row);
+      return '<div class="wx-game"><span>' + w.i + " " + esc(dayWord(g.date)) + (g.time ? " at " + esc(fmtTime(g.time)) : "") + ": " + esc(gTitle(g)) + "</span><small>" + Math.round(row.temperature_2m) + "°F (feels " + Math.round(row.apparent_temperature) + "°), " + esc(w.t) + ", rain " + row.precipitation_probability + "%, wind " + Math.round(h.wind_speed_10m[i]) + " mph</small>" + tips.map(function (t) { return '<span class="tip">' + esc(t) + "</span>"; }).join("") + "</div>";
+    }).join("");
+    else if (upcomingGames().length) html += '<p class="wx-sub">Weather for a game appears here once it is within the next 7 days.</p>';
+    html += '<p class="wx-sub">Updated ' + esc(agoText(wxAt)) + ". Forecast by Open-Meteo.</p>";
+    $("wx-body").innerHTML = html;
+  }
+  function wxSet(loc) { wxLoc = loc; wxData = null; wxAt = 0; wxSave(); $("wx-results").innerHTML = ""; $("wx-msg").className = "msg"; $("wx-msg").textContent = loc ? "Location set to " + loc.name + "." : "Location removed."; renderWeather(); wxLoad(true); }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#wx-search,#wx-geo,#wx-clear,[data-wx-pick]"); if (!b) return;
+    var msg = $("wx-msg"); msg.className = "msg";
+    if (b.id === "wx-clear") { wxSet(null); return; }
+    if (b.hasAttribute("data-wx-pick")) { var r = JSON.parse(b.getAttribute("data-wx-pick")); wxSet(r); return; }
+    if (b.id === "wx-geo") {
+      if (!navigator.geolocation) { msg.textContent = "This device can't share its location. Search for a city instead."; msg.className = "msg err"; return; }
+      msg.textContent = "Finding you...";
+      navigator.geolocation.getCurrentPosition(function (p) { wxSet({ lat: Math.round(p.coords.latitude * 1000) / 1000, lon: Math.round(p.coords.longitude * 1000) / 1000, name: "My location" }); }, function () { msg.textContent = "Could not get your location. Search for a city instead."; msg.className = "msg err"; }, { timeout: 10000, maximumAge: 600000 });
+      return;
+    }
+    var q = $("wx-q").value.trim(); if (q.length < 2) { msg.textContent = "Type a city or town."; msg.className = "msg err"; return; }
+    msg.textContent = "Searching...";
+    fetch("https://geocoding-api.open-meteo.com/v1/search?count=5&language=en&format=json&name=" + encodeURIComponent(q.split(",")[0].trim())).then(function (r) { if (!r.ok) throw new Error("x"); return r.json(); }).then(function (j) {
+      var rs = (j && j.results) || [], want = (q.split(",")[1] || "").trim().toLowerCase();
+      if (want) { var f = rs.filter(function (x) { return String(x.admin1 || "").toLowerCase().indexOf(want) === 0 || String(x.country || "").toLowerCase().indexOf(want) === 0 || String(x.country_code || "").toLowerCase() === want; }); if (f.length) rs = f; }
+      if (!rs.length) { msg.textContent = "No match. Try just the city name."; msg.className = "msg err"; $("wx-results").innerHTML = ""; return; }
+      msg.textContent = "Tap your town:";
+      $("wx-results").innerHTML = rs.map(function (x) { var nm = [x.name, x.admin1, x.country_code].filter(Boolean).join(", "); return '<div class="mw-row"><span>' + esc(nm) + '</span><button class="mini" type="button" data-wx-pick="' + esc(JSON.stringify({ lat: Math.round(x.latitude * 1000) / 1000, lon: Math.round(x.longitude * 1000) / 1000, name: nm })) + '">Use</button></div>'; }).join("");
+    }).catch(function () { msg.textContent = "Could not search right now. Check your connection."; msg.className = "msg err"; });
+  });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) wxLoad(false); });
+  setInterval(function () { if (!document.hidden) wxLoad(false); }, 30 * 60 * 1000);
+  setTimeout(function () { wxLoad(false); }, 1500);
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
