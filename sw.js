@@ -1,7 +1,7 @@
 /* RefVault: keeps the app working with no connection.
    Pages: try the network first (so updates show up), fall back to the saved copy.
    Fonts and icons: saved copy first, refreshed in the background. */
-const CACHE = "rf-shell-v6";
+const CACHE = "rf-shell-v7";
 const SHELL = ["./", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -32,4 +32,12 @@ self.addEventListener("fetch", (e) => {
       })
     );
   }
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+    for (const c of cs) { if ("focus" in c) return c.focus(); }
+    return self.clients.openWindow("./");
+  }));
 });

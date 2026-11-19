@@ -275,6 +275,10 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-price { font-weight: 700; border-radius: var(--r-sm); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 .wish-price.down { color: var(--green); background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.45); }
 .wish-price.up { color: var(--orange); background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.5); }
+.nf-toast { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 120; background: var(--panel); border: 1px solid var(--blue); border-radius: var(--r-sm); padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.45); display: grid; gap: 2px; max-width: 480px; margin: 0 auto; }
+.nf-toast strong { font-size: 15px; } .nf-toast span { font-size: 13px; color: var(--muted); }
+.nf-item { padding: 9px 0; border-top: 1px solid var(--panel-line); display: grid; gap: 2px; }
+.nf-item:first-child { border-top: 0; } .nf-item small { color: var(--muted); font-size: 12px; } .nf-item strong { font-size: 14px; }
 .sz-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--panel-line); font-size: 14px; }
 .sz-row:first-child { border-top: 0; }
 .sz-row span:first-child { color: var(--muted); }
@@ -1027,6 +1031,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
           <div class="field"><label for="rp-level">Referee level</label><select id="rp-level"><option value="">Not set</option><option>Recreational</option><option>Club / travel</option><option>High school</option><option>College</option><option>Semi-pro</option><option>Professional</option></select></div>
           <div class="field"><label for="rp-since">Officiating since (year)</label><input id="rp-since" type="number" inputmode="numeric" min="1970" max="2100" step="1" placeholder="e.g. 2022"></div>
         </div>
+        <div class="field"><label for="rp-exp">Certification expires (for renewal reminders)</label><input id="rp-exp" type="date"></div>
         <div class="field"><label for="rp-favs">Favorite leagues</label><input id="rp-favs" type="text" maxlength="160" autocomplete="off" placeholder="Separate with commas, up to 5"></div>
         <div class="row"><button class="btn" type="submit">Save profile</button><a class="btn ghost" href="#home">Done</a></div>
         <p class="msg" id="rp-msg" role="status"></p>
@@ -1051,6 +1056,24 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <div class="panel-head"><h2 id="h-layout">Customize Home</h2><button class="mini" type="button" id="lay-reset">Reset order</button></div>
       <p class="note">Drag a card by the ☰ handle to move it, or use the arrows. Tap the eye to show or hide a card. Then tap Save settings. The summary tiles stay at the top.</p>
       <ul class="list" id="lay-list"></ul>
+    </section>
+
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-nf" id="nf-panel">
+      <div class="panel-head"><h2 id="h-nf">Notifications</h2><span class="chip" id="nf-state"></span></div>
+      <p class="note">Reminders show up here and as alerts on this device. They are checked when you open RefVault and while it is open. On iPhone, add RefVault to your Home Screen first, then turn this on.</p>
+      <label class="check" for="nf-on"><input id="nf-on" type="checkbox">Turn on notifications</label>
+      <div id="nf-opts">
+        <label class="check" for="nf-game"><input id="nf-game" type="checkbox">Upcoming games</label>
+        <div class="field"><label for="nf-lead">Remind me</label><select id="nf-lead"><option value="both">A day before and 2 hours before</option><option value="day">A day before</option><option value="hours">2 hours before</option></select></div>
+        <label class="check" for="nf-pay"><input id="nf-pay" type="checkbox">Payment reminders (games still unpaid)</label>
+        <div class="field"><label for="nf-paydays">Remind after</label><select id="nf-paydays"><option value="3">3 days unpaid</option><option value="7">7 days unpaid</option><option value="14">14 days unpaid</option></select></div>
+        <label class="check" for="nf-goal"><input id="nf-goal" type="checkbox">Goal milestones (50%, 75%, 100% of monthly goal)</label>
+        <label class="check" for="nf-wish"><input id="nf-wish" type="checkbox">Wish list item affordable</label>
+        <label class="check" for="nf-cert"><input id="nf-cert" type="checkbox">Certification renewal (set the date in your Referee profile)</label>
+      </div>
+      <div class="wish-actions"><button class="mini" type="button" id="nf-test">Send a test</button><button class="mini" type="button" id="nf-clear">Clear list</button></div>
+      <p class="msg" id="nf-msg" role="status"></p>
+      <div id="nf-inbox"></div>
     </section>
 
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-sz">
@@ -2500,7 +2523,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     safe(function () { renderPeriods(); S = summarize(); A = summarize(true); }, "totals");
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
-    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
     safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
@@ -2966,6 +2989,107 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     $("sz-body").innerHTML = rows.map(function (r) { return '<div class="sz-row"><span>' + r[0] + "</span><b>" + (r[0] === "Status" || r[0] === "Usually quiet" || r[0].indexOf("estimate") > 0 ? esc(r[1]) : r[1]) + "</b></div>"; }).join("") +
       (S.off ? '<p class="note">Your wish list and savings forecasts count the slower off-season pace.</p>' : "");
   }
+  /* Notifications: reminders kept on this device, shown in the app and as system alerts when allowed */
+  var NF_KEY = "rf-notif-v1", NP_KEY = "rf-notif-prefs-v1", nfPrefs = { on: false, game: true, lead: "both", pay: true, payDays: 7, goal: true, wish: true, cert: true }, nfState = { sent: {}, inbox: [] }, wishReadyList = [];
+  try { var np = JSON.parse(localStorage.getItem(NP_KEY) || "{}"); if (np && typeof np === "object") Object.keys(nfPrefs).forEach(function (k) { if (typeof np[k] === typeof nfPrefs[k]) nfPrefs[k] = np[k]; }); } catch (e) {}
+  try { var ns = JSON.parse(localStorage.getItem(NF_KEY) || "{}"); if (ns && ns.sent && typeof ns.sent === "object") nfState.sent = ns.sent; if (ns && Array.isArray(ns.inbox)) nfState.inbox = ns.inbox.filter(function (x) { return x && x.title; }).slice(0, 40); } catch (e) {}
+  function nfSave() { try { localStorage.setItem(NP_KEY, JSON.stringify(nfPrefs)); localStorage.setItem(NF_KEY, JSON.stringify(nfState)); } catch (e) {} }
+  function nfSupported() { return "Notification" in window; }
+  function nfShow(title, body, tag) {
+    if (!nfSupported() || Notification.permission !== "granted") return;
+    var opt = { body: body, icon: "icon-192.png?v=5", badge: "icon-192.png?v=5", tag: tag };
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(function (r) { return r.showNotification(title, opt); }).catch(function () { try { new Notification(title, opt); } catch (e) { /* blocked */ } });
+      else new Notification(title, opt);
+    } catch (e) { /* blocked */ }
+  }
+  var nfToastTimer = null;
+  function nfToast(title, body) {
+    var el = $("nf-toast"); if (!el) { el = document.createElement("div"); el.id = "nf-toast"; el.className = "nf-toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+    el.innerHTML = "<strong>" + esc(title) + "</strong><span>" + esc(body) + "</span>"; el.hidden = false;
+    clearTimeout(nfToastTimer); nfToastTimer = setTimeout(function () { el.hidden = true; }, 7000);
+  }
+  function nfCollect() {
+    var out = [], now = new Date(), nowMs = now.getTime(), t = todayStr();
+    if (nfPrefs.game) upcomingGames().forEach(function (g) {
+      var p = pdate(g.date), tm = /^(\d{1,2}):(\d{2})/.exec(g.time || ""); p.setHours(tm ? +tm[1] : 9, tm ? +tm[2] : 0, 0, 0);
+      var ms = p.getTime() - nowMs; if (ms <= 0 || ms > 864e5) return;
+      var when = g.time ? " at " + fmtTime(g.time) : "";
+      if (ms <= 72e5 && nfPrefs.lead !== "day") out.push({ id: "g2:" + g.id, type: "game", title: "Game starts soon", body: gTitle(g) + when + (g.assoc ? " · " + g.assoc : "") });
+      else if (ms > 72e5 && nfPrefs.lead !== "hours") out.push({ id: "g24:" + g.id, type: "game", title: g.date === t ? "Game today" : "Game tomorrow", body: gTitle(g) + when + (g.assoc ? " · " + g.assoc : "") });
+    });
+    if (nfPrefs.pay) owedGames().forEach(function (g) {
+      var age = Math.round((pdate(t) - pdate(g.date)) / 864e5); if (age < nfPrefs.payDays) return;
+      out.push({ id: "pay:" + g.id, type: "pay", title: "Payment reminder", body: gTitle(g) + " on " + dayWord(g.date) + " is still unpaid (" + fmt(gNet(g)) + ", " + age + " days)." });
+    });
+    if (nfPrefs.goal && goal > 0) {
+      var gC = Math.round(goal * 100), pct = Math.floor(Math.max(0, totalsFor(periodRange("month")).net) / gC * 100);
+      [50, 75, 100].forEach(function (m) { if (pct >= m) out.push({ id: "goal:" + t.slice(0, 7) + ":" + m, type: "goal", title: m === 100 ? "Monthly goal reached!" : "Goal milestone: " + m + "%", body: m === 100 ? "You hit your " + fmt(gC) + " goal this month." : "You are " + m + "% of the way to your " + fmt(gC) + " monthly goal." }); });
+    }
+    if (nfPrefs.wish) wishReadyList.forEach(function (w) { out.push({ id: "wish:" + (w.id || w.what) + ":" + toCents(w.amount), type: "wish", title: "You can afford it", body: w.what + " (" + fmt(toCents(w.amount)) + ") is ready to buy." }); });
+    if (nfPrefs.cert && rp && rp.exp) {
+      var d = Math.round((pdate(rp.exp) - pdate(t)) / 864e5), th = [1, 7, 14, 30, 60].filter(function (x) { return d <= x; })[0];
+      if (d < 0) out.push({ id: "cert:" + rp.exp + ":exp", type: "cert", title: "Certification expired", body: (rp.cert || "Your certification") + " expired on " + shortDate(rp.exp) + ". Renew it to keep getting games." });
+      else if (th) out.push({ id: "cert:" + rp.exp + ":" + th, type: "cert", title: "Certification renewal", body: (rp.cert || "Your certification") + (d === 0 ? " expires today." : " expires in " + d + (d === 1 ? " day" : " days") + " (" + shortDate(rp.exp) + ").") });
+    }
+    return out;
+  }
+  function nfRun(silentTypes) {
+    if (!nfPrefs.on) return;
+    var fresh = [], silent = silentTypes || [];
+    nfCollect().forEach(function (it) {
+      if (nfState.sent[it.id]) return;
+      nfState.sent[it.id] = Date.now();
+      if (silent.indexOf(it.type) >= 0) return;
+      nfState.inbox.unshift({ id: it.id, t: Date.now(), title: it.title, body: it.body }); fresh.push(it);
+    });
+    var cut = Date.now() - 200 * 864e5; Object.keys(nfState.sent).forEach(function (k) { if (nfState.sent[k] < cut) delete nfState.sent[k]; });
+    nfState.inbox = nfState.inbox.slice(0, 40); nfSave();
+    if (fresh.length) {
+      if (fresh.length > 3) { nfShow("RefVault", fresh.length + " new reminders", "nf-multi"); nfToast("RefVault", fresh.length + " new reminders. See Settings, Notifications."); }
+      else fresh.forEach(function (it) { nfShow(it.title, it.body, it.id); });
+      if (fresh.length <= 3) nfToast(fresh[0].title, fresh[0].body + (fresh.length > 1 ? " (+" + (fresh.length - 1) + " more)" : ""));
+    }
+    renderNotifs();
+  }
+  function renderNotifs() {
+    var p = $("nf-panel"); if (!p) return;
+    $("nf-on").checked = nfPrefs.on; $("nf-opts").style.display = nfPrefs.on ? "" : "none";
+    ["game", "pay", "goal", "wish", "cert"].forEach(function (k) { $("nf-" + k).checked = nfPrefs[k]; });
+    $("nf-lead").value = nfPrefs.lead; $("nf-paydays").value = String(nfPrefs.payDays);
+    var perm = nfSupported() ? Notification.permission : "none", st = $("nf-state");
+    st.textContent = !nfPrefs.on ? "Off" : perm === "granted" ? "Alerts on" : perm === "denied" ? "In app only" : perm === "none" ? "In app only" : "Allow alerts";
+    st.className = "chip " + (nfPrefs.on && perm === "granted" ? "ok" : "bad");
+    $("nf-inbox").innerHTML = nfState.inbox.length ? "<h3>Recent</h3>" + nfState.inbox.map(function (x) { return '<div class="nf-item"><strong>' + esc(x.title) + "</strong><span>" + esc(x.body) + "</span><small>" + esc(agoText(x.t)) + "</small></div>"; }).join("") : (nfPrefs.on ? '<p class="note">Nothing yet. Reminders will show up here.</p>' : "");
+  }
+  function nfPermMsg() {
+    var m = $("nf-msg"); m.className = "msg";
+    if (!nfPrefs.on) { m.textContent = ""; return; }
+    if (!nfSupported()) m.textContent = "This browser can't show system alerts. Reminders will show here and inside the app.";
+    else if (Notification.permission === "denied") m.textContent = "Alerts are blocked for this site. Reminders still show in the app. To get alerts, allow notifications for RefVault in your device settings.";
+    else if (Notification.permission === "default") m.textContent = "Tap Send a test and choose Allow to get alerts on this device.";
+    else m.textContent = "";
+  }
+  document.addEventListener("change", function (e) {
+    if (!e.target.closest || !e.target.closest("#nf-panel")) return;
+    var id = e.target.id, first = false;
+    if (id === "nf-on") {
+      nfPrefs.on = e.target.checked; first = nfPrefs.on;
+      if (nfPrefs.on && nfSupported() && Notification.permission === "default") { try { var r = Notification.requestPermission(); if (r && r.then) r.then(function () { renderNotifs(); nfPermMsg(); }); } catch (x) { /* older Safari */ } }
+    } else if (id === "nf-lead") nfPrefs.lead = e.target.value;
+    else if (id === "nf-paydays") nfPrefs.payDays = +e.target.value || 7;
+    else if (/^nf-(game|pay|goal|wish|cert)$/.test(id)) nfPrefs[id.slice(3)] = e.target.checked;
+    nfSave(); renderNotifs(); nfPermMsg();
+    if (nfPrefs.on) nfRun(first ? ["goal", "wish"] : ["goal", "wish"].filter(function (k) { return id === "nf-" + k; }));
+  });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#nf-test,#nf-clear"); if (!b) return;
+    if (b.id === "nf-clear") { nfState.inbox = []; nfSave(); renderNotifs(); return; }
+    var go = function () { nfShow("RefVault test", "Notifications are working on this device.", "nf-test"); nfToast("RefVault test", "Notifications are working on this device."); renderNotifs(); nfPermMsg(); };
+    if (nfSupported() && Notification.permission === "default") { try { var r = Notification.requestPermission(); if (r && r.then) r.then(go); else go(); } catch (x) { go(); } } else go();
+  });
+  setTimeout(function () { nfRun(); }, 4000); setInterval(function () { nfRun(); }, 300000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { nfRun(); }, 800); });
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
@@ -3429,7 +3553,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     o = o && typeof o === "object" ? o : {};
     var since = Math.floor(Number(o.since)), yr = new Date().getFullYear();
     return { name: String(o.name || "").trim().slice(0, 40), cert: String(o.cert || "").trim().slice(0, 60), level: RP_LEVELS.indexOf(o.level) >= 0 ? o.level : "",
-      since: since >= 1970 && since <= yr ? since : 0, favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5) };
+      since: since >= 1970 && since <= yr ? since : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(o.exp || "") ? o.exp : "", favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5) };
   }
   function rpStats() {
     var td = todayStr(), played = 0, earned = 0, byDay = {}, leagues = {}, roles = {}, weeks = {}, paidN = 0, unpaidN = 0, first = "";
@@ -3472,7 +3596,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var yrs = rp.since ? new Date().getFullYear() - rp.since : (st.first ? new Date().getFullYear() - Number(st.first.slice(0, 4)) : null);
     $("rp-stats").innerHTML = [["🎽 Total games", st.played], ["💵 Lifetime earnings", fmt(st.earned)], ["📆 Years officiating", yrs === null ? "—" : yrs < 1 ? "First year" : yrs + (yrs === 1 ? " year" : " years")], ["🌎 Leagues worked", st.nLeagues]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("");
     if (!editingIn("form-rp") && document.activeElement !== box) {
-      if ($("rp-name").value !== name) $("rp-name").value = name; $("rp-cert").value = rp.cert || ""; $("rp-level").value = rp.level || ""; $("rp-since").value = rp.since || ""; $("rp-favs").value = (rp.favs || []).join(", ");
+      if ($("rp-name").value !== name) $("rp-name").value = name; $("rp-cert").value = rp.cert || ""; $("rp-exp").value = rp.exp || ""; $("rp-level").value = rp.level || ""; $("rp-since").value = rp.since || ""; $("rp-favs").value = (rp.favs || []).join(", ");
     }
     var top = Object.keys(st.leagues).sort(function (a, b) { return st.leagues[b] - st.leagues[a]; }).slice(0, 5);
     $("rp-leagues").innerHTML = top.length ? top.map(function (l) { var fav = (rp.favs || []).some(function (f) { return f.toLowerCase() === l.toLowerCase(); }); return '<li class="row-line"><span>' + (fav ? "⭐ " : "") + esc(l) + '</span><strong>' + st.leagues[l] + (st.leagues[l] === 1 ? " game" : " games") + "</strong></li>"; }).join("") : '<li><p class="empty">Log games with a league and your most-worked leagues show here. Favorites you list above get a star.</p></li>';
@@ -3489,7 +3613,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var since = $("rp-since").value === "" ? 0 : Number($("rp-since").value);
     if ($("rp-since").value !== "" && (!isFinite(since) || since < 1970 || since > new Date().getFullYear() || Math.floor(since) !== since)) return rpMsg("Type the year you started, like 2022.", true);
     var before = rp;
-    rp = sanitizeRp({ name: $("rp-name").value, cert: $("rp-cert").value, level: $("rp-level").value, since: since, favs: $("rp-favs").value.split(",") }); render();
+    rp = sanitizeRp({ name: $("rp-name").value, cert: $("rp-cert").value, exp: $("rp-exp").value, level: $("rp-level").value, since: since, favs: $("rp-favs").value.split(",") }); render();
     persistSplit().then(function (ok) { if (!ok) { rp = before; render(); rpMsg("Could not save that. Try again.", true); } else rpMsg("Profile saved."); });
   });
   function rpMsg(t, err) { var m = $("rp-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
@@ -3871,6 +3995,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       var k = BUCKETS.map(function (b) { return b.k; }).indexOf(r.w.bucket), c = toCents(r.w.amount), sa = Math.max(0, Math.min(c, info.a.out[k] - info.used[r.w.bucket] - r.ahead));
       tot += c; sv += sa; if (r.st.ok) rdy++; else if (!near || c - sa < near.left) near = { name: r.w.what, left: c - sa };
     });
+    wishReadyList = rows.filter(function (r) { return r.st.ok; }).map(function (r) { return r.w; });
     wishSum = { n: rows.length, tot: tot, sv: sv, rdy: rdy, near: near };
     var ws = $("wish-stats"); ws.hidden = !rows.length;
     ws.innerHTML = '<div><span>🛒 Items</span><strong>' + rows.length + '</strong></div><div><span>💲 Total wish list</span><strong>' + esc(fmt(tot)) + '</strong></div><div><span>💰 Saved</span><strong>' + esc(fmt(sv)) + '</strong></div><div><span>🎯 Closest item</span><strong>' + (near ? esc(near.name) : "All ready") + '</strong></div><div><span>✅ Ready to buy</span><strong>' + rdy + '</strong></div>';
