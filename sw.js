@@ -1,7 +1,7 @@
-/* RefLedger: keeps the app working with no connection.
+/* RefVault: keeps the app working with no connection.
    Pages: try the network first (so updates show up), fall back to the saved copy.
    Fonts and icons: saved copy first, refreshed in the background. */
-const CACHE = "rf-shell-v4";
+const CACHE = "rf-shell-v6";
 const SHELL = ["./", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
