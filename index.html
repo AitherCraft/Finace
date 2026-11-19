@@ -883,6 +883,17 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Pending payment</span><span><i class="dot" style="background:var(--red)"></i>Cancelled</span></div>
     </section>
     <section class="panel" aria-live="polite" aria-label="Games on the selected day"><div id="cal-day"></div></section>
+    <section class="panel" aria-labelledby="h-gcal">
+      <h2 id="h-gcal">Sync with Google Calendar</h2>
+      <p class="note">Your assignments show up in Google Calendar (and Apple Calendar) and update by themselves when you add, move or cancel a game. Google refreshes subscribed calendars every few hours, so changes are not instant. It flows one way, from RefVault to your calendar.</p>
+      <div class="wish-actions"><button class="btn" type="button" id="gc-sub">Add to Google Calendar</button><button class="mini" type="button" id="gc-apple">Apple Calendar</button><button class="mini" type="button" id="gc-ics">Download .ics</button></div>
+      <div id="gc-link" hidden>
+        <div class="field"><label for="gc-url">Your private calendar link</label><input id="gc-url" type="text" readonly></div>
+        <div class="wish-actions"><button class="mini" type="button" id="gc-copy">Copy link</button><button class="mini" type="button" id="gc-rotate">Make a new link</button></div>
+        <p class="note">Keep this link private. Anyone with it can see your game times and places. Making a new link stops the old one.</p>
+      </div>
+      <p class="msg" id="gc-msg" role="status"></p>
+    </section>
   </div>
 
   <div class="view" data-view="ai" hidden>
@@ -3230,6 +3241,55 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (e.target.closest && e.target.closest("#aic-clear")) { aiChat = []; try { localStorage.removeItem(AIC_KEY); } catch (x) { /* ok */ } $("aic-msg").textContent = ""; aicRender(); }
   });
   aicRender();
+  /* Google Calendar: a private subscribe link (served by the cal-feed function) and a plain .ics download */
+  var gcToken = "";
+  function gcMsg(t, err) { var m = $("gc-msg"); m.textContent = t; m.className = "msg" + (err ? " err" : ""); }
+  function gcFeed(action) {
+    if (!sbSession || !sbSession.access_token) return Promise.reject(new Error("Sign in to sync your calendar."));
+    var go = function (retried) {
+      return fetch(SB_URL + "/functions/v1/cal-feed", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + sbSession.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ action: action }) }).then(function (r) {
+        if (r.status === 401 && !retried) return sbRefresh().then(function () { return go(true); });
+        return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (x) { /* not json */ } if (!r.ok || !j || !j.ok) throw new Error((j && j.error) || "Could not set up the calendar link."); gcToken = j.token; return j.token; });
+      });
+    };
+    return go(false);
+  }
+  function gcUrl(tk) { return SB_URL + "/functions/v1/cal-feed?t=" + tk; }
+  function gcShow(tk) { $("gc-link").hidden = false; $("gc-url").value = gcUrl(tk); }
+  function icsEsc(x) { return String(x).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+  function icsFold(l) { var o = [], c = ""; Array.from(l).forEach(function (ch) { if ((c + ch).length > 72) { o.push(c); c = " " + ch; } else c += ch; }); o.push(c); return o.join("\r\n"); }
+  function buildIcs() {
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//RefVault//Games//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:RefVault games"], st = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    upcomingGames().forEach(function (g) {
+      var n = gN(g), tm = /^(\d{2}):(\d{2})/.exec(g.time || ""), p = g.date.split("-").map(Number), z = function (v) { return (v < 10 ? "0" : "") + v; };
+      L.push("BEGIN:VEVENT", "UID:" + g.id + "@refvault", "DTSTAMP:" + st);
+      if (tm) { var a = new Date(Date.UTC(p[0], p[1] - 1, p[2], +tm[1], +tm[2])), b = new Date(a.getTime() + n * 36e5), f = function (d) { return d.getUTCFullYear() + z(d.getUTCMonth() + 1) + z(d.getUTCDate()) + "T" + z(d.getUTCHours()) + z(d.getUTCMinutes()) + "00"; }; L.push("DTSTART:" + f(a), "DTEND:" + f(b)); }
+      else { var nx = new Date(Date.UTC(p[0], p[1] - 1, p[2]) + 864e5); L.push("DTSTART;VALUE=DATE:" + g.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + nx.getUTCFullYear() + z(nx.getUTCMonth() + 1) + z(nx.getUTCDate())); }
+      L.push("SUMMARY:" + icsEsc("⚽ " + gTitle(g) + (n > 1 ? " (" + n + " games)" : "") + (g.role ? " - " + g.role : "")));
+      if (g.field) L.push("LOCATION:" + icsEsc(g.field));
+      var d = [g.assoc && "League: " + g.assoc, g.role && "Role: " + g.role, g.assignor && "Assignor: " + g.assignor, g.notes && "Notes: " + g.notes].filter(Boolean).join("\n"); if (d) L.push("DESCRIPTION:" + icsEsc(d));
+      L.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Game soon", "TRIGGER:-PT2H", "END:VALARM", "END:VEVENT");
+    });
+    L.push("END:VCALENDAR"); return L.map(icsFold).join("\r\n") + "\r\n";
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#gc-sub,#gc-apple,#gc-ics,#gc-copy,#gc-rotate"); if (!b) return;
+    if (b.id === "gc-ics") {
+      var n = upcomingGames().length; if (!n) { gcMsg("No upcoming games to export yet.", true); return; }
+      saveBlob(new Blob([buildIcs()], { type: "text/calendar" }), "refvault-games.ics"); gcMsg("Downloaded " + n + (n === 1 ? " game." : " games.") + " Open the file to add them to your calendar. This copy does not update by itself."); return;
+    }
+    if (b.id === "gc-copy") { var u = $("gc-url").value; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { gcMsg("Link copied."); }, function () { $("gc-url").select(); gcMsg("Press and hold the link to copy it."); }); return; }
+    var act = b.id === "gc-rotate" ? "rotate" : "get";
+    if (act === "rotate" && !confirm("Make a new link? Calendars using the old link will stop updating until you add the new one.")) return;
+    gcMsg("Setting up..."); b.disabled = true;
+    gcFeed(act).then(function (tk) {
+      gcShow(tk); var url = gcUrl(tk), web = url.replace(/^https:/, "webcal:");
+      if (b.id === "gc-sub") { gcMsg("Opening Google Calendar. Tap Add to finish."); window.open("https://calendar.google.com/calendar/r?cid=" + encodeURIComponent(web), "_blank", "noopener"); }
+      else if (b.id === "gc-apple") { gcMsg("Opening Calendar..."); location.href = web; }
+      else if (act === "rotate") gcMsg("New link made. Add it to your calendar again.");
+      else gcMsg("");
+    }, function (err) { gcMsg(String(err.message || err), true); }).then(function () { b.disabled = false; });
+  });
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
