@@ -678,6 +678,13 @@ button:disabled, .btn:disabled { opacity: 0.55; }
 @media (min-width: 720px) { .exbtns { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .exbtns .qbtn { min-height: 84px; }
 #print-root { display: none; }
+#main > .hero { position: sticky; top: 0; z-index: 40; padding: calc(8px + env(safe-area-inset-top, 0px)) 0 10px; background: rgba(6, 13, 28, 0.9); background: color-mix(in srgb, var(--bg) 90%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid transparent; transition: border-color 0.2s ease; }
+#main > .hero.compact { border-bottom-color: var(--panel-line); }
+#main > .hero .logo, #main > .hero h1, #main > .hero .tagline { transition: all 0.18s ease; }
+#main > .hero.compact .tagline { display: none; }
+#main > .hero.compact .logo { width: 38px; height: 38px; border-radius: 10px; }
+#main > .hero.compact h1 { font-size: 24px; }
+html { scroll-padding-top: 96px; }
 .menu-btn, .nav-close, .nav-scrim { display: none; }
 .wxp-hours { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
 .wxp-hours div { flex: 0 0 auto; min-width: 58px; text-align: center; background: var(--panel-2, rgba(255,255,255,.04)); border-radius: 12px; padding: 8px 6px; display: grid; gap: 3px; font-size: 12px; }
@@ -3435,6 +3442,12 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   document.addEventListener("visibilitychange", function () { if (!document.hidden) wxLoad(false); });
   setInterval(function () { if (!document.hidden) wxLoad(false); }, 30 * 60 * 1000);
   setTimeout(function () { wxLoad(false); }, 1500);
+  /* Sticky header: stays at the top on every page and shrinks a little once you scroll */
+  (function () {
+    var hero = document.querySelector("#main > .hero"), on = false; if (!hero) return;
+    function chk() { var y = window.pageYOffset || document.documentElement.scrollTop || 0; if (!on && y > 80) { on = true; hero.classList.add("compact"); } else if (on && y < 20) { on = false; hero.classList.remove("compact"); } }
+    window.addEventListener("scroll", chk, { passive: true }); chk();
+  })();
   /* Menu drawer (phones): the same list as the computer sidebar, opened from the three-line button */
   function menuSet(open) {
     var n = $("nav"), sc = $("nav-scrim"), b = $("menu-btn"); if (!n || !b) return;
