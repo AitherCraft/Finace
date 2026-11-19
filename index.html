@@ -275,6 +275,16 @@ button.badge { cursor: pointer; min-height: 26px; }
 .wish-price { font-weight: 700; border-radius: var(--r-sm); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 .wish-price.down { color: var(--green); background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.45); }
 .wish-price.up { color: var(--orange); background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.5); }
+.mw-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mw { background: var(--panel-2, rgba(255,255,255,0.04)); border: 1px solid var(--panel-line); border-left: 4px solid var(--mc, var(--blue)); border-radius: var(--r-sm); padding: 10px 12px; display: grid; gap: 3px; min-width: 0; }
+.mw.w2 { grid-column: span 2; }
+.mw .mw-t { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.mw strong { font: 700 22px/1.1 var(--display); color: var(--mc, var(--fg)); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.mw small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.mw-form { display: grid; gap: 10px; margin-top: 10px; }
+.mw-row { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--panel-line); }
+.mw-row:first-child { border-top: 0; }
+.mw-row span { min-width: 0; overflow-wrap: anywhere; }
 .wish-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 4px 0 8px; }
 .wish-stats div { background: var(--panel-2, rgba(255,255,255,0.04)); border: 1px solid var(--panel-line); border-radius: var(--r-sm); padding: 10px 12px; display: grid; gap: 4px; }
 .wish-stats span { font-size: 13px; color: var(--muted); }
@@ -348,7 +358,8 @@ html[data-hide~="reminders"] [data-card="reminders"],
 html[data-hide~="owed"] [data-card="owed"],
 html[data-hide~="goals"] [data-card="goals"],
 html[data-hide~="wish"] [data-card="wish"],
-html[data-hide~="bag"] [data-card="bag"] { display: none; }
+html[data-hide~="bag"] [data-card="bag"],
+html[data-hide~="mywid"] [data-card="mywid"] { display: none; }
 @media (min-width: 960px) { .grid2:has(> .p-start:only-child) { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 960px) {
   html[data-hide~="chart"] .grid2:has(.p-chart),
@@ -394,7 +405,7 @@ h1 span { display: inline; }
 .hcol { display: contents; }
 .hc { grid-column: 1 / -1; min-width: 0; }
 .hc.half { grid-column: auto; padding: 14px; }
-.o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; } .o8 { order: 8; } .o9 { order: 9; }
+.o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; } .o8 { order: 8; } .o9 { order: 9; }
 .hc h2 { font-size: 17px; }
 .more { color: var(--blue); font-weight: 600; font-size: 14px; text-decoration: none; }
 .mini { text-decoration: none; display: inline-flex; align-items: center; }
@@ -754,6 +765,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
 
     <div class="hcols">
       <div class="hcol">
+        <section class="panel hc o1" data-card="mywid" id="mw-card" hidden><div class="panel-head"><h2>My widgets</h2><a class="mini" href="#app-settings">Edit</a></div><div class="mw-grid" id="mw-grid"></div></section>
         <section class="panel hc o2 mob-only" data-card="next"><h2>Next Game</h2><div id="next-game"></div></section>
         <section class="panel hc half o4" data-card="recent"><div class="panel-head"><h2>Recent Games</h2></div><div id="recent"></div><a class="more" href="#games">View all</a></section>
         <section class="panel hc o3" data-card="goal"><div class="panel-head"><h2>Monthly Goal</h2><a class="mini" href="#goals">Edit</a></div><div id="goal-card"></div></section>
@@ -1034,6 +1046,23 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       <ul class="list" id="lay-list"></ul>
     </section>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-mw" id="mw-editor">
+      <div class="panel-head"><h2 id="h-mw">My widgets</h2><button class="mini" type="button" id="mw-starter">Add starter set</button></div>
+      <p class="note">Build your own Home widgets from the info in the app. Pick what to show, name it, choose an icon and color. Then tap Save settings.</p>
+      <div id="mw-list"></div>
+      <form class="mw-form" id="mw-form" novalidate>
+        <h3 id="mw-ftitle">Add a widget</h3>
+        <div class="grid">
+          <div class="field"><label for="mw-m">Show</label><select id="mw-m"></select></div>
+          <div class="field"><label for="mw-t">Title (optional)</label><input id="mw-t" type="text" maxlength="24" autocomplete="off" placeholder="Uses the default name"></div>
+          <div class="field"><label for="mw-i">Icon</label><select id="mw-i"></select></div>
+          <div class="field"><label for="mw-c">Color</label><select id="mw-c"></select></div>
+          <div class="field"><label for="mw-w">Size</label><select id="mw-w"><option value="1">Small (half width)</option><option value="2">Wide (full width)</option></select></div>
+        </div>
+        <div class="wish-actions"><button class="btn" type="submit" id="mw-save">Add widget</button><button class="mini" type="button" id="mw-cancel" hidden>Cancel edit</button></div>
+      </form>
+    </section>
+
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-colors">
       <h2 id="h-colors">Colors</h2>
       <div class="presets" id="presets" role="group" aria-label="Color themes">
@@ -1098,6 +1127,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
         <label class="check" for="show-owed"><input id="show-owed" type="checkbox" data-ui>Owed to you card</label>
         <label class="check" for="show-goals"><input id="show-goals" type="checkbox" data-ui>Goals progress</label>
         <label class="check" for="show-wish"><input id="show-wish" type="checkbox" data-ui>Wish list</label>
+        <label class="check" for="show-mywid"><input id="show-mywid" type="checkbox" data-ui>My widgets</label>
         <label class="check" for="show-bag"><input id="show-bag" type="checkbox" data-ui>Ref bag</label>
       </div>
     </section>
@@ -1352,13 +1382,14 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }
+    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true },
+    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true },
+    widgets: [],
     name: "RefVault", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
   var PRESETS = [
@@ -2455,7 +2486,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     safe(function () { renderPeriods(); S = summarize(); A = summarize(true); }, "totals");
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
-    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
     safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
@@ -2741,7 +2772,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
   var HOME_ORIG = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll("[data-card]")) : [];
   var HOME_HOME = HOME_ORIG.map(function (c) { return { el: c, col: HOME_COLS.indexOf(c.parentNode) }; });
   var CARD_KEYS = HOME_ORIG.map(function (c) { return c.getAttribute("data-card"); });
-  var CARD_LABEL = { next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
+  var CARD_LABEL = { mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
   var curOrder = [], deskMq = window.matchMedia ? window.matchMedia("(min-width: 960px)") : null;
   function defaultOrder() {
     return HOME_ORIG.map(function (c, i) { var m = /(?:^|\s)o(\d)(?:\s|$)/.exec(c.className); return { k: c.getAttribute("data-card"), n: m ? +m[1] : 99, i: i }; })
@@ -2767,6 +2798,87 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     });
   }
   if (deskMq && deskMq.addEventListener) deskMq.addEventListener("change", function () { applyOrder(curOrder); });
+  /* My widgets: user-built Home cards from the app's own numbers */
+  var curWidgets = [], wishSum = { n: 0, tot: 0, sv: 0, rdy: 0, near: null }, mwEdit = null;
+  var MW_ICONS = ["💵", "💰", "🏦", "📈", "🎯", "⚽", "🏆", "🔥", "🛒", "🎁", "⏳", "📅", "🟢", "⭐", "💎", "🧾"];
+  var MW_COLORS = { blue: ["Blue", "var(--blue)"], green: ["Green", "var(--green)"], give: ["Give color", "var(--c-give)"], save: ["Save color", "var(--c-save)"], invest: ["Invest color", "var(--c-invest)"], spend: ["Spend color", "var(--c-spend)"], yellow: ["Yellow", "var(--yellow)"], text: ["Plain", "var(--fg)"] };
+  function mwBucketLeft(A, k) { var i = BUCKETS.findIndex(function (b) { return b.k === k; }); return A.a.out[i] - A.used[k]; }
+  function mwEarn(p) { var r = periodRange(p), n = totalsFor(r).net; return n; }
+  var MW_GROUPS = ["Earnings", "Money buckets", "Games", "Goals & wish list"];
+  var MW_METRICS = {
+    earn_today: { g: 0, n: "Earned today", i: "💵", f: function () { var t = todayStr(), n = live().filter(function (g) { return g.date === t; }).length; return [fmt(totalsFor([t, t]).net), n ? n + (n === 1 ? " game today" : " games today") : "No games today"]; } },
+    earn_week: { g: 0, n: "Earned this week", i: "💵", f: function () { return [fmt(mwEarn("week")), "This week"]; } },
+    earn_month: { g: 0, n: "Earned this month", i: "📅", f: function () { return [fmt(mwEarn("month")), "This month"]; } },
+    earn_year: { g: 0, n: "Earned this year", i: "📈", f: function () { return [fmt(mwEarn("year")), "This year"]; } },
+    earn_all: { g: 0, n: "Total earned", i: "🏦", f: function (A) { return [fmt(A.net), "All time"]; } },
+    owed: { g: 0, n: "Owed to you", i: "⏳", f: function () { var o = owedGames(), c = o.reduce(function (a, g) { return a + gNet(g); }, 0); return [fmt(c), o.length ? o.length + (o.length === 1 ? " game waiting on pay" : " games waiting on pay") : "All paid up"]; } },
+    spent_month: { g: 0, n: "Spent this month", i: "🧾", f: function () { var r = periodRange("month"), c = 0; data.spending.forEach(function (x) { if (x.date && x.date >= r[0] && x.date <= r[1]) c += toCents(x.amount); }); return [fmt(c), "Logged this month"]; } },
+    left_donate: { g: 1, n: "Give left", i: "🎁", f: function (A) { return [fmt(mwBucketLeft(A, "donate")), "Left in Give"]; } },
+    left_save: { g: 1, n: "Save left", i: "💰", f: function (A) { return [fmt(mwBucketLeft(A, "save")), "Left in Save"]; } },
+    left_invest: { g: 1, n: "Invest left", i: "📈", f: function (A) { return [fmt(mwBucketLeft(A, "invest")), "Left in Invest"]; } },
+    left_spend: { g: 1, n: "Spend left", i: "🛒", f: function (A) { return [fmt(mwBucketLeft(A, "spend")), "Left in Spend"]; } },
+    games_month: { g: 2, n: "Games this month", i: "⚽", f: function () { var r = periodRange("month"), n = 0; live().forEach(function (g) { if (g.date >= r[0] && g.date <= r[1]) n += gN(g); }); return [String(n), "This month"]; } },
+    games_total: { g: 2, n: "Games played", i: "🏆", f: function () { var s = rpStats(); return [String(s.played), "All time"]; } },
+    avg_game: { g: 2, n: "Average per game", i: "💎", f: function () { var s = rpStats(); return [s.played ? fmt(Math.round(s.earned / Math.max(1, s.paidN))) : "$0.00", "Paid games"]; } },
+    streak: { g: 2, n: "Week streak", i: "🔥", f: function () { var s = rpStats(); return [String(s.streak), s.streak === 1 ? "week in a row" : "weeks in a row"]; } },
+    next_game: { g: 2, n: "Next game", i: "📅", f: function () { var g = upcomingGames()[0]; return g ? [dayWord(g.date), gTitle(g)] : ["None", "Nothing scheduled"]; } },
+    goal_pct: { g: 3, n: "Monthly goal progress", i: "🎯", f: function () { var gC = Math.round(goal * 100); if (gC <= 0) return ["Not set", "Set a monthly goal"]; var n = Math.max(0, mwEarn("month")); return [Math.min(100, Math.round(n / gC * 100)) + "%", fmt(n) + " of " + fmt(gC)]; } },
+    wish_n: { g: 3, n: "Wish list items", i: "🛒", f: function () { return [String(wishSum.n), "On your list"]; } },
+    wish_total: { g: 3, n: "Wish list total", i: "💲", f: function () { return [fmt(wishSum.tot), "All items"]; } },
+    wish_saved: { g: 3, n: "Saved toward wish list", i: "💰", f: function () { return [fmt(wishSum.sv), "of " + fmt(wishSum.tot)]; } },
+    wish_ready: { g: 3, n: "Ready to buy", i: "🟢", f: function () { return [String(wishSum.rdy), wishSum.rdy === 1 ? "item you can afford" : "items you can afford"]; } },
+    wish_close: { g: 3, n: "Closest wish", i: "⭐", f: function () { return wishSum.near ? [fmt(wishSum.near.left), "to go: " + wishSum.near.name] : ["None", "Nothing left to save for"]; } }
+  };
+  function renderMyWidgets() {
+    var card = $("mw-card"), box = $("mw-grid"); if (!card || !box) return;
+    var ws = curWidgets || [];
+    card.hidden = !ws.length; if (!ws.length) { box.innerHTML = ""; return; }
+    var A = summarize(true);
+    box.innerHTML = ws.map(function (w) {
+      var m = MW_METRICS[w.m], r; try { r = m.f(A); } catch (e) { r = ["-", ""]; }
+      return '<div class="mw' + (w.w === 2 ? " w2" : "") + '" style="--mc:' + MW_COLORS[w.c][1] + '"><span class="mw-t"><span aria-hidden="true">' + esc(w.i) + "</span>" + esc(w.t || m.n) + "</span><strong>" + esc(r[0]) + "</strong><small>" + esc(r[1]) + "</small></div>";
+    }).join("");
+  }
+  function mwFormInit() {
+    if (!$("mw-m") || $("mw-m").options.length) return;
+    $("mw-m").innerHTML = MW_GROUPS.map(function (g, gi) { return '<optgroup label="' + g + '">' + Object.keys(MW_METRICS).filter(function (k) { return MW_METRICS[k].g === gi; }).map(function (k) { return '<option value="' + k + '">' + esc(MW_METRICS[k].n) + "</option>"; }).join("") + "</optgroup>"; }).join("");
+    $("mw-i").innerHTML = '<option value="">Automatic</option>' + MW_ICONS.map(function (i) { return '<option value="' + i + '">' + i + "</option>"; }).join("");
+    $("mw-c").innerHTML = Object.keys(MW_COLORS).map(function (k) { return '<option value="' + k + '">' + MW_COLORS[k][0] + "</option>"; }).join("");
+  }
+  function renderMwList() {
+    mwFormInit();
+    var box = $("mw-list"); if (!box) return;
+    var ws = draftUi.widgets || [];
+    box.innerHTML = ws.length ? ws.map(function (w, i) {
+      var m = MW_METRICS[w.m];
+      return '<div class="mw-row"><span>' + esc(w.i) + " " + esc(w.t || m.n) + (w.t ? " <small class=\"note\">(" + esc(m.n) + ")</small>" : "") + '</span><span class="wish-actions"><button class="mini" type="button" data-mw-edit="' + w.id + '">Edit</button><button class="mini" type="button" data-mw-up="' + w.id + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Move up">&uarr;</button><button class="mini" type="button" data-mw-down="' + w.id + '"' + (i === ws.length - 1 ? " disabled" : "") + ' aria-label="Move down">&darr;</button><button class="mini" type="button" data-mw-del="' + w.id + '">Remove</button></span></div>';
+    }).join("") : '<p class="note">No widgets yet. Add one below, or tap Add starter set.</p>';
+  }
+  function mwSet(list) { draftUi = sanitizeUi(Object.assign(clone(draftUi), { widgets: list })); applyUi(draftUi); renderMwList(); updateUiState(); }
+  function mwReset() { mwEdit = null; $("mw-ftitle").textContent = "Add a widget"; $("mw-save").textContent = "Add widget"; $("mw-cancel").hidden = true; $("mw-t").value = ""; $("mw-i").value = ""; $("mw-w").value = "1"; }
+  function mwNewId() { return "w" + Date.now().toString(36).slice(-6) + Math.floor(Math.random() * 36).toString(36); }
+  document.addEventListener("submit", function (e) {
+    if (e.target.id !== "mw-form") return; e.preventDefault();
+    var m = $("mw-m").value, list = (draftUi.widgets || []).slice();
+    var w = { id: mwEdit || mwNewId(), m: m, t: $("mw-t").value, i: $("mw-i").value || MW_METRICS[m].i, c: $("mw-c").value, w: +$("mw-w").value };
+    if (mwEdit) list = list.map(function (x) { return x.id === mwEdit ? w : x; }); else list.push(w);
+    mwSet(list); mwReset();
+  });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-mw-edit],[data-mw-up],[data-mw-down],[data-mw-del],#mw-cancel,#mw-starter"); if (!b) return;
+    var list = (draftUi.widgets || []).slice();
+    if (b.id === "mw-cancel") { mwReset(); return; }
+    if (b.id === "mw-starter") {
+      [["earn_month", "blue"], ["owed", "yellow"], ["left_save", "save"], ["games_month", "green"]].forEach(function (p) { if (list.length < 16) list.push({ id: mwNewId() + list.length, m: p[0], t: "", i: MW_METRICS[p[0]].i, c: p[1], w: 1 }); });
+      mwSet(list); return;
+    }
+    var id = b.getAttribute("data-mw-edit") || b.getAttribute("data-mw-up") || b.getAttribute("data-mw-down") || b.getAttribute("data-mw-del");
+    var i = list.findIndex(function (x) { return x.id === id; }); if (i < 0) return;
+    if (b.hasAttribute("data-mw-edit")) { var w = list[i]; mwEdit = id; $("mw-m").value = w.m; $("mw-t").value = w.t; $("mw-i").value = w.i; $("mw-c").value = w.c; $("mw-w").value = String(w.w); $("mw-ftitle").textContent = "Edit widget"; $("mw-save").textContent = "Update widget"; $("mw-cancel").hidden = false; $("mw-t").focus(); return; }
+    if (b.hasAttribute("data-mw-del")) { list.splice(i, 1); if (mwEdit === id) mwReset(); }
+    else { var j = i + (b.hasAttribute("data-mw-up") ? -1 : 1); if (j < 0 || j >= list.length) return; var t = list[i]; list[i] = list[j]; list[j] = t; }
+    mwSet(list);
+  });
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
@@ -2777,6 +2889,12 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     if (typeof raw.glow === "boolean") u.glow = raw.glow;
     if (raw.show && typeof raw.show === "object") SECTIONS.forEach(function (s) { if (typeof raw.show[s.k] === "boolean") u.show[s.k] = raw.show[s.k]; });
     if (typeof raw.name === "string" && raw.name.trim()) u.name = /^(referee\s+finance|refledger)$/i.test(raw.name.trim()) ? "RefVault" : raw.name.trim().slice(0, 40);
+    if (Array.isArray(raw.widgets)) {
+      var wseen = {};
+      u.widgets = raw.widgets.filter(function (w) { return w && typeof w === "object" && MW_METRICS[w.m] && typeof w.id === "string" && !wseen[w.id] && (wseen[w.id] = 1); }).slice(0, 16).map(function (w) {
+        return { id: w.id.slice(0, 12), m: w.m, t: typeof w.t === "string" ? w.t.trim().slice(0, 24) : "", i: MW_ICONS.indexOf(w.i) >= 0 ? w.i : MW_METRICS[w.m].i, c: MW_COLORS[w.c] ? w.c : "blue", w: w.w === 2 ? 2 : 1 };
+      });
+    }
     if (typeof raw.tagline === "string") u.tagline = raw.tagline.slice(0, 60);
     if (Array.isArray(raw.order) && raw.order.length) {
       var seen = {}, ord = raw.order.filter(function (k) { if (CARD_KEYS.indexOf(k) < 0 || seen[k]) return false; seen[k] = 1; return true; });
@@ -2808,6 +2926,8 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     st.setProperty("--glow-a", u.glow ? rgba(u.accent, dark ? 0.30 : 0.18) : "transparent");
     st.setProperty("--glow-b", u.glow ? rgba(u.accent, dark ? 0.22 : 0.12) : "transparent");
     st.colorScheme = dark ? "dark" : "light";
+    curWidgets = u.widgets || [];
+    try { renderMyWidgets(); } catch (e) { /* data not ready yet */ }
     applyOrder(u.order);
     root.setAttribute("data-size", u.size);
     root.setAttribute("data-round", u.round);
@@ -2850,7 +2970,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     SECTIONS.forEach(function (s) { $("show-" + s.k).checked = draftUi.show[s.k]; });
     $("set-name").value = draftUi.name;
     $("set-tagline").value = draftUi.tagline;
-    renderLayout();
+    renderLayout(); renderMwList();
     syncPresetButtons();
     updateUiState();
   }
@@ -2863,6 +2983,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     raw.glow = $("set-glow").checked;
     raw.show = {};
     SECTIONS.forEach(function (s) { raw.show[s.k] = $("show-" + s.k).checked; });
+    raw.widgets = draftUi.widgets || [];
     raw.name = $("set-name").value;
     raw.tagline = $("set-tagline").value;
     return sanitizeUi(raw);
@@ -3652,6 +3773,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
       var k = BUCKETS.map(function (b) { return b.k; }).indexOf(r.w.bucket), c = toCents(r.w.amount), sa = Math.max(0, Math.min(c, info.a.out[k] - info.used[r.w.bucket] - r.ahead));
       tot += c; sv += sa; if (r.st.ok) rdy++; else if (!near || c - sa < near.left) near = { name: r.w.what, left: c - sa };
     });
+    wishSum = { n: rows.length, tot: tot, sv: sv, rdy: rdy, near: near };
     var ws = $("wish-stats"); ws.hidden = !rows.length;
     ws.innerHTML = '<div><span>🛒 Items</span><strong>' + rows.length + '</strong></div><div><span>💲 Total wish list</span><strong>' + esc(fmt(tot)) + '</strong></div><div><span>💰 Saved</span><strong>' + esc(fmt(sv)) + '</strong></div><div><span>🎯 Closest item</span><strong>' + (near ? esc(near.name) : "All ready") + '</strong></div><div><span>✅ Ready to buy</span><strong>' + rdy + '</strong></div>';
     var WISH_ICON = { Uniform: "👕", Electronics: "📱", Equipment: "🎒", Training: "🎓", Travel: "✈️", Clothing: "👔", Other: "📦", "": "🏷️" };
