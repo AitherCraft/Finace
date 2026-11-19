@@ -779,7 +779,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     <div class="hcols">
       <div class="hcol">
         <section class="panel hc o1" data-card="mywid" id="mw-card" hidden><div class="panel-head"><h2>My widgets</h2><a class="mini" href="#app-settings">Edit</a></div><div class="mw-grid" id="mw-grid"></div></section>
-        <section class="panel hc o3" data-card="insights" id="ins-card" hidden><div class="panel-head"><h2>Insights</h2><span class="chip">From your numbers</span></div><div id="ins-body"></div></section>
+        <section class="panel hc o3" data-card="insights" id="ins-card" hidden><div class="panel-head"><h2>Insights</h2><span class="chip">From your numbers</span></div><div id="ins-body"></div><div id="ai-body"></div><div class="wish-actions"><button class="mini" type="button" id="ai-ask">✨ Ask AI for more</button></div><p class="msg" id="ai-msg" role="status"></p></section>
         <section class="panel hc o3" data-card="season" id="sz-card" hidden><div class="panel-head"><h2>Season</h2><span class="chip" id="sz-chip"></span></div><div id="sz-body"></div></section>
         <section class="panel hc o2 mob-only" data-card="next"><h2>Next Game</h2><div id="next-game"></div></section>
         <section class="panel hc half o4" data-card="recent"><div class="panel-head"><h2>Recent Games</h2></div><div id="recent"></div><a class="more" href="#games">View all</a></section>
@@ -3142,6 +3142,37 @@ button:disabled, .btn:disabled { opacity: 0.55; }
     var l = insightList(); card.hidden = !l.length;
     $("ins-body").innerHTML = l.map(function (x) { return '<div class="ins"><span aria-hidden="true">' + x[0] + "</span><div>" + esc(x[1]) + "<small>" + esc(x[2]) + "</small></div></div>"; }).join("");
   }
+  /* Ask AI (Gemini, through a server function; the key never touches the app) */
+  var aiBusy = false, aiLast = 0;
+  function aiFacts() {
+    var S = seasonInfo(), mr = periodRange("month"), d = function (c) { return Math.round(c) / 100; }, info = allTimeInfo(), wk = info.weekend || info.perWeek;
+    var sn = S.seasons || [];
+    return {
+      today: todayStr(), monthEarnedSoFar: d(Math.max(0, totalsFor(mr).net)), monthlyGoal: goal || 0,
+      scheduledGamesThisMonth: upcomingGames().filter(function (g) { return g.date >= mr[0] && g.date <= mr[1]; }).map(function (g) { return d(gNet(g)); }),
+      gamesPlayedTotal: rpStats().played, owedToYou: d(owedGames().reduce(function (a, g) { return a + gNet(g); }, 0)), perWeekPace: d(info.perWeek), payPerWeekend: d(wk),
+      split: split, bucketsLeft: BUCKETS.map(function (b, i) { return { bucket: b.name, left: d(info.a.out[i] - info.used[b.k]) }; }),
+      season: S.none ? null : { inSeason: !S.off, inSeasonWeekly: S.inW === null ? null : d(S.inW), offSeasonWeekly: S.offW === null ? null : d(S.offW), quietMonths: S.quietMoy.map(function (m) { return MON[m - 1]; }), recentSeasons: sn.slice(-4).map(function (x) { return { name: x.name, earned: d(x.net), games: x.n, current: !!x.cur }; }) },
+      wishList: wishes.slice(0, 8).map(function (w) { return { item: w.what, price: Number(w.amount) || 0, bucket: w.bucket }; })
+    };
+  }
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest || !e.target.closest("#ai-ask") || aiBusy) return;
+    var msg = $("ai-msg"), btn = $("ai-ask"); msg.className = "msg";
+    if (!sbSession || !sbSession.access_token) { msg.textContent = "Sign in to use AI insights."; msg.className = "msg err"; return; }
+    if (Date.now() - aiLast < 15000) { msg.textContent = "Give it a few seconds, then try again."; return; }
+    aiBusy = true; aiLast = Date.now(); btn.disabled = true; msg.textContent = "Thinking..."; var facts; try { facts = aiFacts(); } catch (x) { facts = {}; }
+    var call = function (retried) {
+      return fetch(SB_URL + "/functions/v1/ai-insights", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + sbSession.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ facts: facts }) }).then(function (r) {
+        if (r.status === 401 && !retried) return sbRefresh().then(function () { return call(true); });
+        return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (x) { /* not json */ } if (!r.ok || !j || !j.ok) throw new Error(j && j.code === "no_key" ? "AI insights are not switched on yet." : (j && j.error) || "Could not reach the AI."); return j; });
+      });
+    };
+    call(false).then(function (j) {
+      $("ai-body").innerHTML = '<h3>AI insights</h3>' + j.insights.map(function (x) { return '<div class="ins"><span aria-hidden="true">' + esc(x.icon) + "</span><div>" + esc(x.text) + "</div></div>"; }).join("");
+      msg.textContent = "Written by AI from your numbers. Double-check anything important.";
+    }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; }).then(function () { aiBusy = false; btn.disabled = false; });
+  });
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
