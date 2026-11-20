@@ -688,6 +688,30 @@ html { scroll-padding-top: 96px; }
 .pc-big { display: grid; gap: 2px; margin: 6px 0 10px; } .pc-big b { font: 800 40px/1 var(--display); font-variant-numeric: tabular-nums; } .pc-big span { color: var(--muted); font-size: 14px; }
 .pc-line { padding: 5px 0; font-size: 16px; } .pc-line small { display: block; color: var(--muted); font-size: 13px; margin-left: 26px; }
 .badge.partial { background: var(--orange, #ff9f43); color: #231000; } .badge.paid { background: var(--green); color: #04180b; }
+.linkbtn { background: none; border: 0; color: var(--blue); font: inherit; font-weight: 600; padding: 0; min-height: 0 !important; cursor: pointer; text-align: left; text-decoration: none; }
+.linkbtn.strong { color: var(--fg); font-weight: 600; overflow-wrap: anywhere; }
+.cal.big { gap: 4px; }
+.cal.big .cdw { position: relative; min-height: 70px; border: 1px solid var(--panel-line); border-radius: 8px; padding: 3px 2px 3px; display: grid; align-content: start; gap: 2px; min-width: 0; }
+.cal.big .cdw.today { outline: 1.5px solid var(--blue); } .cal.big .cdw.sel { background: rgba(47, 140, 255, 0.14); }
+.cal.big .cdw .cd { aspect-ratio: auto; min-height: 0; display: block; text-align: left; padding: 1px 3px 2px; border: 0; background: none; font-weight: 700; font-size: 12px; border-radius: 6px; color: inherit; }
+.cal.big .cdw .cd.sel { background: none; }
+.cal.big .cdw.today .dn { background: var(--blue); color: var(--on-accent); border-radius: 999px; padding: 1px 6px; }
+.cal.big .chips { display: grid; gap: 2px; min-width: 0; }
+.cal.big .chip { display: block; width: 100%; min-height: 0 !important; height: 17px; padding: 0 4px; border: 0; border-radius: 4px; font: 700 10px/17px var(--body); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: #04180b; background: var(--green); }
+.cal.big .chip.k-pending { background: var(--yellow); color: #231800; } .cal.big .chip.k-upcoming { background: var(--blue); color: #021226; } .cal.big .chip.k-cancelled { background: var(--red); color: #fff; text-decoration: line-through; }
+.cal.big .chip { text-transform: none; letter-spacing: 0; } .cal.big .chip .cn { display: none; }
+.cal.big .more { font-size: 10px; color: var(--muted); text-align: left; padding-left: 3px; } .cal.big .more.m3 { display: none; }
+.cal.big .chip.c3 { display: none; }
+@media (min-width: 720px) { .cal.big .chip .cn { display: inline; } .cal.big .cdw { min-height: 112px; padding: 6px; } .cal.big .chip { height: 20px; font-size: 11.5px; line-height: 20px; padding: 0 6px; } .cal.big .chip.c3 { display: block; } .cal.big .more.m2 { display: none; } .cal.big .more.m3 { display: block; } .cal.big .cdw .cd { font-size: 13px; } }
+.gd-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.6); display: grid; align-items: end; justify-items: center; padding: 0; overflow-y: auto; }
+.gd-scrim[hidden] { display: none; }
+.gd-card { width: min(560px, 100%); max-height: 92vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--panel-line); border-radius: 18px 18px 0 0; padding: 18px 18px calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 12px; outline: none; }
+@media (min-width: 720px) { .gd-scrim { align-items: center; padding: 24px; } .gd-card { border-radius: 18px; } }
+.gd-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; } .gd-head h2 { margin: 0; font-size: 21px; overflow-wrap: anywhere; }
+.gd-x { flex: 0 0 auto; width: 38px; height: 38px; min-height: 38px !important; border-radius: 10px; border: 1.5px solid var(--panel-line); background: transparent; color: var(--fg); cursor: pointer; padding: 0; font-size: 20px; }
+.gd-rows { display: grid; } .gd-row { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-top: 1px solid var(--panel-line); font-size: 15px; } .gd-row:first-child { border-top: 0; }
+.gd-row span:first-child { color: var(--muted); flex: 0 0 auto; } .gd-row b { text-align: right; font-weight: 600; overflow-wrap: anywhere; } .gd-row a { color: var(--blue); }
+.gd-note { background: var(--panel-2, rgba(255,255,255,.05)); border-radius: 10px; padding: 10px 12px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .menu-btn, .nav-close, .nav-scrim { display: none; }
 .wxp-hours { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
 .wxp-hours div { flex: 0 0 auto; min-width: 58px; text-align: center; background: var(--panel-2, rgba(255,255,255,.04)); border-radius: 12px; padding: 8px 6px; display: grid; gap: 3px; font-size: 12px; }
@@ -794,6 +818,7 @@ html { scroll-padding-top: 96px; }
 <div id="toast" class="toast" role="alert" hidden></div>
 <div id="sr-route" class="sr" aria-live="polite"></div>
 <main class="wrap" id="main" tabindex="-1">
+  <div class="gd-scrim" id="gd" hidden><div class="gd-card" id="gd-card" role="dialog" aria-modal="true" aria-labelledby="gd-title" tabindex="-1"></div></div>
   <div class="nav-scrim" id="nav-scrim"></div>
   <nav class="nav" id="nav" aria-label="Main">
     <button class="nav-close" type="button" id="nav-close" aria-label="Close menu"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -946,7 +971,7 @@ html { scroll-padding-top: 96px; }
     <section class="panel" aria-labelledby="cal2-title">
       <div class="panel-head"><h2 id="cal2-title">Calendar</h2><span class="cal-nav"><button class="mini" type="button" data-cal2="-1" aria-label="Previous month">&lsaquo;</button><button class="mini" type="button" data-cal2="0">Today</button><button class="mini" type="button" data-cal2="1" aria-label="Next month">&rsaquo;</button></span></div>
       <div id="cal2"></div>
-      <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Worked</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--yellow)"></i>Pending payment</span><span><i class="dot" style="background:var(--red)"></i>Cancelled</span></div>
+      <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Paid</span><span><i class="dot" style="background:var(--yellow)"></i>Pending</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--red)"></i>Cancelled</span></div>
     </section>
     <section class="panel" aria-live="polite" aria-label="Games on the selected day"><div id="cal-day"></div></section>
     <section class="panel" aria-labelledby="h-gcal">
@@ -1868,7 +1893,7 @@ html { scroll-padding-top: 96px; }
 
     var up = upcomingGames(), ng = up[0];
     $("next-game").innerHTML = ng
-      ? '<div class="next-when">' + esc(dayWord(ng.date)) + (ng.time ? " &bull; " + esc(fmtTime(ng.time)) : "") + '</div><div class="next-title">' + esc(gTitle(ng)) + '</div><p class="note">' + esc([ng.assoc, ng.role].filter(Boolean).join(" · ")) + '</p><a class="more" href="#games">View Details</a>'
+      ? '<div class="next-when">' + esc(dayWord(ng.date)) + (ng.time ? " &bull; " + esc(fmtTime(ng.time)) : "") + '</div><div class="next-title">' + esc(gTitle(ng)) + '</div><p class="note">' + esc([ng.assoc, ng.role].filter(Boolean).join(" · ")) + '</p><button class="more linkbtn" type="button" data-calgame="' + esc(ng.id) + '">View Details</button>'
       : '<p class="note">No upcoming games. Add one and it shows up here.</p><a class="more" href="#add-game">Add a game</a>';
     $("upcoming").innerHTML = up.length ? up.slice(0, 4).map(function (g) {
       return '<div class="rg rg2"><div><strong>' + esc(gTitle(g)) + "</strong><small>" + esc(dayWord(g.date)) + (g.time ? " · " + esc(fmtTime(g.time)) : "") + "</small></div>" + '<span class="amt">' + fmt(toCents(g.fee)) + "</span></div>";
@@ -2257,7 +2282,7 @@ html { scroll-padding-top: 96px; }
   /* Calendar: color-coded month, tap a day to see its games */
   var calSel = null, cal2Off = 0;
   var CAL_COLORS = { worked: "var(--green)", upcoming: "var(--blue)", pending: "var(--yellow)", cancelled: "var(--red)" };
-  var CAL_NAMES = { worked: "Worked", upcoming: "Upcoming", pending: "Pending payment", cancelled: "Cancelled" };
+  var CAL_NAMES = { worked: "Paid", upcoming: "Upcoming", pending: "Pending", cancelled: "Cancelled" };
   var CAL_ORDER = ["worked", "upcoming", "pending", "cancelled"];
   function live() { return data.games.filter(function (g) { return !g.cancelled; }); }
   function calKind(g) {
@@ -2267,6 +2292,7 @@ html { scroll-padding-top: 96px; }
     if (g.date === t) return paid ? "worked" : "upcoming";
     return paid ? "worked" : "pending";
   }
+  function calShortTime(t) { var m = /^(\d{1,2}):(\d{2})/.exec(t || ""); if (!m) return ""; var h = +m[1]; return (h % 12 || 12) + (m[2] !== "00" ? ":" + m[2] : "") + (h >= 12 ? "p" : "a"); }
   function calMonth(off) { var n = new Date(); return new Date(n.getFullYear(), n.getMonth() + off, 1); }
   function calHtml(off, big) {
     var cm = calMonth(off), ym = cm.getFullYear() + "-" + String(cm.getMonth() + 1).padStart(2, "0"), dim = new Date(cm.getFullYear(), cm.getMonth() + 1, 0).getDate(), t = todayStr(), by = {};
@@ -2278,9 +2304,19 @@ html { scroll-padding-top: 96px; }
       var ds = ym + "-" + String(d).padStart(2, "0"), list = by[ds] || [], kinds = {};
       list.forEach(function (g) { kinds[calKind(g)] = 1; });
       var ks = CAL_ORDER.filter(function (k) { return kinds[k]; });
-      h += '<button type="button" class="cd' + (ds === t ? " today" : "") + (big && ds === calSel ? " sel" : "") + '" data-goday="' + ds + '" aria-label="' + esc(parseD(ds).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })) + (list.length ? ", " + list.length + (list.length === 1 ? " game" : " games") : "") + '">' + d +
-        (ks.length ? '<span class="dots">' + ks.map(function (k) { return '<i style="background:' + CAL_COLORS[k] + '"></i>'; }).join("") + "</span>" : "") +
-        (big && list.length ? '<small class="cnt">' + list.length + (list.length === 1 ? " game" : " games") + "</small>" : "") + "</button>";
+      var lbl = parseD(ds).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) + (list.length ? ", " + list.length + (list.length === 1 ? " game" : " games") : "");
+      if (big) {
+        var sorted = list.slice().sort(byDateTime), chips = sorted.slice(0, 3).map(function (g, i) {
+          var k = calKind(g), tt = g.time ? calShortTime(g.time) + " " : "";
+          return '<button type="button" class="chip k-' + k + (i === 2 ? " c3" : "") + '" data-calgame="' + esc(g.id) + '" aria-label="' + esc(CAL_NAMES[k] + ": " + gTitle(g) + (g.time ? " at " + fmtTime(g.time) : "")) + '">' + (tt ? '<span class="ct">' + esc(tt.trim()) + '</span><span class="cn"> ' + esc(gTitle(g)) + "</span>" : esc(gTitle(g))) + "</button>";
+        }).join("");
+        var more = list.length > 3 ? '<span class="more m3">+' + (list.length - 3) + "</span>" : "";
+        if (list.length > 2) more += '<span class="more m2">+' + (list.length - 2) + "</span>";
+        h += '<div class="cdw' + (ds === t ? " today" : "") + (ds === calSel ? " sel" : "") + '"><button type="button" class="cd" data-goday="' + ds + '" aria-label="' + esc(lbl) + '"><span class="dn">' + d + "</span></button><div class=\"chips\">" + chips + more + "</div></div>";
+        continue;
+      }
+      h += '<button type="button" class="cd' + (ds === t ? " today" : "") + '" data-goday="' + ds + '" aria-label="' + esc(lbl) + '"><span>' + d + "</span>" +
+        (ks.length ? '<span class="dots">' + ks.map(function (k) { return '<i style="background:' + CAL_COLORS[k] + '"></i>'; }).join("") + "</span>" : "") + "</button>";
     }
     return { title: cm.toLocaleDateString("en-US", { month: "long", year: "numeric" }), html: h + "</div>", ym: ym };
   }
@@ -2294,7 +2330,7 @@ html { scroll-padding-top: 96px; }
     var h = '<h3 class="cal-dayhead">' + esc(head) + "</h3>";
     h += list.length ? '<ul class="list tall">' + list.map(function (g) {
       var k = calKind(g), unpaid = g.paid === false && !g.cancelled;
-      return '<li class="cdr"><div><strong>' + (g.time ? esc(fmtTime(g.time)) + " &middot; " : "") + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + k + '">' + CAL_NAMES[k] + "</span><span>" + esc([gSpan(g), g.assoc, g.role, g.field].filter(Boolean).join(" · ")) + "</span></div>" +
+      return '<li class="cdr"><div><button type="button" class="linkbtn strong" data-calgame="' + esc(g.id) + '">' + (g.time ? esc(fmtTime(g.time)) + " &middot; " : "") + esc(gTitle(g)) + '</button><div class="a-sub"><span class="badge ' + k + '">' + CAL_NAMES[k] + "</span><span>" + esc([gSpan(g), g.assoc, g.role, g.field].filter(Boolean).join(" · ")) + "</span></div>" +
         (g.notes ? '<div class="game-note">' + esc(g.notes) + "</div>" : "") +
         '<div class="a-sub"><button class="mini" type="button" data-editgame="' + esc(g.id) + '">Edit</button>' +
         (unpaid ? '<button class="mini" type="button" data-calpaid="' + esc(g.id) + '">Got paid</button>' : "") +
@@ -3437,9 +3473,9 @@ html { scroll-padding-top: 96px; }
   function gcShow(tk) { $("gc-link").hidden = false; $("gc-url").value = gcUrl(tk); }
   function icsEsc(x) { return String(x).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
   function icsFold(l) { var o = [], c = ""; Array.from(l).forEach(function (ch) { if ((c + ch).length > 72) { o.push(c); c = " " + ch; } else c += ch; }); o.push(c); return o.join("\r\n"); }
-  function buildIcs() {
+  function buildIcs(list) {
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//RefVault//Games//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:RefVault games"], st = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-    upcomingGames().forEach(function (g) {
+    (list || upcomingGames()).forEach(function (g) {
       var n = gN(g), tm = /^(\d{2}):(\d{2})/.exec(g.time || ""), p = g.date.split("-").map(Number), z = function (v) { return (v < 10 ? "0" : "") + v; };
       L.push("BEGIN:VEVENT", "UID:" + g.id + "@refvault", "DTSTAMP:" + st);
       if (tm) { var a = new Date(Date.UTC(p[0], p[1] - 1, p[2], +tm[1], +tm[2])), b = new Date(a.getTime() + n * 36e5), f = function (d) { return d.getUTCFullYear() + z(d.getUTCMonth() + 1) + z(d.getUTCDate()) + "T" + z(d.getUTCHours()) + z(d.getUTCMinutes()) + "00"; }; L.push("DTSTART:" + f(a), "DTEND:" + f(b)); }
@@ -3595,6 +3631,43 @@ html { scroll-padding-top: 96px; }
     html += '<p class="wx-sub">Updated ' + esc(agoText(wxAt)) + '. Forecast by Open-Meteo. <a href="#app-settings">Change location</a></p>';
     body.innerHTML = html;
   }
+  /* Game details: tap any game on the calendar (or Next Game) to open everything about it */
+  var gdId = null;
+  function gdClose() { var el = $("gd"); if (!el || el.hidden) return; el.hidden = true; document.body.classList.remove("menu-open"); gdId = null; }
+  function gdOpen(id) {
+    var g = data.games.filter(function (x) { return x.id === id; })[0]; if (!g) return;
+    gdId = id; var k = calKind(g), p = gPay(g), st = gStatus(g), rows = [];
+    var when = mdDate(g.date) + (g.endDate && g.endDate > g.date ? " – " + mdDate(g.endDate) : "") + (g.time ? " at " + fmtTime(g.time) : "");
+    var row = function (a, b, raw) { if (b === "" || b == null) return; rows.push('<div class="gd-row"><span>' + a + "</span><b>" + (raw ? b : esc(b)) + "</b></div>"); };
+    row("When", when); if (gN(g) > 1) row("Games", String(gN(g)));
+    row("League", g.assoc); row("Role", g.role); row("Assignor", g.assignor);
+    if (g.field) row("Field", '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(g.field + (g.assoc ? " " + g.assoc : "")) + '" target="_blank" rel="noopener">' + esc(g.field) + "</a>", true);
+    if (gMiles(g)) row("Distance", fmtMiles(gMiles(g)));
+    row("Fee", fmt(toCents(g.fee))); if (toCents(g.expenses)) row("Expenses", fmt(toCents(g.expenses))); row("You keep", fmt(gNet(g)));
+    var pay = g.cancelled ? "Cancelled" : p === "paid" ? "Paid" + (g.paidOn ? " on " + mdDate(g.paidOn) : "") : p === "partial" ? "Partly paid: " + fmt(gRcvd(g)) + " received, " + fmt(gOwedC(g)) + " owed" : g.date >= todayStr() ? "Not paid yet" : (st === "overdue" ? "Overdue: " : "Pending: ") + fmt(gOwedC(g)) + " owed";
+    row("Payment", pay); if (g.remindedOn && g.paid === false) row("Reminder", "Sent " + mdDate(g.remindedOn));
+    try { var wi = wxHourAt(g.date, g.time); if (wi >= 0) { var h = wxData.hourly; row("Weather", wxInfo(h.weather_code[wi], 1).i + " " + Math.round(h.temperature_2m[wi]) + "°F, rain " + h.precipitation_probability[wi] + "%, wind " + Math.round(h.wind_speed_10m[wi]) + " mph"); } } catch (e) { /* no forecast */ }
+    var unpaid = g.paid === false && !g.cancelled;
+    $("gd-card").innerHTML = '<div class="gd-head"><div><h2 id="gd-title">' + esc(gTitle(g)) + '</h2><div class="a-sub"><span class="badge ' + k + '">' + CAL_NAMES[k] + "</span>" + (p === "partial" ? '<span class="badge partial">Partial</span>' : "") + '</div></div><button class="gd-x" type="button" id="gd-close" aria-label="Close">&times;</button></div>' +
+      '<div class="gd-rows">' + rows.join("") + "</div>" + (g.notes ? '<div class="gd-note">' + esc(g.notes) + "</div>" : "") +
+      '<div class="wish-actions"><button class="btn" type="button" data-editgame="' + esc(g.id) + '">Edit</button>' +
+      (unpaid ? '<button class="btn" type="button" data-calpaid="' + esc(g.id) + '">Mark paid</button><button class="mini" type="button" data-gdpartial="' + esc(g.id) + '">Partial</button>' : "") +
+      (g.cancelled ? '<button class="mini" type="button" data-calrestore="' + esc(g.id) + '">Restore</button>' : '<button class="mini" type="button" data-calcancel="' + esc(g.id) + '">Cancel game</button>') +
+      '<button class="mini" type="button" data-gdics="' + esc(g.id) + '">Add to calendar</button></div>';
+    $("gd").hidden = false; document.body.classList.add("menu-open"); $("gd-card").scrollTop = 0; $("gd-card").focus({ preventScroll: true });
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target; if (!t.closest) return;
+    var og = t.closest("[data-calgame]"); if (og) { e.preventDefault(); gdOpen(og.getAttribute("data-calgame")); return; }
+    if (!$("gd") || $("gd").hidden) return;
+    if (t === $("gd") || t.closest("#gd-close")) { gdClose(); return; }
+    var pa = t.closest("[data-gdpartial]"); if (pa) { var id = pa.getAttribute("data-gdpartial"); gdClose(); pcSetPartial(id); return; }
+    var ic = t.closest("[data-gdics]");
+    if (ic) { var g = data.games.filter(function (x) { return x.id === ic.getAttribute("data-gdics"); })[0]; if (g) saveBlob(new Blob([buildIcs([g])], { type: "text/calendar" }), "refvault-game.ics"); return; }
+    if (t.closest("[data-editgame],[data-calpaid],[data-calcancel],[data-calrestore]")) setTimeout(gdClose, 0);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") gdClose(); });
+  window.addEventListener("hashchange", gdClose);
   function sanitizeUi(raw) {
     var u = clone(DEFAULT_UI);
     if (!raw || typeof raw !== "object") return u;
