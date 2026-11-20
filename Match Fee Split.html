@@ -91,7 +91,7 @@ h1 span { display: block; }
   min-height: 40px;
   cursor: pointer;
 }
-.periods button[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--on-accent); }
+.periods button[aria-pressed="true"], .periods button[aria-selected="true"] { background: var(--blue); border-color: var(--blue); color: var(--on-accent); }
 
 /* Summary tiles */
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -685,6 +685,9 @@ button:disabled, .btn:disabled { opacity: 0.55; }
 #main > .hero.compact .logo { width: 38px; height: 38px; border-radius: 10px; }
 #main > .hero.compact h1 { font-size: 24px; }
 html { scroll-padding-top: 96px; }
+.pc-big { display: grid; gap: 2px; margin: 6px 0 10px; } .pc-big b { font: 800 40px/1 var(--display); font-variant-numeric: tabular-nums; } .pc-big span { color: var(--muted); font-size: 14px; }
+.pc-line { padding: 5px 0; font-size: 16px; } .pc-line small { display: block; color: var(--muted); font-size: 13px; margin-left: 26px; }
+.badge.partial { background: var(--orange, #ff9f43); color: #231000; } .badge.paid { background: var(--green); color: #04180b; }
 .menu-btn, .nav-close, .nav-scrim { display: none; }
 .wxp-hours { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
 .wxp-hours div { flex: 0 0 auto; min-width: 58px; text-align: center; background: var(--panel-2, rgba(255,255,255,.04)); border-radius: 12px; padding: 8px 6px; display: grid; gap: 3px; font-size: 12px; }
@@ -797,6 +800,7 @@ html { scroll-padding-top: 96px; }
     <a href="#home" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span>Home</span></a>
     <a href="#games" data-nav="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20.5 9.5l-5 1M3.5 9.5l5 1M16.5 20l-2.3-5.5M7.5 20l2.3-5.5"/></svg><span>Games</span></a>
     <a href="#calendar" data-nav="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/></svg><span>Calendar</span></a>
+    <a href="#owed" data-nav="payments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v.01M17.5 14.5v.01"/></svg><span>Payments</span></a>
     <a href="#money" data-nav="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.2c-.5-.8-1.5-1.2-2.6-1.2-1.5 0-2.6.8-2.6 2s1 1.7 2.7 2 2.7.8 2.7 2-1.1 2-2.7 2c-1.2 0-2.2-.5-2.7-1.4M12 6v2M12 16v2"/></svg><span>Money</span></a>
     <a href="#reports" data-nav="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Reports</span></a>
     <a class="desk" href="#goals" data-nav="goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></svg><span>Goals</span></a>
@@ -913,17 +917,29 @@ html { scroll-padding-top: 96px; }
 
   <div class="view" data-view="owed" hidden>
     <section class="panel" aria-labelledby="h-owed-page">
-      <div class="panel-head"><h2 id="h-owed-page">Owed to You</h2><span class="chip" id="owed-count"></span></div>
-      <p class="note">Games you worked that have not paid you yet. A game turns Overdue after 7 days.</p>
+      <div class="panel-head"><h2 id="h-owed-page">Payment Center</h2><span class="chip" id="owed-count"></span></div>
+      <div id="pc-sum"></div>
+      <div class="wish-actions"><button class="btn" type="button" id="pc-markall">Mark Paid</button><button class="btn" type="button" id="pc-remind">Send Reminder</button></div>
+      <p class="msg" id="pc-msg" role="status"></p>
+      <div class="periods sm" role="tablist" aria-label="Show"><button type="button" role="tab" id="pc-t-owed" data-pctab="owed" aria-selected="true" aria-pressed="true">Owed</button><button type="button" role="tab" id="pc-t-paid" data-pctab="paid" aria-selected="false" aria-pressed="false">Paid</button></div>
       <div class="filters">
         <select id="o-league" aria-label="League"><option value="">All leagues</option></select>
         <select id="o-assignor" aria-label="Assignor"><option value="">All assignors</option></select>
-        <select id="o-status" aria-label="Status"><option value="">Not paid yet</option><option value="pending">Pending only</option><option value="overdue">Overdue only</option></select>
+        <select id="o-status" aria-label="Status"><option value="">Unpaid and partial</option><option value="unpaid">Unpaid only</option><option value="partial">Partly paid only</option><option value="pending">Not overdue yet</option><option value="overdue">Overdue only</option></select>
       </div>
-      <div class="stats" id="owed-stats"></div>
+      <p class="note">A game turns Overdue after 7 days without full payment.</p>
+    </section>
+    <section class="panel" id="pc-compose" hidden aria-labelledby="h-pc-compose">
+      <h2 id="h-pc-compose">Request payment</h2>
+      <p class="note">A friendly message listing what is still owed. Edit it, then send it your way. Nothing is sent automatically.</p>
+      <div class="field"><label for="pc-to">Send to</label><select id="pc-to"></select></div>
+      <div class="field"><label for="pc-text">Message</label><textarea id="pc-text" rows="10"></textarea></div>
+      <div class="wish-actions"><button class="btn" type="button" id="pc-copy">Copy</button><button class="mini" type="button" id="pc-share">Share</button><button class="mini" type="button" id="pc-email">Email</button><button class="mini" type="button" id="pc-sms">Text</button><button class="mini" type="button" id="pc-close">Close</button></div>
+      <p class="msg" id="pc-cmsg" role="status"></p>
     </section>
     <section class="panel" aria-labelledby="h-owed-by"><h2 id="h-owed-by">By league</h2><div id="owed-by"></div></section>
-    <section class="panel" aria-labelledby="h-owed-list"><h2 id="h-owed-list">Unpaid games</h2><ul class="list tall" id="owed-list"></ul></section>
+    <section class="panel" aria-labelledby="h-owed-by2"><h2 id="h-owed-by2">By assignor</h2><div id="owed-by2"></div></section>
+    <section class="panel" aria-labelledby="h-owed-list"><h2 id="h-owed-list">Games</h2><ul class="list tall" id="owed-list"></ul></section>
   </div>
 
   <div class="view" data-view="calendar" hidden>
@@ -1432,7 +1448,9 @@ html { scroll-padding-top: 96px; }
         <div class="grid">
           <div class="field"><label for="g-fee">Pay (total for all games)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
           <div class="field"><label for="g-exp">Expenses (total)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
-          <div class="field"><label for="g-status">Status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Not paid yet</option><option value="cancelled">Cancelled</option></select></div>
+          <div class="field"><label for="g-status">Status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Not paid yet</option><option value="partial">Partly paid</option><option value="cancelled">Cancelled</option></select></div>
+          <div class="field" id="g-rcvd-w" hidden><label for="g-rcvd">Received so far ($)</label><input id="g-rcvd" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="field" id="g-paidon-w" hidden><label for="g-paidon">Date paid</label><input id="g-paidon" type="date"></div>
         </div>
         <div class="field"><label for="g-notes">Notes</label><textarea id="g-notes" rows="3" maxlength="300" placeholder="Assignor, who you worked with, anything to remember"></textarea></div>
         <div class="row"><button class="btn" id="g-submit" type="submit">Add game</button><a class="btn ghost" id="g-cancel" href="#home">Done</a></div>
@@ -1648,7 +1666,7 @@ html { scroll-padding-top: 96px; }
     var pick = function (k) { return all ? data[k].slice() : inPeriod(k); };
     var games = pick("games"), income = pick("income"), spending = pick("spending");
     var fee = 0, exp = 0, other = 0;
-    games.forEach(function (g) { if (g.paid === false) return; fee += toCents(g.fee); exp += toCents(g.expenses); });
+    games.forEach(function (g) { if (g.paid === false) { fee += gRcvd(g); return; } fee += toCents(g.fee); exp += toCents(g.expenses); });
     income.forEach(function (x) { other += toCents(x.amount); });
     var used = { spend: 0, save: 0, donate: 0, invest: 0 };
     spending.forEach(function (s) { if (used[s.bucket] !== undefined) used[s.bucket] += toCents(s.amount); });
@@ -1661,7 +1679,7 @@ html { scroll-padding-top: 96px; }
 
   function totalsFor(r) {
     var earn = 0, exp = 0;
-    data.games.forEach(function (g) { if (g.paid !== false && g.date >= r[0] && g.date <= r[1]) { earn += toCents(g.fee); exp += toCents(g.expenses); } });
+    data.games.forEach(function (g) { if (g.date < r[0] || g.date > r[1] || g.cancelled) return; if (g.paid !== false) { earn += toCents(g.fee); exp += toCents(g.expenses); } else earn += gRcvd(g); });
     data.income.forEach(function (x) { if (x.date >= r[0] && x.date <= r[1]) earn += toCents(x.amount); });
     return { earn: earn, exp: exp, net: earn - exp };
   }
@@ -1798,6 +1816,10 @@ html { scroll-padding-top: 96px; }
   /* Dashboard cards */
   var goal = 0, earnRange = "6m", calOff = 0, fQ = "", fType = "all", fAssoc = "", fAssignor = "", oLeague = "", oAssignor = "", oStatus = "";
   function todayStr() { return ymd(new Date()); }
+  /* Payment status: a game can be paid in full, partly paid (g.rcvd so far) or unpaid */
+  function gRcvd(g) { return g.paid === false && !g.cancelled ? Math.min(toCents(g.rcvd), Math.max(0, toCents(g.fee) - 0)) : 0; }
+  function gOwedC(g) { return g.paid !== false || g.cancelled ? 0 : Math.max(0, gNet(g) - gRcvd(g)); }
+  function gPay(g) { return g.cancelled ? "cancelled" : g.paid !== false ? "paid" : gRcvd(g) > 0 ? "partial" : "unpaid"; }
   function gNet(g) { return Math.max(0, toCents(g.fee) - toCents(g.expenses)); }
   function parseD(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
   function dayDiff(s) { return Math.round((parseD(s) - parseD(todayStr())) / 864e5); }
@@ -1837,7 +1859,7 @@ html { scroll-padding-top: 96px; }
     $("h-today-d").textContent = todayGames ? todayGames + (todayGames === 1 ? " game today" : " games today") : "No games today";
     $("h-total").textContent = fmt(A.net);
     $("h-total-d").textContent = A.demo ? "Example numbers" : "All time";
-    var owed = owedGames(), owedC = owed.reduce(function (a, g) { return a + gNet(g); }, 0);
+    var owed = owedGames(), owedC = owed.reduce(function (a, g) { return a + gOwedC(g); }, 0);
     $("h-owed").textContent = fmt(owedC);
     $("h-owed-d").textContent = owed.length ? owed.length + (owed.length === 1 ? " game waiting on pay" : " games waiting on pay") : "All paid up";
     var leftOf = function (k) { var i = BUCKETS.findIndex(function (b) { return b.k === k; }); return A.a.out[i] - A.used[k]; };
@@ -1895,11 +1917,11 @@ html { scroll-padding-top: 96px; }
     $("cal").innerHTML = '<div class="cal-title">' + esc(calMonth(calOff).toLocaleDateString("en-US", { month: "long", year: "numeric" })) + "</div>" + calHtml(calOff, false).html;
 
     /* Payment reminders */
-    var late = owed.filter(function (g) { return dayDiff(g.date) < -7; }), lateC = late.reduce(function (a, g) { return a + gNet(g); }, 0), card = $("remind-card");
+    var late = owed.filter(function (g) { return dayDiff(g.date) < -7; }), lateC = late.reduce(function (a, g) { return a + gOwedC(g); }, 0), card = $("remind-card");
     card.classList.toggle("late", late.length > 0);
     if (late.length) {
       $("reminders").innerHTML = '<div class="remind-row"><p class="note" style="color:var(--fg)"><b>' + late.length + (late.length === 1 ? " game has" : " games have") + " not paid you</b> in over 7 days &middot; " + fmt(lateC) + '</p><a class="btn small red" href="#games" data-setfilter="unpaid">View</a></div>' +
-        late.slice(0, 3).map(function (g) { return '<div class="rg rg2"><div><strong>' + esc(gTitle(g)) + "</strong><small>" + (-dayDiff(g.date)) + " days unpaid</small></div><span class=\"amt\">" + fmt(gNet(g)) + "</span></div>"; }).join("");
+        late.slice(0, 3).map(function (g) { return '<div class="rg rg2"><div><strong>' + esc(gTitle(g)) + "</strong><small>" + (-dayDiff(g.date)) + " days unpaid</small></div><span class=\"amt\">" + fmt(gOwedC(g)) + "</span></div>"; }).join("");
     } else if (owed.length) $("reminders").innerHTML = '<div class="remind-row"><p class="note">' + owed.length + (owed.length === 1 ? " game is" : " games are") + " waiting to pay you (" + fmt(owedC) + "). None are overdue yet.</p></div>";
     else $("reminders").innerHTML = '<p class="note">You are all caught up. Every game you worked has paid you.</p>';
   }
@@ -2388,32 +2410,121 @@ html { scroll-padding-top: 96px; }
   }
 
 
+  /* Payment Center */
+  var pcTab = "owed";
+  function pcFilter(g) { return (!oLeague || (g.assoc || "") === oLeague) && (!oAssignor || (g.assignor || "") === oAssignor); }
+  function pcOwedList() {
+    return owedGames().filter(function (g) { if (!pcFilter(g)) return false; var p = gPay(g), st = gStatus(g); return !oStatus || (oStatus === "unpaid" ? p === "unpaid" : oStatus === "partial" ? p === "partial" : st === oStatus); });
+  }
+  function pcPaidList() { return live().filter(function (g) { return g.paid !== false && g.date <= todayStr() && pcFilter(g); }).sort(function (a, b) { return String(b.paidOn || b.date).localeCompare(String(a.paidOn || a.date)); }); }
+  function gamesN(l) { return l.reduce(function (a, g) { return a + gN(g); }, 0); }
+  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
   function renderOwed() {
-    var all = owedGames();
-    var list = all.filter(function (g) {
-      return (!oLeague || (g.assoc || "") === oLeague) && (!oAssignor || (g.assignor || "") === oAssignor) && (!oStatus || gStatus(g) === oStatus);
-    });
-    var total = list.reduce(function (a, g) { return a + gNet(g); }, 0);
-    var od = list.filter(function (g) { return gStatus(g) === "overdue"; }), odC = od.reduce(function (a, g) { return a + gNet(g); }, 0);
-    $("owed-count").textContent = list.length + (list.length === 1 ? " game" : " games") + " · " + fmt(total);
-    $("owed-stats").innerHTML = "<div><b>" + fmt(total) + "</b><span>Owed to you</span></div><div><b>" + (list.length - od.length) + "</b><span>Pending</span></div><div><b>" + od.length + "</b><span>Overdue" + (od.length ? " (" + fmt(odC) + ")" : "") + "</span></div>";
-    var by = {}, n = {};
-    list.forEach(function (g) { var k = g.assoc || "No league"; by[k] = (by[k] || 0) + gNet(g); n[k] = (n[k] || 0) + 1; });
-    var keys = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; });
-    $("owed-by").innerHTML = keys.length ? keys.map(function (k) { return '<div class="by-row"><span>' + esc(k) + " · " + n[k] + (n[k] === 1 ? " game" : " games") + "</span><b>" + fmt(by[k]) + "</b></div>"; }).join("") : '<p class="note">Nothing owed for these filters.</p>';
-    $("owed-list").innerHTML = list.length ? list.map(function (g) {
-      var st = gStatus(g), days = -dayDiff(g.date);
-      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge ' + st + '">' + (st === "overdue" ? "Overdue" : "Pending") + "</span><span>" + esc([mdDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ")) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Got paid</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
-    }).join("") : '<li><p class="empty">' + (all.length ? "No games match these filters." : "Nothing is owed to you. Every game you worked has paid you.") + "</p></li>";
+    var all = owedGames(), list = pcOwedList(), paidL = pcPaidList();
+    var total = list.reduce(function (a, g) { return a + gOwedC(g); }, 0), part = list.filter(function (g) { return gPay(g) === "partial"; }), od = list.filter(function (g) { return gStatus(g) === "overdue"; }), odC = od.reduce(function (a, g) { return a + gOwedC(g); }, 0);
+    var paidC = paidL.reduce(function (a, g) { return a + gNet(g); }, 0);
+    $("owed-count").textContent = fmt(total) + " owed";
+    $("pc-sum").innerHTML = '<div class="pc-big"><b>' + fmt(total) + '</b><span>Owed to you</span></div>' +
+      '<div class="pc-line">🟡 <b>' + plural(gamesN(list), "game") + ' pending</b><small>' + (list.length ? [part.length ? part.length + " partly paid" : "", od.length ? od.length + " overdue (" + fmt(odC) + ")" : ""].filter(Boolean).join(", ") : "Nothing waiting on pay") + "</small></div>" +
+      '<div class="pc-line">🟢 <b>' + plural(gamesN(paidL), "game") + ' paid</b><small>' + fmt(paidC) + " received</small></div>";
+    $("pc-markall").disabled = !list.length; $("pc-remind").disabled = !list.length;
+    var tb = document.querySelectorAll("[data-pctab]"); Array.prototype.forEach.call(tb, function (b) { var on = b.getAttribute("data-pctab") === pcTab ? "true" : "false"; b.setAttribute("aria-selected", on); b.setAttribute("aria-pressed", on); });
+    $("o-status").style.display = pcTab === "owed" ? "" : "none";
+    var by = {}, n = {}, byA = {}, nA = {};
+    list.forEach(function (g) { var k = g.assoc || "No league", a = g.assignor || "No assignor", v = gOwedC(g); by[k] = (by[k] || 0) + v; n[k] = (n[k] || 0) + gN(g); byA[a] = (byA[a] || 0) + v; nA[a] = (nA[a] || 0) + gN(g); });
+    var rowsOf = function (m, c) { var keys = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }); return keys.length ? keys.map(function (k) { return '<div class="by-row"><span>' + esc(k) + " · " + plural(c[k], "game") + "</span><b>" + fmt(m[k]) + "</b></div>"; }).join("") : '<p class="note">Nothing owed for these filters.</p>'; };
+    $("owed-by").innerHTML = rowsOf(by, n); $("owed-by2").innerHTML = rowsOf(byA, nA);
+    var shown = pcTab === "paid" ? paidL : list;
+    $("h-owed-list").textContent = pcTab === "paid" ? "Paid games" : "Unpaid and partly paid games";
+    $("owed-list").innerHTML = shown.length ? shown.map(function (g) {
+      var st = gStatus(g), p = gPay(g), days = -dayDiff(g.date), meta = [mdDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ");
+      if (p === "paid") return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge paid">Paid</span><span>' + esc(meta) + "</span></div><div class=\"a-sub\"><span>" + (g.paidOn ? "Paid " + esc(mdDate(g.paidOn)) : "Date paid not recorded") + '</span><button class="mini" type="button" data-edit="' + esc(g.id) + '">Edit</button><button class="mini" type="button" data-markunpaid="' + esc(g.id) + '">Undo</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
+      var badge = st === "overdue" ? '<span class="badge overdue">Overdue</span>' : p === "partial" ? '<span class="badge partial">Partial</span>' : '<span class="badge pending">Unpaid</span>';
+      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub">' + badge + "<span>" + esc(meta) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span></div>' +
+        (p === "partial" ? '<div class="a-sub"><span>Received ' + fmt(gRcvd(g)) + " of " + fmt(gNet(g)) + (g.paidOn ? " · last payment " + esc(mdDate(g.paidOn)) : "") + "</span></div>" : "") +
+        (g.remindedOn ? '<div class="a-sub"><span>Reminder sent ' + esc(mdDate(g.remindedOn)) + "</span></div>" : "") +
+        '<div class="a-sub"><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Mark paid</button><button class="mini" type="button" data-partial="' + esc(g.id) + '">Partial</button><button class="mini" type="button" data-edit="' + esc(g.id) + '">Edit</button></div></div><span class="amt">' + fmt(gOwedC(g)) + "</span></li>";
+    }).join("") : '<li><p class="empty">' + (pcTab === "paid" ? "No paid games match these filters." : all.length ? "No games match these filters." : "Nothing is owed to you. Every game you worked has paid you.") + "</p></li>";
 
-    var odAll = all.filter(function (g) { return gStatus(g) === "overdue"; }), totAll = all.reduce(function (a, g) { return a + gNet(g); }, 0);
+    var odAll = all.filter(function (g) { return gStatus(g) === "overdue"; }), totAll = all.reduce(function (a, g) { return a + gOwedC(g); }, 0);
     $("owed-box").classList.toggle("late", odAll.length > 0);
-    var by2 = {}; all.forEach(function (g) { var k = g.assoc || "No league"; by2[k] = (by2[k] || 0) + gNet(g); });
+    var by2 = {}; all.forEach(function (g) { var k = g.assoc || "No league"; by2[k] = (by2[k] || 0) + gOwedC(g); });
     var k2 = Object.keys(by2).sort(function (a, b) { return by2[b] - by2[a]; }).slice(0, 3);
     $("owed-card").innerHTML = '<div class="goal-top"><b>' + fmt(totAll) + '</b><span class="note">' + all.length + (all.length === 1 ? " game waiting on pay" : " games waiting on pay") + "</span></div>" +
       '<p class="note">' + (odAll.length ? "<b style=\"color:var(--fg)\">" + odAll.length + " overdue</b>" : "None overdue") + "</p>" +
       k2.map(function (k) { return '<div class="by-row"><span>' + esc(k) + "</span><b>" + fmt(by2[k]) + "</b></div>"; }).join("");
+    if (!$("pc-compose").hidden) pcBuild(false);
   }
+  function payFieldsSync() { var v = $("g-status").value; $("g-rcvd-w").hidden = v !== "partial"; $("g-paidon-w").hidden = !(v === "paid" || v === "partial"); }
+  function pcSave(g, before, msg) {
+    histLog("edited", "games", g, before);
+    if (store) { var copy = Object.assign({}, g); delete copy.id; store.games.doc(g.id).set(copy).catch(function () { setStatus("Could not update that game. Try again."); }); render(); }
+    else { saveLocal(); render(); }
+    if (msg) { var m = $("pc-msg"); if (m) { m.className = "msg"; m.textContent = msg; } }
+  }
+  function pcSetPartial(id) {
+    var g = data.games.filter(function (x) { return x.id === id; })[0]; if (!g) return;
+    var fee = toCents(g.fee), cur = gRcvd(g), v = window.prompt("How much have you received so far for " + gTitle(g) + "? The fee is " + fmt(fee) + ".", cur ? (cur / 100).toFixed(2) : "");
+    if (v === null) return; var n = Math.round((parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0) * 100);
+    if (n <= 0) { var m0 = $("pc-msg"); m0.className = "msg err"; m0.textContent = "Enter an amount more than $0."; return; }
+    if (n >= fee) { setPaid(id, true); return; }
+    var before = Object.assign({}, g); g.paid = false; g.rcvd = n / 100; g.paidOn = todayStr(); pcSave(g, before, "Saved. " + fmt(fee - n) + " still owed on " + gTitle(g) + ".");
+  }
+  /* Request payment: a friendly message listing what is owed */
+  function pcRecipients() {
+    var list = pcOwedList(), seen = {}, out = [];
+    list.forEach(function (g) { var k = g.assignor || ""; if (!seen[k]) { seen[k] = 1; out.push(k); } });
+    return out;
+  }
+  function pcGames() { var to = $("pc-to").value, l = pcOwedList(); return to === "*" ? l : l.filter(function (g) { return (g.assignor || "") === (to === "-" ? "" : to); }); }
+  function pcMessage() {
+    var to = $("pc-to").value, l = pcGames(); if (!l.length) return "";
+    var me = (rp && rp.name) || "", total = l.reduce(function (a, g) { return a + gOwedC(g); }, 0), multi = to === "*" && pcRecipients().length > 1;
+    var lines = l.map(function (g) {
+      var p = gPay(g), age = -dayDiff(g.date);
+      return "- " + mdDate(g.date) + (g.assoc ? ", " + g.assoc : "") + ", " + gTitle(g) + (multi && g.assignor ? " (" + g.assignor + ")" : "") + ": " + (p === "partial" ? fmt(gOwedC(g)) + " left (" + fmt(gRcvd(g)) + " of " + fmt(gNet(g)) + " received)" : fmt(gOwedC(g))) + " (" + age + (age === 1 ? " day" : " days") + " ago)";
+    });
+    var late = l.some(function (g) { return gStatus(g) === "overdue"; });
+    return "Hi" + (to !== "*" && to !== "-" ? " " + to : "") + ",\n\nI hope you're doing well. I'm following up on payment for " + (l.length === 1 ? "a game" : "the games") + " I worked" + (late ? " that " + (l.length === 1 ? "is" : "are") + " now past due" : "") + ":\n\n" + lines.join("\n") + "\n\nTotal still owed: " + fmt(total) + "\n\nCould you let me know when I can expect payment? Thank you for your help!" + (me ? "\n\n" + me : "");
+  }
+  function pcBuild(resetTo) {
+    var recs = pcRecipients(), sel = $("pc-to"), cur = sel.value;
+    sel.innerHTML = '<option value="*">Everyone shown (' + plural(pcOwedList().length, "entry").replace("entrys", "entries") + ")</option>" + recs.map(function (r) { return '<option value="' + (r ? esc(r) : "-") + '">' + (r ? esc(r) : "No assignor listed") + "</option>"; }).join("");
+    sel.value = !resetTo && Array.prototype.some.call(sel.options, function (o) { return o.value === cur; }) ? cur : "*";
+    var ta = $("pc-text"); if (resetTo || document.activeElement !== ta) ta.value = pcMessage();
+  }
+  function pcSent(how) {
+    var l = pcGames(), t = todayStr();
+    l.forEach(function (g) { var before = Object.assign({}, g); g.remindedOn = t; histLog("edited", "games", g, before); if (store) { var c = Object.assign({}, g); delete c.id; store.games.doc(g.id).set(c).catch(function () { /* ignore */ }); } });
+    if (!store) saveLocal(); render();
+    var m = $("pc-cmsg"); m.className = "msg"; m.textContent = how + " Marked as reminded today.";
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-pctab],[data-partial],[data-markunpaid],#pc-markall,#pc-remind,#pc-close,#pc-copy,#pc-share,#pc-email,#pc-sms"); if (!b) return;
+    var msg = $("pc-msg"); msg.className = "msg";
+    if (b.hasAttribute("data-pctab")) { pcTab = b.getAttribute("data-pctab"); renderOwed(); return; }
+    if (b.hasAttribute("data-partial")) { pcSetPartial(b.getAttribute("data-partial")); return; }
+    if (b.hasAttribute("data-markunpaid")) { setPaid(b.getAttribute("data-markunpaid"), false); return; }
+    if (b.id === "pc-markall") {
+      var l = pcOwedList(); if (!l.length) return; var c = l.reduce(function (a, g) { return a + gOwedC(g); }, 0);
+      if (!window.confirm("Mark " + plural(l.length, "game") + " as paid (" + fmt(c) + ")? You can undo any game from the Paid tab.")) return;
+      l.forEach(function (g) { var before = Object.assign({}, g); g.paid = true; g.rcvd = 0; g.paidOn = todayStr(); histLog("edited", "games", g, before); if (store) { var cp = Object.assign({}, g); delete cp.id; store.games.doc(g.id).set(cp).catch(function () { setStatus("Could not update a game. Try again."); }); } });
+      if (!store) saveLocal(); render(); msg.textContent = plural(l.length, "game") + " marked paid."; return;
+    }
+    if (b.id === "pc-remind") { $("pc-compose").hidden = false; pcBuild(true); $("pc-compose").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (b.id === "pc-close") { $("pc-compose").hidden = true; return; }
+    var text = $("pc-text").value, cm = $("pc-cmsg"); cm.className = "msg";
+    if (!text.trim()) { cm.textContent = "Nothing to send."; cm.className = "msg err"; return; }
+    var subj = "Payment follow-up" + ((rp && rp.name) ? " from " + rp.name : "");
+    if (b.id === "pc-copy") { (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { pcSent("Copied."); }, function () { $("pc-text").select(); cm.textContent = "Press and hold the text to copy it."; }); }
+    else if (b.id === "pc-share") { if (navigator.share) navigator.share({ title: subj, text: text }).then(function () { pcSent("Shared."); }, function () { /* cancelled */ }); else { cm.textContent = "Sharing isn't available here. Use Copy, Email or Text."; cm.className = "msg err"; } }
+    else if (b.id === "pc-email") { pcSent("Opening your email app."); location.href = "mailto:?subject=" + encodeURIComponent(subj) + "&body=" + encodeURIComponent(text); }
+    else if (b.id === "pc-sms") { pcSent("Opening Messages."); location.href = "sms:?&body=" + encodeURIComponent(text); }
+  });
+  document.addEventListener("change", function (e) {
+    if (e.target.id === "g-status") payFieldsSync();
+    if (e.target.id === "pc-to") $("pc-text").value = pcMessage();
+  });
 
   function csvCell(v) {
     v = String(v == null ? "" : v);
@@ -2848,7 +2959,7 @@ html { scroll-padding-top: 96px; }
   function setPaid(id, val) {
     var g = data.games.filter(function (x) { return x.id === id; })[0];
     if (!g) return;
-    var before = Object.assign({}, g); g.paid = val; histLog("edited", "games", g, before);
+    var before = Object.assign({}, g); g.paid = val; g.rcvd = 0; g.paidOn = val ? todayStr() : ""; histLog("edited", "games", g, before);
     if (store) {
       var copy = Object.assign({}, g); delete copy.id;
       store.games.doc(id).set(copy).catch(function () { setStatus("Could not update that game. Try again."); });
@@ -2877,7 +2988,7 @@ html { scroll-padding-top: 96px; }
     Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (el) { el.hidden = el.getAttribute("data-view") !== view; });
     Array.prototype.forEach.call(document.querySelectorAll("[data-page]"), function (el) { el.hidden = el.getAttribute("data-page") !== view; });
     $("pages").hidden = tab;
-    var nk = view === "owed" ? "money" : view === "export" ? "reports" : tab || view === "app-settings" ? view : view === "profile" ? "home" : view === "add-game" ? "games" : "money";
+    var nk = view === "owed" ? "payments" : view === "export" ? "reports" : tab || view === "app-settings" ? view : view === "profile" ? "home" : view === "add-game" ? "games" : "money";
     Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function (el) {
       if (el.getAttribute("data-nav") === nk) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
     });
@@ -2951,7 +3062,7 @@ html { scroll-padding-top: 96px; }
     earn_month: { g: 0, n: "Earned this month", i: "📅", f: function () { return [fmt(mwEarn("month")), "This month"]; } },
     earn_year: { g: 0, n: "Earned this year", i: "📈", f: function () { return [fmt(mwEarn("year")), "This year"]; } },
     earn_all: { g: 0, n: "Total earned", i: "🏦", f: function (A) { return [fmt(A.net), "All time"]; } },
-    owed: { g: 0, n: "Owed to you", i: "⏳", f: function () { var o = owedGames(), c = o.reduce(function (a, g) { return a + gNet(g); }, 0); return [fmt(c), o.length ? o.length + (o.length === 1 ? " game waiting on pay" : " games waiting on pay") : "All paid up"]; } },
+    owed: { g: 0, n: "Owed to you", i: "⏳", f: function () { var o = owedGames(), c = o.reduce(function (a, g) { return a + gOwedC(g); }, 0); return [fmt(c), o.length ? o.length + (o.length === 1 ? " game waiting on pay" : " games waiting on pay") : "All paid up"]; } },
     spent_month: { g: 0, n: "Spent this month", i: "🧾", f: function () { var r = periodRange("month"), c = 0; data.spending.forEach(function (x) { if (x.date && x.date >= r[0] && x.date <= r[1]) c += toCents(x.amount); }); return [fmt(c), "Logged this month"]; } },
     left_donate: { g: 1, n: "Give left", i: "🎁", f: function (A) { return [fmt(mwBucketLeft(A, "donate")), "Left in Give"]; } },
     left_save: { g: 1, n: "Save left", i: "💰", f: function (A) { return [fmt(mwBucketLeft(A, "save")), "Left in Save"]; } },
@@ -3124,7 +3235,7 @@ html { scroll-padding-top: 96px; }
     });
     if (nfPrefs.pay) owedGames().forEach(function (g) {
       var age = Math.round((pdate(t) - pdate(g.date)) / 864e5); if (age < nfPrefs.payDays) return;
-      out.push({ id: "pay:" + g.id, type: "pay", title: "Payment reminder", body: gTitle(g) + " on " + dayWord(g.date) + " is still unpaid (" + fmt(gNet(g)) + ", " + age + " days)." });
+      out.push({ id: "pay:" + g.id, type: "pay", title: "Payment reminder", body: gTitle(g) + " on " + dayWord(g.date) + " is still unpaid (" + fmt(gOwedC(g)) + ", " + age + " days)." });
     });
     if (nfPrefs.goal && goal > 0) {
       var gC = Math.round(goal * 100), pct = Math.floor(Math.max(0, totalsFor(periodRange("month")).net) / gC * 100);
@@ -3232,7 +3343,7 @@ html { scroll-padding-top: 96px; }
     var byDow = [0, 0, 0, 0, 0, 0, 0], names = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
     S.gs.forEach(function (g) { byDow[pdate(g.date).getDay()] += gNet(g); });
     var bi = byDow.indexOf(Math.max.apply(null, byDow)); if (S.gs.length >= 8 && byDow[bi] > 0) out.push(["⚽", names[bi] + " are your best earning day.", fmt(byDow[bi]) + " earned on " + names[bi].toLowerCase() + " so far."]);
-    var o = owedGames(); if (o.length) out.push(["⏳", fmt(o.reduce(function (a, g) { return a + gNet(g); }, 0)) + " is still owed to you.", o.length + (o.length === 1 ? " game is" : " games are") + " waiting on pay."]);
+    var o = owedGames(); if (o.length) out.push(["⏳", fmt(o.reduce(function (a, g) { return a + gOwedC(g); }, 0)) + " is still owed to you.", o.length + (o.length === 1 ? " game is" : " games are") + " waiting on pay."]);
     if (S.off && S.offW !== null) out.push(["🌤️", "It's the off-season. Expect about " + fmt(Math.round(S.offW)) + " a week.", S.est ? "That's a rough guess until you have a full quiet season logged." : "Based on your past quiet months."]);
     return out.slice(0, 6);
   }
@@ -3252,7 +3363,7 @@ html { scroll-padding-top: 96px; }
     return {
       today: todayStr(), monthEarnedSoFar: d(Math.max(0, totalsFor(mr).net)), monthlyGoal: goal || 0,
       scheduledGamesThisMonth: upcomingGames().filter(function (g) { return g.date >= mr[0] && g.date <= mr[1]; }).map(function (g) { return d(gNet(g)); }),
-      gamesPlayedTotal: rpStats().played, owedToYou: d(owedGames().reduce(function (a, g) { return a + gNet(g); }, 0)), perWeekPace: d(info.perWeek), payPerWeekend: d(wk),
+      gamesPlayedTotal: rpStats().played, owedToYou: d(owedGames().reduce(function (a, g) { return a + gOwedC(g); }, 0)), perWeekPace: d(info.perWeek), payPerWeekend: d(wk),
       split: split, bucketsLeft: BUCKETS.map(function (b, i) { return { bucket: b.name, left: d(info.a.out[i] - info.used[b.k]) }; }),
       season: S.none ? null : { inSeason: !S.off, inSeasonWeekly: S.inW === null ? null : d(S.inW), offSeasonWeekly: S.offW === null ? null : d(S.offW), quietMonths: S.quietMoy.map(function (m) { return MON[m - 1]; }), recentSeasons: sn.slice(-4).map(function (x) { return { name: x.name, earned: d(x.net), games: x.n, current: !!x.cur }; }) },
       wishList: wishes.slice(0, 8).map(function (w) { return { item: w.what, price: Number(w.amount) || 0, bucket: w.bucket }; })
@@ -3845,7 +3956,7 @@ html { scroll-padding-top: 96px; }
   function resetGameForm() {
     editGameId = null; gameFormMode(false); $("g-count").value = "1";
     ["g-match", "g-field", "g-assignor", "g-fee", "g-exp", "g-notes", "g-time"].forEach(function (id) { $(id).value = ""; });
-    $("g-date").value = todayStr(); $("g-status").value = "paid"; $("g-role").value = "Center";
+    $("g-date").value = todayStr(); $("g-status").value = "paid"; $("g-rcvd").value = ""; $("g-paidon").value = ""; payFieldsSync(); $("g-role").value = "Center";
     formMsg("form-game", "", false);
   }
   function startEditGame(id) {
@@ -3859,7 +3970,7 @@ html { scroll-padding-top: 96px; }
     $("g-count").value = gN(g);
     $("g-match").value = g.match || ""; $("g-field").value = g.field || ""; $("g-assignor").value = g.assignor || "";
     $("g-fee").value = g.fee; $("g-exp").value = g.expenses ? g.expenses : "";
-    $("g-notes").value = g.notes || ""; $("g-status").value = g.cancelled ? "cancelled" : g.paid === false ? "pending" : "paid";
+    $("g-notes").value = g.notes || ""; $("g-status").value = g.cancelled ? "cancelled" : g.paid === false ? (gRcvd(g) > 0 ? "partial" : "pending") : "paid"; $("g-rcvd").value = g.rcvd ? g.rcvd : ""; $("g-paidon").value = g.paidOn || ""; payFieldsSync();
     editSwap = true; location.hash = "#add-game";
   }
   $("form-game").addEventListener("submit", function (e) {
@@ -3877,6 +3988,10 @@ html { scroll-padding-top: 96px; }
       notes: $("g-notes").value.trim().slice(0, 300),
       paid: $("g-status").value === "paid", cancelled: $("g-status").value === "cancelled"
     };
+    var stv = $("g-status").value;
+    f.rcvd = stv === "partial" ? Math.round((Number($("g-rcvd").value) || 0) * 100) / 100 : 0;
+    f.paidOn = stv === "paid" || stv === "partial" ? ($("g-paidon").value || (stv === "paid" ? todayStr() : "")) : "";
+    if (stv === "partial" && !(f.rcvd > 0 && f.rcvd < f.fee)) return formMsg("form-game", "For a partly paid game, enter an amount received that is more than $0 and less than the fee. Use Paid if you got it all.", true);
     if (editGameId) {
       var g = data.games.filter(function (x) { return x.id === editGameId; })[0];
       if (!g) { resetGameForm(); return formMsg("form-game", "That game is gone. It may have been removed on another device.", true); }
