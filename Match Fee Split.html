@@ -1158,7 +1158,7 @@ html { scroll-padding-top: 96px; }
     <a class="back" href="#home">&larr; Back to dashboard</a>
 
     <section class="panel" data-page="profile" hidden aria-labelledby="h-profile">
-      <div class="rp-head"><div class="rp-avatar" id="rp-avatar" aria-hidden="true">R</div><div><h2 id="h-profile">Referee profile</h2><p class="page-sub" id="rp-line"></p></div></div>
+      <div class="rp-head"><div class="rp-avatar" id="rp-avatar" aria-hidden="true">R</div><div><h2 id="h-profile">Referee career profile</h2><p class="page-sub" id="rp-line"></p></div></div>
       <div class="wish-stats" id="rp-stats"></div>
       <h3>About you</h3>
       <form id="form-rp" novalidate class="fs">
@@ -4142,45 +4142,55 @@ html { scroll-padding-top: 96px; }
       since: since >= 1970 && since <= yr ? since : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(o.exp || "") ? o.exp : "", favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5) };
   }
   function rpStats() {
-    var td = todayStr(), played = 0, earned = 0, byDay = {}, leagues = {}, roles = {}, weeks = {}, paidN = 0, unpaidN = 0, first = "";
+    var td = todayStr(), played = 0, earned = 0, byDay = {}, leagues = {}, roles = {}, weeks = {}, paidN = 0, unpaidN = 0, first = "", tourn = 0;
     live().forEach(function (g) {
       var n = gN(g);
       if (g.date > td) return;
       played += n; byDay[g.date] = (byDay[g.date] || 0) + n;
-      if (g.paid !== false) { earned += toCents(g.fee); paidN += n; } else unpaidN += n;
+      if (g.paid !== false) { earned += toCents(g.fee); paidN += n; } else { earned += gRcvd(g); unpaidN += n; }
+      if (/tournament|cup|festival|showcase/i.test((g.match || "") + " " + (g.notes || "") + " " + (g.assoc || ""))) tourn++;
       var lg = g.assoc || "No league"; if (g.assoc) leagues[lg] = (leagues[lg] || 0) + n;
       if (g.role) roles[g.role] = 1;
       var d = parseD(g.date), wk = Math.floor((d.getTime() / 864e5 + 3) / 7); weeks[wk] = 1;
       if (!first || g.date < first) first = g.date;
     });
+    var seq = data.games.slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }), gs = 0, bestG = 0;
+    seq.forEach(function (g) { if (g.date > td) return; if (g.cancelled) { gs = 0; return; } gs += gN(g); if (gs > bestG) bestG = gs; });
     var ks = Object.keys(weeks).map(Number).sort(function (a, b) { return a - b; }), best = 0, run = 0, prev = null;
     ks.forEach(function (k) { run = prev !== null && k === prev + 1 ? run + 1 : 1; prev = k; if (run > best) best = run; });
     var maxDay = 0; Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxDay) maxDay = byDay[k]; });
-    return { played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first };
+    return { played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first, tourn: tourn, gstreak: bestG };
   }
   var RP_BADGES = [
     { i: "🥇", n: "First Whistle", d: "Referee your first game", v: function (s) { return s.played; }, t: 1 },
     { i: "🔟", n: "Ten Games", d: "Referee 10 games", v: function (s) { return s.played; }, t: 10 },
-    { i: "🏅", n: "Quarter Century", d: "Referee 25 games", v: function (s) { return s.played; }, t: 25 },
-    { i: "💯", n: "Century", d: "Referee 100 games", v: function (s) { return s.played; }, t: 100 },
+    { i: "🎖️", n: "Quarter Century", d: "Referee 25 games", v: function (s) { return s.played; }, t: 25 },
+    { i: "🏅", n: "100 Games", d: "Referee 100 games", v: function (s) { return s.played; }, t: 100 },
     { i: "🏆", n: "Veteran", d: "Referee 250 games", v: function (s) { return s.played; }, t: 250 },
     { i: "💵", n: "First $100", d: "Earn $100 in game fees", v: function (s) { return s.earned / 100; }, t: 100, m: 1 },
-    { i: "💰", n: "Thousand Club", d: "Earn $1,000 in game fees", v: function (s) { return s.earned / 100; }, t: 1000, m: 1 },
-    { i: "💎", n: "Five Grand", d: "Earn $5,000 in game fees", v: function (s) { return s.earned / 100; }, t: 5000, m: 1 },
-    { i: "🔥", n: "Tournament Day", d: "Referee 4 games in one day", v: function (s) { return s.maxDay; }, t: 4 },
+    { i: "💵", n: "Thousand Club", d: "Earn $1,000 in game fees", v: function (s) { return s.earned / 100; }, t: 1000, m: 1 },
+    { i: "💰", n: "$5,000 Earned", d: "Earn $5,000 in game fees", v: function (s) { return s.earned / 100; }, t: 5000, m: 1 },
+    { i: "🚩", n: "Tournament Referee", d: "Work a tournament (name it in the game or notes) or 4 games in one day", v: function (s) { return s.tourn > 0 || s.maxDay >= 4 ? 1 : 0; }, t: 1 },
+    { i: "🔥", n: "10 Game Streak", d: "Referee 10 games in a row with no cancellations", v: function (s) { return s.gstreak; }, t: 10 },
+    { i: "⚡", n: "Tournament Day", d: "Referee 4 games in one day", v: function (s) { return s.maxDay; }, t: 4 },
     { i: "📅", n: "Four-Week Streak", d: "Referee in 4 weeks in a row", v: function (s) { return s.streak; }, t: 4 },
     { i: "🗓️", n: "Twelve-Week Streak", d: "Referee in 12 weeks in a row", v: function (s) { return s.streak; }, t: 12 },
     { i: "🎭", n: "All-Rounder", d: "Work as Center, assistant and 4th official", v: function (s) { return (s.roles.Center ? 1 : 0) + ((s.roles.AR1 || s.roles.AR2) ? 1 : 0) + (s.roles["4th"] ? 1 : 0); }, t: 3 },
     { i: "🌎", n: "Multi-League", d: "Work games in 3 different leagues", v: function (s) { return s.nLeagues; }, t: 3 },
     { i: "✅", n: "Paid in Full", d: "5 or more games played and none unpaid", v: function (s) { return s.unpaidN === 0 ? s.paidN : 0; }, t: 5 }
   ];
+  function certStatus() {
+    if (!rp.exp) return rp.cert ? "No expiry set" : "—";
+    var d = Math.round((parseD(rp.exp) - parseD(todayStr())) / 864e5);
+    return d < 0 ? "Expired " + shortDate(rp.exp) : d === 0 ? "Expires today" : d <= 90 ? "Renew in " + d + (d === 1 ? " day" : " days") : "Valid to " + shortDate(rp.exp);
+  }
   function renderProfile() {
     var box = $("form-rp"); if (!box) return;
     var st = rpStats(), name = rp.name || "", ini = name ? name.split(/\s+/).map(function (x) { return x.charAt(0); }).join("").slice(0, 2).toUpperCase() : "R";
     $("rp-avatar").textContent = ini; $("rp-ini").textContent = ini;
     $("rp-line").textContent = [rp.level, rp.cert].filter(Boolean).join(" · ") || "Add your certification and level below.";
     var yrs = rp.since ? new Date().getFullYear() - rp.since : (st.first ? new Date().getFullYear() - Number(st.first.slice(0, 4)) : null);
-    $("rp-stats").innerHTML = [["🎽 Total games", st.played], ["💵 Lifetime earnings", fmt(st.earned)], ["📆 Years officiating", yrs === null ? "—" : yrs < 1 ? "First year" : yrs + (yrs === 1 ? " year" : " years")], ["🌎 Leagues worked", st.nLeagues]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("");
+    $("rp-stats").innerHTML = [["🎽 Total games", st.played], ["💵 Lifetime earnings", fmt(st.earned)], ["📆 Years officiating", yrs === null ? "—" : yrs < 1 ? "First year" : yrs + (yrs === 1 ? " year" : " years")], ["🌎 Leagues worked", st.nLeagues], ["📜 Certification", rp.cert || "Not set"], ["🎚️ Referee level", rp.level || "Not set"], ["⭐ Favorite leagues", (rp.favs || []).join(", ") || "Not set"], ["⏳ Cert. status", certStatus()]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("");
     if (!editingIn("form-rp") && document.activeElement !== box) {
       if ($("rp-name").value !== name) $("rp-name").value = name; $("rp-cert").value = rp.cert || ""; $("rp-exp").value = rp.exp || ""; $("rp-level").value = rp.level || ""; $("rp-since").value = rp.since || ""; $("rp-favs").value = (rp.favs || []).join(", ");
     }
