@@ -1256,16 +1256,16 @@ html { scroll-padding-top: 96px; }
       <p class="msg" id="goal-msg" role="status"></p>
     </section>
     <section class="panel" aria-labelledby="h-sg">
-      <div class="panel-head"><h2 id="h-sg">Savings, investment and equipment goals</h2></div>
+      <div class="panel-head"><h2 id="h-sg">Your goals</h2></div>
       <ul class="wish-list" id="sg-list"></ul>
     </section>
     <section class="panel" aria-labelledby="h-sgform">
       <h2 id="h-sgform">Add a goal</h2>
       <div class="grid">
         <div class="field"><label for="sg-name">Name</label><input id="sg-name" type="text" maxlength="60" placeholder="New flags" autocomplete="off"></div>
-        <div class="field"><label for="sg-type">Type</label><select id="sg-type"><option value="save">Savings</option><option value="invest">Investment</option><option value="equip">Equipment</option></select></div>
-        <div class="field"><label for="sg-target">Target</label><div class="money-wrap"><input id="sg-target" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
-        <div class="field"><label for="sg-saved">Saved so far</label><div class="money-wrap"><input id="sg-saved" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
+        <div class="field"><label for="sg-type">Type</label><select id="sg-type"><option value="games">Games this season</option><option value="income">Season income</option><option value="save">Savings</option><option value="invest">Investment</option><option value="equip">Equipment purchase</option><option value="train">Training</option></select></div>
+        <div class="field"><label for="sg-target" id="sg-target-l">Target</label><div class="money-wrap"><input id="sg-target" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
+        <div class="field" id="sg-saved-w"><label for="sg-saved" id="sg-saved-l">Saved so far</label><div class="money-wrap"><input id="sg-saved" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
         <div class="field"><label for="sg-deadline">Deadline (optional)</label><input id="sg-deadline" type="date"></div>
       </div>
       <div class="row"><button class="btn" id="sg-save" type="button">Add goal</button><button class="btn ghost" id="sg-cancel" type="button" hidden>Cancel</button></div>
@@ -2207,7 +2207,10 @@ html { scroll-padding-top: 96px; }
 
   /* Savings, investment and equipment goals */
   var sgoals = [], sgEditId = null, sgConfirm = null, sgSig = "";
-  var SG_TYPES = { save: { name: "Savings", color: "var(--c-save)", pct: "save" }, invest: { name: "Investment", color: "var(--c-invest)", pct: "invest" }, equip: { name: "Equipment", color: "var(--c-spend)", pct: "spend" } };
+  var SG_TYPES = { save: { name: "Savings", color: "var(--c-save)", pct: "save" }, invest: { name: "Investment", color: "var(--c-invest)", pct: "invest" }, equip: { name: "Equipment purchase", color: "var(--c-spend)", pct: "spend" }, games: { name: "Games this season", color: "var(--blue)", unit: "games", auto: true }, income: { name: "Season income", color: "var(--green)", auto: true }, train: { name: "Training", color: "var(--yellow, #e6c229)", unit: "sessions" } };
+  function sgSeasonVals() { var t = todayStr(), sn = seasonName(t.slice(0, 7)), n = 0, c = 0; live().forEach(function (g) { if (g.date <= t && seasonName(g.date.slice(0, 7)) === sn) { n += gN(g); c += gNet(g); } }); return { name: sn, games: n, income: Math.round(c) / 100 }; }
+  function sgCur(g) { var T = SG_TYPES[g.type]; if (!T.auto) return g.saved; var v = sgSeasonVals(); return g.type === "games" ? v.games : v.income; }
+  function sgFmtV(g, v) { var T = SG_TYPES[g.type]; return T.unit ? (Math.round(v * 100) / 100) + " " + T.unit : fmt(Math.round(v * 100)); }
   function sanitizeSGoals(a) {
     var out = [];
     if (!Array.isArray(a)) return out;
@@ -2216,7 +2219,7 @@ html { scroll-padding-top: 96px; }
       var t = Number(g.target), sv = Number(g.saved), name = typeof g.name === "string" ? g.name.trim().slice(0, 60) : "";
       if (!name || !isFinite(t) || t <= 0 || t > 1e7) return;
       out.push({ id: typeof g.id === "string" && g.id ? g.id.slice(0, 24) : uid("sg"), name: name, type: SG_TYPES[g.type] ? g.type : "save",
-        target: Math.round(t * 100) / 100, saved: isFinite(sv) && sv >= 0 && sv < 1e8 ? Math.round(sv * 100) / 100 : 0,
+        target: SG_TYPES[g.type] && SG_TYPES[g.type].unit ? Math.max(1, Math.round(t)) : Math.round(t * 100) / 100, saved: isFinite(sv) && sv >= 0 && sv < 1e8 ? Math.round(sv * 100) / 100 : 0,
         deadline: typeof g.deadline === "string" && /^\d{4}-\d{2}-\d{2}$/.test(g.deadline) ? g.deadline : "", created: Number(g.created) || 0 });
     });
     return out;
@@ -2224,7 +2227,7 @@ html { scroll-padding-top: 96px; }
   function sgMonthly() { return allTimeInfo().nowWeekly * 4.33; }
   function sgCapacity(type, monthly) {
     var tot = BUCKETS.reduce(function (t, b) { return t + (Number(split[b.k]) || 0); }, 0) || 100;
-    return monthly * (Number(split[SG_TYPES[type].pct]) || 0) / tot;
+    return SG_TYPES[type].pct ? monthly * (Number(split[SG_TYPES[type].pct]) || 0) / tot : 0;
   }
   function sgLeft(deadline) {
     var d = dayDiff(deadline);
@@ -2234,17 +2237,25 @@ html { scroll-padding-top: 96px; }
     var m = Math.round(d / 30.4); return m + (m === 1 ? " month left" : " months left");
   }
   function sgPace(g) {
+    var T = SG_TYPES[g.type];
+    if (T.unit || g.type === "income") {
+      var left = Math.max(0, g.target - sgCur(g)); if (left <= 0) return { done: true, text: "Goal reached!" };
+      var dd = g.deadline ? dayDiff(g.deadline) : null, what = T.unit ? Math.ceil(left) + " " + T.unit : fmt(Math.round(left * 100));
+      if (dd === null) return { text: what + " to go." }; if (dd <= 0) return { late: true, text: what + " still to go and the deadline has passed." };
+      var wk = dd / 7, per = T.unit ? Math.ceil(left / wk * 10) / 10 : Math.round(left / wk);
+      return { text: what + " to go: about " + (T.unit ? per + " " + T.unit : fmt(per * 100)) + " a week to finish by " + mdDate(g.deadline) + "." };
+    }
     var rem = Math.max(0, Math.round((g.target - g.saved) * 100));
     if (rem === 0) return { done: true, text: "Goal reached!" };
     var cap = sgCapacity(g.type, sgMonthly());
-    if (!g.deadline) return { text: cap > 0 ? "At your current pace this takes about " + Math.max(1, Math.round(rem / cap)) + " months." : "Log some games and I will estimate how long this takes." };
+    if (!g.deadline) return { text: cap > 0 ? (function (n) { return "At your current pace this takes about " + n + (n === 1 ? " month." : " months."); })(Math.max(1, Math.round(rem / cap))) : "Log some games and I will estimate how long this takes." };
     var d = dayDiff(g.deadline);
     if (d <= 0) return { late: true, text: fmt(rem) + " still to go and the deadline has passed." };
     var need = d < 60 ? rem / (d / 7) : rem / (d / 30.4), unit = d < 60 ? "week" : "month", capU = d < 60 ? cap * 7 / 30.4 : cap;
     var ok = cap > 0 && need <= capU * 1.0001;
     return { ok: ok, text: "Needs about " + fmt(Math.round(need)) + " a " + unit + (cap > 0 ? (ok ? ". You are on pace." : ". That is more than your current pace (" + fmt(Math.round(capU)) + ").") : ".") };
   }
-  function sgProgress(g) { return Math.min(100, Math.round(g.saved / g.target * 100)); }
+  function sgProgress(g) { return Math.min(100, Math.round(sgCur(g) / g.target * 100)); }
   function sgMsg(t, err) { var m = $("sg-msg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
   function renderSGoals() {
     if (!$("sg-list")) return;
@@ -2255,12 +2266,12 @@ html { scroll-padding-top: 96px; }
     });
     var html = list.map(function (g) {
       var t = SG_TYPES[g.type], p = sgProgress(g), pace = sgPace(g), askDel = sgConfirm === g.id;
-      return '<li class="sg" data-id="' + esc(g.id) + '"><div class="wish-top"><strong>' + esc(g.name) + ' <span class="chip">' + t.name + '</span></strong><span class="wish-amt">' + fmt(Math.round(g.saved * 100)) + " / " + fmt(Math.round(g.target * 100)) + "</span></div>" +
+      return '<li class="sg" data-id="' + esc(g.id) + '"><div class="wish-top"><strong>' + esc(g.name) + ' <span class="chip">' + t.name + '</span></strong><span class="wish-amt">' + sgFmtV(g, sgCur(g)) + " / " + sgFmtV(g, g.target) + "</span></div>" +
         '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="' + esc(g.name) + '"><span style="width:' + p + "%;background:" + t.color + '"></span></div>' +
         '<p class="note">' + p + "%" + (g.deadline ? " &middot; Due " + esc(mdDate(g.deadline)) + " &middot; " + sgLeft(g.deadline) : " &middot; No deadline") + "</p>" +
         '<p class="note' + (pace.done || pace.ok ? " sg-ok" : pace.late ? " sg-late" : "") + '">' + pace.text + "</p>" +
-        '<div class="sg-act"><div class="money-wrap"><input id="sg-amt-' + esc(g.id) + '" type="number" inputmode="decimal" min="0" step="1" placeholder="Amount" aria-label="Amount for ' + esc(g.name) + '"></div>' +
-        '<button class="mini" type="button" data-sg-add="' + esc(g.id) + '">Add</button><button class="mini" type="button" data-sg-take="' + esc(g.id) + '">Take out</button></div>' +
+        (t.auto ? '<p class="note">Tracked automatically from your games this season.</p>' : '<div class="sg-act"><div class="money-wrap"><input id="sg-amt-' + esc(g.id) + '" type="number" inputmode="decimal" min="0" step="1" placeholder="' + (t.unit ? "How many" : "Amount") + '" aria-label="Amount for ' + esc(g.name) + '"></div>' +
+        '<button class="mini" type="button" data-sg-add="' + esc(g.id) + '">Add</button><button class="mini" type="button" data-sg-take="' + esc(g.id) + '">Take out</button></div>') +
         '<div class="wish-actions"><button class="mini" type="button" data-sg-edit="' + esc(g.id) + '">Edit</button>' +
         (askDel ? '<button class="mini danger" type="button" data-sg-del="' + esc(g.id) + '">Delete goal</button><button class="mini" type="button" data-sg-keep="1">Keep</button>' : '<button class="mini" type="button" data-sg-ask="' + esc(g.id) + '">Delete</button>') + "</div></li>";
     }).join("");
@@ -2270,8 +2281,8 @@ html { scroll-padding-top: 96px; }
     /* home card */
     var open = list.filter(function (g) { return sgProgress(g) < 100; }).slice(0, 3);
     $("sg-home").innerHTML = open.length ? open.map(function (g) {
-      return '<div class="sgh"><div class="wish-top"><span>' + esc(g.name) + "</span><b>" + sgProgress(g) + '%</b></div><div class="gbar"><span style="width:' + sgProgress(g) + "%;background:" + SG_TYPES[g.type].color + '"></span></div></div>';
-    }).join("") + '<a class="more" href="#goals">All goals</a>' : '<p class="note">Set a savings, investment or equipment goal.</p><a class="more" href="#goals">Add a goal</a>';
+      return '<div class="sgh"><div class="wish-top"><span>' + esc(g.name) + "</span><b>" + sgProgress(g) + '%</b></div><div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + sgProgress(g) + '" aria-label="' + esc(g.name) + '"><span style="width:' + sgProgress(g) + "%;background:" + SG_TYPES[g.type].color + '"></span></div></div>';
+    }).join("") + '<a class="more" href="#goals">All goals</a>' : '<p class="note">Set a games, income, savings, equipment or training goal.</p><a class="more" href="#goals">Add a goal</a>';
   }
   var sgSuggestions = [];
   function renderSuggest() {
@@ -2300,8 +2311,15 @@ html { scroll-padding-top: 96px; }
       return true;
     });
   }
+  function sgFormSync() {
+    var T = SG_TYPES[$("sg-type").value] || SG_TYPES.save;
+    $("sg-target-l").textContent = T.unit ? "Target (" + T.unit + ")" : "Target ($)"; $("sg-saved-l").textContent = T.unit ? "Done so far" : "Saved so far"; $("sg-saved-w").hidden = !!T.auto;
+    $("sg-target").step = T.unit ? "1" : "any"; $("sg-name").placeholder = { games: "Referee 60 games", income: "Earn $2,000 this season", save: "Emergency cushion", invest: "Invest for the year", equip: "New flags", train: "Attend 4 clinics" }[$("sg-type").value] || "New goal";
+  }
+  document.addEventListener("change", function (e) { if (e.target.id === "sg-type") sgFormSync(); });
+  sgFormSync();
   function sgFormReset() {
-    sgEditId = null; ["sg-name", "sg-target", "sg-saved", "sg-deadline"].forEach(function (id) { $(id).value = ""; }); $("sg-type").value = "save";
+    sgEditId = null; ["sg-name", "sg-target", "sg-saved", "sg-deadline"].forEach(function (id) { $(id).value = ""; }); $("sg-type").value = "games"; sgFormSync();
     $("sg-save").textContent = "Add goal"; $("sg-cancel").hidden = true; $("h-sgform").textContent = "Add a goal";
   }
   function sgClick(b) {
@@ -2312,12 +2330,13 @@ html { scroll-padding-top: 96px; }
     } else if (b.hasAttribute("data-sg-add") || b.hasAttribute("data-sg-take")) {
       id = b.getAttribute("data-sg-add") || b.getAttribute("data-sg-take");
       var inp = $("sg-amt-" + id), amt = parseFloat(inp && inp.value);
-      if (!isFinite(amt) || amt <= 0) { sgMsg("Type an amount above $0 first.", true); return; }
+      var gg0 = sgoals.filter(function (x) { return x.id === id; })[0], unit0 = gg0 && SG_TYPES[gg0.type].unit;
+      if (!isFinite(amt) || amt <= 0) { sgMsg(unit0 ? "Type how many " + unit0 + " first." : "Type an amount above $0 first.", true); return; }
       var add = b.hasAttribute("data-sg-add");
-      sgSave(sgoals.map(function (g) { return g.id === id ? Object.assign({}, g, { saved: Math.max(0, Math.round((g.saved + (add ? amt : -amt)) * 100) / 100) }) : g; }), add ? "Added " + fmt(Math.round(amt * 100)) + "." : "Took out " + fmt(Math.round(amt * 100)) + ".").then(function () { sgSig = ""; renderSGoals(); });
+      sgSave(sgoals.map(function (g) { return g.id === id ? Object.assign({}, g, { saved: Math.max(0, Math.round((g.saved + (add ? amt : -amt)) * 100) / 100) }) : g; }), (add ? "Added " : "Took out ") + (unit0 ? amt + " " + unit0 : fmt(Math.round(amt * 100))) + ".").then(function () { sgSig = ""; renderSGoals(); });
     } else if (b.hasAttribute("data-sg-edit")) {
       id = b.getAttribute("data-sg-edit"); var g = sgoals.filter(function (x) { return x.id === id; })[0]; if (!g) return;
-      sgEditId = id; $("sg-name").value = g.name; $("sg-type").value = g.type; $("sg-target").value = g.target; $("sg-saved").value = g.saved || ""; $("sg-deadline").value = g.deadline;
+      sgEditId = id; $("sg-name").value = g.name; $("sg-type").value = g.type; sgFormSync(); $("sg-target").value = g.target; $("sg-saved").value = g.saved || ""; $("sg-deadline").value = g.deadline;
       $("sg-save").textContent = "Save changes"; $("sg-cancel").hidden = false; $("h-sgform").textContent = "Edit goal"; $("sg-name").focus(); $("h-sgform").scrollIntoView({ block: "start" });
     } else if (b.hasAttribute("data-sg-ask")) { sgConfirm = b.getAttribute("data-sg-ask"); sgSig = ""; renderSGoals(); }
     else if (b.hasAttribute("data-sg-keep")) { sgConfirm = null; sgSig = ""; renderSGoals(); }
@@ -2329,7 +2348,8 @@ html { scroll-padding-top: 96px; }
   function sgFormSubmit() {
     var name = $("sg-name").value.trim(), target = parseFloat($("sg-target").value), saved = $("sg-saved").value === "" ? 0 : parseFloat($("sg-saved").value), dl = $("sg-deadline").value;
     if (!name) return sgMsg("Give the goal a name.", true);
-    if (!isFinite(target) || target <= 0) return sgMsg("Enter a target amount above $0.", true);
+    var tp = $("sg-type").value, tu = SG_TYPES[tp].unit;
+    if (!isFinite(target) || target <= 0) return sgMsg(tu ? "Enter a target number of " + tu + " above 0." : "Enter a target amount above $0.", true);
     if (!isFinite(saved) || saved < 0) return sgMsg("Saved so far must be zero or more.", true);
     var g = { id: sgEditId || uid("sg"), name: name, type: $("sg-type").value, target: target, saved: saved, deadline: dl, created: Date.now() };
     var next;
@@ -3551,7 +3571,7 @@ html { scroll-padding-top: 96px; }
   });
   /* Seasonal mode: detect the off-season, estimate reduced income, compare seasons */
   var curSeasonMode = "auto", MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  function seasonName(ym) { var p = ym.split("-"), m = +p[1]; return (m >= 8 && m <= 11 ? "Fall" : m === 12 || m <= 2 ? "Winter" : m <= 6 ? "Spring" : "Summer") + " " + p[0]; }
+  function seasonName(ym) { var p = ym.split("-"), m = +p[1]; return (m >= 8 && m <= 11 ? "Fall" : m === 12 || m <= 2 ? "Winter" : m <= 6 ? "Spring" : "Summer") + " " + (m <= 2 ? +p[0] - 1 : p[0]); }
   function seasonInfo() {
     var t = todayStr(), gs = live().filter(function (g) { return g.date <= t; });
     if (!gs.length) return { none: true };
