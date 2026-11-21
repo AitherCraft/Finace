@@ -346,6 +346,11 @@ button.badge { cursor: pointer; min-height: 26px; }
 .has-photo { background-size: cover !important; background-position: center !important; color: transparent !important; }
 .ph-row { display: flex; align-items: center; gap: 14px; padding: 8px 0; } .ph-prev { width: 64px; height: 64px; } .ph-logo { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 1px solid var(--panel-line); }
 .ph-pick { cursor: pointer; display: inline-block; }
+.szi { margin-top: 12px; display: grid; gap: 8px; } .szi h3 { margin: 0; }
+.szi-hd { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; } .szi-hd span { color: var(--muted); font-size: 13px; }
+.szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
+.szi-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; height: 84px; align-items: end; } .szi-strip > div { display: grid; grid-template-rows: 1fr auto; height: 100%; justify-items: center; gap: 2px; font-size: 11px; color: var(--muted); }
+.szi-strip i { align-self: end; width: 100%; border-radius: 4px 4px 0 0; background: var(--blue); } .szi-strip .q i { background: var(--orange); } .szi-strip .now span { color: var(--fg); font-weight: 800; }
 .rp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 20px/1 var(--display); background: rgba(46, 134, 255, 0.2); border: 2px solid var(--blue); flex: 0 0 auto; }
 .rp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .rp-badge { display: grid; gap: 4px; padding: 12px; border-radius: var(--r-sm); border: 1px dashed var(--panel-line); opacity: 0.55; filter: grayscale(0.7); }
@@ -3740,7 +3745,71 @@ html { scroll-padding-top: 96px; }
     else if (prev) rows.push(["Last season", esc(prev.name) + ": " + fmt(prev.net) + " &middot; " + prev.n + (prev.n === 1 ? " game" : " games") + (pp ? pct(prev.net, pp.net) + " vs " + fmt(pp.net) + " the season before" : "")]);
     sn.slice(-4).reverse().forEach(function (x) { rows.push([esc(x.name) + (x.cur ? " (now)" : ""), fmt(x.net) + " &middot; " + x.n + (x.n === 1 ? " game" : " games")]); });
     $("sz-body").innerHTML = rows.map(function (r) { return '<div class="sz-row"><span>' + r[0] + "</span><b>" + (r[0] === "Status" || r[0] === "Usually quiet" || r[0].indexOf("estimate") > 0 ? esc(r[1]) : r[1]) + "</b></div>"; }).join("") +
-      (S.off ? '<p class="note">Your wish list and savings forecasts count the slower off-season pace.</p>' : "");
+      (S.off ? '<p class="note">Your wish list and savings forecasts count the slower off-season pace.</p>' : "") + szIntelHtml(S);
+  }
+  /* Seasonal intelligence: slowdown alert, ahead/behind last season, month pattern, income forecast for quiet stretches */
+  function szIntel(S) {
+    var t = todayStr(), cur = t.slice(0, 7), by = {}, o = {};
+    S.gs.forEach(function (g) { var k = g.date.slice(0, 7), m = by[k] || (by[k] = { n: 0, net: 0 }); m.n += gN(g); m.net += gNet(g); });
+    var first = S.gs[0].date.slice(0, 7), y = +first.slice(0, 4), mo = +first.slice(5, 7), moy = {}, busyN = [];
+    while (true) {
+      var k = y + "-" + (mo < 10 ? "0" : "") + mo; if (k >= cur) break;
+      var b = by[k] || { n: 0, net: 0 }, a = moy[mo] || (moy[mo] = { n: 0, net: 0, c: 0 }); a.n += b.n; a.net += b.net; a.c++;
+      if (S.quietMoy.indexOf(mo) < 0 && b.n > 0) busyN.push(b.n);
+      if (++mo > 12) { mo = 1; y++; }
+    }
+    o.strip = []; var mx = 0;
+    for (var m = 1; m <= 12; m++) { var a = moy[m], v = a ? a.net / a.c : null; if (v !== null && v > mx) mx = v; o.strip.push({ m: m, v: v, n: a ? a.n / a.c : null, q: S.quietMoy.indexOf(m) >= 0, now: m === +cur.slice(5, 7) }); }
+    o.mx = mx;
+    var avgBusy = busyN.length ? busyN.reduce(function (a, b) { return a + b; }, 0) / busyN.length : 0, n28 = 0, c28 = ymd(new Date(pdate(t).getTime() - 28 * 864e5));
+    S.gs.forEach(function (g) { if (g.date > c28) n28 += gN(g); });
+    var exp28 = avgBusy * 28 / 30.4;
+    if (!S.off && avgBusy >= 4 && n28 < exp28 * 0.5) o.slow = { n: n28, exp: Math.round(exp28) };
+    /* quiet stretch forecast */
+    var cm = new Date().getMonth() + 1, start = -1, offNow = S.off;
+    if (offNow) start = 0; else if (S.hasPattern) { for (var i = 1; i <= 12; i++) { if (S.quietMoy.indexOf((cm + i - 1) % 12 + 1) >= 0) { start = i; break; } } }
+    if (start >= 0 && (S.hasPattern || S.offW !== null)) {
+      var list = [], tot = 0, dim = new Date(new Date().getFullYear(), cm, 0).getDate(), frac = (dim - new Date().getDate() + 1) / dim;
+      for (var j = start; j < start + 12; j++) {
+        var mm = (cm + j - 1) % 12 + 1, quiet = S.quietMoy.indexOf(mm) >= 0;
+        if (S.hasPattern && !quiet && !(j === start && offNow)) break;
+        if (!S.hasPattern && j >= start + 2) break;
+        var a2 = moy[mm], per = a2 && a2.c ? a2.net / a2.c : (S.offW || 0) * 4.33, part = j === 0 ? per * frac : per;
+        list.push({ m: mm, v: Math.round(part) }); tot += part;
+      }
+      if (list.length) {
+        var endD = new Date(new Date().getFullYear(), cm - 1 + start + list.length, 1), endK = ymd(endD), sch = 0;
+        upcomingGames().forEach(function (g) { if (g.date < endK) sch += Math.max(0, gNet(g)); });
+        var nb = (list[list.length - 1].m % 12) + 1;
+        o.stretch = { list: list, total: Math.round(Math.max(tot, sch)), sch: Math.round(sch), from: list[0].m, to: list[list.length - 1].m, now: offNow, nextBusy: S.hasPattern ? nb : null, est: !S.hasPattern };
+      }
+    }
+    /* ahead or behind the same point last season */
+    var sn = S.seasons, c = sn.length && sn[sn.length - 1].cur ? sn[sn.length - 1] : null, prev = c ? sn[sn.length - 2] : null;
+    if (c && prev) {
+      var days = Math.max(1, Math.round((pdate(t) - pdate(c.s + "-01")) / 864e5)), pst = prev.s + "-01", pe = ymd(new Date(pdate(pst).getTime() + days * 864e5)), pn = 0, pg = 0;
+      S.gs.forEach(function (g) { if (g.date >= pst && g.date <= pe) { pn += gNet(g); pg += gN(g); } });
+      if (pn > 0 || pg > 0) {
+        var dn = c.net - pn, dg = c.n - pg, pc = pn > 0 ? Math.round(dn / pn * 100) : 0;
+        o.cmp = { dn: dn, dg: dg, pc: pc, state: Math.abs(pc) < 3 && Math.abs(dg) <= 1 ? "even" : dn >= 0 ? "ahead" : "behind", prevName: prev.name, proj: pn > 0 ? Math.round(prev.net * c.net / pn) : 0, prevTotal: prev.net };
+      }
+    }
+    return o;
+  }
+  function szIntelHtml(S) {
+    var I; try { I = szIntel(S); } catch (e) { return ""; }
+    var h = '<div class="szi"><h3>Seasonal intelligence</h3>';
+    if (I.cmp) {
+      var c = I.cmp, gl = (c.dg === 0 ? "the same number of games" : Math.abs(c.dg) + (Math.abs(c.dg) === 1 ? " game " : " games ") + (c.dg > 0 ? "more" : "fewer"));
+      h += '<div class="szi-hd ' + (c.state === "behind" ? "bad" : "ok") + '"><b>' + (c.state === "even" ? "You are right on pace with last season" : c.state === "ahead" ? "You are ahead of last season" : "You are behind last season") + '</b><span>' + (c.state === "even" ? "" : fmt(Math.abs(c.dn)) + (c.dn >= 0 ? " ahead" : " behind") + (c.pc ? " (" + (c.pc > 0 ? "+" : "") + c.pc + "%)" : "") + ", ") + gl + ' than ' + esc(c.prevName) + ' at this point.' + (c.proj ? " On pace for about " + fmt(c.proj) + " this season (last season: " + fmt(c.prevTotal) + ")." : "") + '</span></div>';
+    }
+    if (I.slow) h += '<div class="szi-hd warn"><b>Activity is slowing down</b><span>' + I.slow.n + (I.slow.n === 1 ? " game" : " games") + ' in the last 4 weeks, you usually do about ' + I.slow.exp + ' in a busy month. Expect income to dip.</span></div>';
+    if (I.stretch) {
+      var st = I.stretch, rng = st.from === st.to ? MON[st.from - 1] : MON[st.from - 1] + " to " + MON[st.to - 1];
+      h += '<div class="szi-hd"><b>' + (st.now ? "Expected income this off-season" : "Next quiet stretch: " + rng) + '</b><span>About ' + fmt(st.total) + (st.now ? " through " + MON[st.to - 1] : " across " + st.list.length + (st.list.length === 1 ? " month" : " months")) + (st.sch ? " (" + fmt(st.sch) + " already scheduled)" : "") + (st.nextBusy && st.now ? ". Games usually pick up in " + MON[st.nextBusy - 1] : "") + (st.est ? ". Rough guess until I have a full quiet season of history" : "") + '.</span></div>';
+    }
+    if (I.mx > 0) h += '<div class="szi-strip" role="img" aria-label="Average income by month">' + I.strip.map(function (x) { var ht = x.v === null ? 0 : Math.max(6, Math.round(x.v / I.mx * 100)); return '<div class="' + (x.q ? "q " : "") + (x.now ? "now" : "") + '" title="' + MON[x.m - 1] + (x.v === null ? ": no history" : ": about " + fmt(Math.round(x.v)) + (x.q ? ", usually quiet" : "")) + '"><i style="height:' + ht + '%"></i><span>' + MON[x.m - 1].charAt(0) + '</span></div>'; }).join("") + '</div><p class="note">Average income by month. Orange bars are your usual off-season months.</p>';
+    return h + "</div>";
   }
   /* Notifications: reminders kept on this device, shown in the app and as system alerts when allowed */
   var NF_KEY = "rf-notif-v1", NP_KEY = "rf-notif-prefs-v1", nfPrefs = { on: false, game: true, lead: "both", pay: true, payDays: 7, goal: true, wish: true, cert: true, gear: true }, nfState = { sent: {}, inbox: [] }, wishReadyList = [];
