@@ -3404,7 +3404,7 @@ html { scroll-padding-top: 96px; }
     renderAiIns();
     $("ins-body").innerHTML = l.map(function (x) { return '<div class="ins"><span aria-hidden="true">' + x[0] + "</span><div>" + esc(x[1]) + "<small>" + esc(x[2]) + "</small></div></div>"; }).join("");
   }
-  /* AI (Gemini, through a server function; the key never touches the app) */
+  /* AI (Pollinations free model, through a server function; the key never touches the app) */
   var AI_KEY = "rf-aiins-v1", AIC_KEY = "rf-aichat-v1", aiBusy = false, aiBackoff = 0, aiCache = null, aiChat = [], aicBusy = false;
   try { aiCache = JSON.parse(localStorage.getItem(AI_KEY) || "null"); if (!aiCache || !Array.isArray(aiCache.list)) aiCache = null; } catch (e) { aiCache = null; }
   try { aiChat = JSON.parse(localStorage.getItem(AIC_KEY) || "[]").filter(function (m) { return m && (m.role === "user" || m.role === "model") && typeof m.text === "string"; }).slice(-30); } catch (e) { aiChat = []; }
@@ -3443,7 +3443,7 @@ html { scroll-padding-top: 96px; }
     if (!sbSession || !sbSession.access_token) return Promise.reject(new Error("Sign in to use AI."));
     return fetch(SB_URL + "/functions/v1/ai-insights", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + sbSession.access_token, "Content-Type": "application/json" }, body: JSON.stringify(payload) }).then(function (r) {
       if (r.status === 401 && !retried) return sbRefresh().then(function () { return aiCall(payload, true); });
-      return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (x) { /* not json */ } if (!r.ok || !j || !j.ok) { var e = new Error(j && j.code === "no_key" ? "AI is not switched on yet. The Gemini key still needs to be added." : (j && j.error) || "Could not reach the AI."); e.code = j && j.code; throw e; } return j; });
+      return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (x) { /* not json */ } if (!r.ok || !j || !j.ok) { var e = new Error(j && j.code === "no_key" ? "AI is not switched on yet. The AI key still needs to be added." : j && j.code === "bad_key" ? "The AI key was rejected. Check the key saved in Supabase." : (j && j.error) || "Could not reach the AI."); e.code = j && j.code; throw e; } return j; });
     });
   }
   function renderAiIns() {
