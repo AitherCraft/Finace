@@ -404,6 +404,7 @@ html[data-hide~="owed"] [data-card="owed"],
 html[data-hide~="goals"] [data-card="goals"],
 html[data-hide~="wish"] [data-card="wish"],
 html[data-hide~="bag"] [data-card="bag"],
+html[data-hide~="wallet"] [data-card="wallet"],
 html[data-hide~="mywid"] [data-card="mywid"],
 html[data-hide~="season"] [data-card="season"],
 html[data-hide~="insights"] [data-card="insights"],
@@ -618,6 +619,14 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .fc-ai { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px 12px; border-radius: var(--r-sm); background: rgba(46, 134, 255, 0.10); } .fc-ai:empty { display: none; }
 .fc-up { color: var(--green); } .fc-down { color: var(--red); }
 .game-note.recap { border-left: 3px solid var(--blue); padding-left: 10px; }
+.wal-big { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--r-sm); background: linear-gradient(135deg, rgba(46,204,113,0.18), transparent 70%), var(--panel-2, rgba(255,255,255,0.04)); border: 1px solid rgba(46,204,113,0.4); margin-bottom: 10px; }
+.wal-big b { font: 800 30px/1.1 var(--display); } .wal-big span { color: var(--muted); font-size: 13px; }
+.wal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.wal-grid > div { display: grid; gap: 2px; padding: 10px; border-radius: var(--r-sm); background: rgba(255,255,255,0.04); border: 1px solid var(--panel-line); min-width: 0; }
+.wal-grid span { font-size: 12px; color: var(--muted); } .wal-grid b { font-size: 17px; } .wal-grid small { font-size: 12px; color: var(--muted); }
+.wal-split { display: grid; gap: 6px; margin-bottom: 10px; } .wal-split div { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; } .wal-split .t { border-top: 1px solid var(--panel-line); padding-top: 6px; font-weight: 700; }
+.wal-rem { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+html.mh .wal-big b, html.mh .wal-grid b, html.mh .wal-split b, html.mh .wal-split span.v { filter: blur(9px); user-select: none; }
 .bag-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .bag-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--panel-line); }
 .bag-row:first-child { border-top: 0; }
@@ -874,6 +883,7 @@ html { scroll-padding-top: 96px; }
     <a href="#home" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span>Home</span></a>
     <a href="#games" data-nav="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20.5 9.5l-5 1M3.5 9.5l5 1M16.5 20l-2.3-5.5M7.5 20l2.3-5.5"/></svg><span>Games</span></a>
     <a href="#calendar" data-nav="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/></svg><span>Calendar</span></a>
+    <a href="#wallet" data-nav="wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2z"/><circle cx="16.5" cy="14.5" r="1"/></svg><span>Referee Wallet</span></a>
     <a href="#owed" data-nav="payments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v.01M17.5 14.5v.01"/></svg><span>Payments</span></a>
     <a href="#money" data-nav="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.2c-.5-.8-1.5-1.2-2.6-1.2-1.5 0-2.6.8-2.6 2s1 1.7 2.7 2 2.7.8 2.7 2-1.1 2-2.7 2c-1.2 0-2.2-.5-2.7-1.4M12 6v2M12 16v2"/></svg><span>Money</span></a>
     <a href="#reports" data-nav="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Reports</span></a>
@@ -948,6 +958,7 @@ html { scroll-padding-top: 96px; }
         <p class="msg" id="wish-msg" role="status"></p>
         <div class="row" id="wish-undo" hidden><button class="btn ghost" type="button" id="wish-undo-go">Undo purchase</button></div>
         </section>
+        <section class="panel hc o2" id="wallet-card" data-card="wallet" aria-labelledby="h-wallet-home"><div class="panel-head"><h2 id="h-wallet-home">Referee Wallet</h2><a class="mini" href="#wallet">Details</a></div><div id="wallet-home"></div></section>
         <section class="panel hc o6" id="bag-card" data-card="bag"><div class="panel-head"><h2>Ref Bag</h2><a class="mini" href="#inventory">View all</a></div><div id="bag-home"></div></section>
         <section class="panel hc o6" data-card="quick" aria-labelledby="h-quick">
           <h2 id="h-quick">Quick Actions</h2>
@@ -1067,6 +1078,13 @@ html { scroll-padding-top: 96px; }
       <div class="ai-log" id="aic-log" aria-live="polite"></div>
       <form class="ai-form" id="aic-form" novalidate><textarea id="aic-in" rows="1" maxlength="1000" placeholder="Ask a money question..." aria-label="Your question"></textarea><button class="btn" type="submit" id="aic-send">Send</button></form>
       <p class="msg" id="aic-msg" role="status"></p>
+    </section>
+  </div>
+
+  <div class="view" data-view="wallet" hidden>
+    <section class="panel" aria-labelledby="h-wallet">
+      <div class="panel-head"><h2 id="h-wallet">Referee Wallet</h2><span class="chip" id="wal-chip"></span></div>
+      <div id="wallet-page"></div>
     </section>
   </div>
 
@@ -1419,6 +1437,7 @@ html { scroll-padding-top: 96px; }
         <label class="check" for="show-weather"><input id="show-weather" type="checkbox" data-ui>Weather</label>
         <label class="check" for="show-insights"><input id="show-insights" type="checkbox" data-ui>Insights</label>
         <label class="check" for="show-season"><input id="show-season" type="checkbox" data-ui>Season</label>
+        <label class="check" for="show-wallet"><input id="show-wallet" type="checkbox" data-ui>Referee wallet</label>
         <label class="check" for="show-bag"><input id="show-bag" type="checkbox" data-ui>Ref bag</label>
       </div>
     </section>
@@ -1674,13 +1693,13 @@ html { scroll-padding-top: 96px; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }, { k: "weather", label: "Weather" }
+    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "wallet", label: "Referee wallet" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }, { k: "weather", label: "Weather" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
+    show: { wallet: true, tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
     widgets: [], season: "auto",
     name: "RefVault", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
@@ -2529,6 +2548,37 @@ html { scroll-padding-top: 96px; }
     if (b.hasAttribute("data-lk-keep")) { lkConfirm = null; renderLocker(); return; }
     if (b.hasAttribute("data-lk-del")) { id = b.getAttribute("data-lk-del"); lkConfirm = null; if (lkEditId === id) lkFormReset(); lkSave(locker.filter(function (x) { return x.id !== id; }), "Gear removed."); }
   });
+  /* Referee Wallet: a quick view of referee money, kept apart from personal money */
+  function walletCalc() {
+    var t = todayStr(), ref = 0, refExp = 0, pers = 0, spent = 0, P = null;
+    data.games.forEach(function (g) { if (g.cancelled) return; if (g.paid !== false) ref += toCents(g.fee) - toCents(g.expenses); else ref += gRcvd(g); });
+    data.income.forEach(function (x) { pers += toCents(x.amount); });
+    data.spending.forEach(function (x) { spent += toCents(x.amount); });
+    var avail = toCents(start) + ref + pers - spent, owed = owedGames(), od = owed.filter(function (g) { return gStatus(g) === "overdue"; }), upc = upcomingGames();
+    var owedC = owed.reduce(function (a, g) { return a + gOwedC(g); }, 0), upcC = upc.reduce(function (a, g) { return a + Math.max(0, gNet(g)); }, 0);
+    var pendExp = owed.concat(upc).reduce(function (a, g) { return a + toCents(g.expenses); }, 0);
+    try { P = ppCalc(); } catch (e) { P = null; }
+    var stale = owed.filter(function (g) { return !g.remindedOn || Math.round((pdate(t) - pdate(g.remindedOn)) / 864e5) >= 7; }), last = owed.reduce(function (m, g) { return g.remindedOn && g.remindedOn > m ? g.remindedOn : m; }, "");
+    return { avail: avail, ref: ref, pers: pers, spent: spent, start: toCents(start), owed: owed, owedC: owedC, od: od, upc: upc, upcC: upcC, pendExp: pendExp, P: P, stale: stale, last: last };
+  }
+  function walletHtml(W, full) {
+    var h = '<div class="wal-big"><span>Available balance</span><b>' + fmt(W.avail) + '</b><span>Referee money and personal money, minus what you have spent</span></div>';
+    h += '<div class="wal-grid"><div><span>🟡 Unpaid games</span><b>' + fmt(W.owedC) + '</b><small>' + plural(gamesN(W.owed), "game") + (W.od.length ? ", " + W.od.length + " overdue" : "") + '</small></div>' +
+      '<div><span>📥 Upcoming payments</span><b>' + fmt(W.P ? W.P.sum.week : 0) + '</b><small>expected this week' + (W.P && W.P.sum.later ? ", " + fmt(W.P.sum.later) + " later" : "") + '</small></div>' +
+      '<div><span>🗓️ Scheduled games</span><b>' + fmt(W.upcC) + '</b><small>' + plural(gamesN(W.upc), "game") + ' not yet worked</small></div>' +
+      '<div><span>🧾 Pending expenses</span><b>' + fmt(W.pendExp) + '</b><small>on unpaid and upcoming games</small></div></div>';
+    h += '<div class="wal-split"><div><span>⚽ Referee income received</span><b>' + fmt(W.ref) + '</b></div><div><span>👤 Personal and other income</span><b>' + fmt(W.pers) + '</b></div>' + (W.start ? '<div><span>Starting balance</span><b>' + fmt(W.start) + '</b></div>' : "") + '<div><span>Spent so far</span><b>−' + fmt(W.spent) + '</b></div><div class="t"><span>Available</span><b>' + fmt(W.avail) + '</b></div></div>';
+    h += '<div class="wal-rem">' + (W.owed.length ? '<button class="btn" type="button" data-wal-remind>Send payment reminders</button><span class="note">' + (W.stale.length ? plural(W.stale.length, "game") + " not reminded in 7 days" : "All reminded this week") + (W.last ? ". Last sent " + esc(mdDate(W.last)) : "") + '</span>' : '<span class="note">Nothing is owed to you. No reminders needed.</span>') + '</div>';
+    if (full && W.owed.length) h += '<h3>Unpaid games</h3>' + W.owed.slice(0, 8).map(function (g) { return '<div class="fc-row"><b>' + esc(mdDate(g.date)) + '</b><div><span>' + esc(gTitle(g)) + '</span><small>' + esc([g.assoc, g.assignor ? "Assignor " + g.assignor : "", gStatus(g) === "overdue" ? "Overdue" : "Pending"].filter(Boolean).join(" · ")) + '</small></div><strong>' + fmt(gOwedC(g)) + "</strong></div>"; }).join("");
+    if (full && W.upc.length) h += '<h3>Upcoming games</h3>' + W.upc.slice(0, 6).map(function (g) { return '<div class="fc-row"><b>' + esc(mdDate(g.date)) + '</b><div><span>' + esc(gTitle(g)) + '</span><small>' + esc([g.assoc, g.time ? fmtTime(g.time) : ""].filter(Boolean).join(" · ")) + '</small></div><strong>' + fmt(Math.max(0, gNet(g))) + "</strong></div>"; }).join("");
+    return h;
+  }
+  function renderWallet() {
+    if (!$("wallet-home")) return; var W = walletCalc();
+    $("wallet-home").innerHTML = walletHtml(W, false); $("wallet-page").innerHTML = walletHtml(W, true);
+    $("wal-chip").textContent = W.od.length ? W.od.length + " overdue" : W.owed.length ? fmt(W.owedC) + " owed" : "All paid";
+  }
+  document.addEventListener("click", function (e) { if (!e.target.closest || !e.target.closest("[data-wal-remind]")) return; location.hash = "#owed"; setTimeout(function () { var b = $("pc-remind"); if (b && !b.disabled) b.click(); }, 350); });
   /* Payment prediction: when each payer usually pays, expected money this week, late alerts, AI write-up */
   function ppMed(a) { a = a.slice().sort(function (x, y) { return x - y; }); var m = a.length >> 1; return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2); }
   function ppPayer(g) { return g.assignor || g.assoc || ""; }
@@ -3102,7 +3152,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3345,7 +3395,7 @@ html { scroll-padding-top: 96px; }
 
   /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
   var PAGES = { "add-game": "g-match", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "", "profile": "" };
-  var TABS = ["home", "games", "money", "reports", "ai", "weather", "goals", "owed", "calendar", "inventory", "history", "export"];
+  var TABS = ["home", "games", "money", "reports", "ai", "weather", "goals", "owed", "calendar", "wallet", "inventory", "history", "export"];
   var MOB = ["home", "games", "calendar", "money", "reports", "ai", "weather", "app-settings"], lastView = "";
   function route(first) {
     var h = (location.hash || "").replace(/^#/, "");
@@ -3390,7 +3440,7 @@ html { scroll-padding-top: 96px; }
   var HOME_ORIG = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll("[data-card]")) : [];
   var HOME_HOME = HOME_ORIG.map(function (c) { return { el: c, col: HOME_COLS.indexOf(c.parentNode) }; });
   var CARD_KEYS = HOME_ORIG.map(function (c) { return c.getAttribute("data-card"); });
-  var CARD_LABEL = { weather: "Weather", insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
+  var CARD_LABEL = { wallet: "Referee wallet", weather: "Weather", insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
   var curOrder = [], deskMq = window.matchMedia ? window.matchMedia("(min-width: 960px)") : null;
   function defaultOrder() {
     return HOME_ORIG.map(function (c, i) { var m = /(?:^|\s)o(\d)(?:\s|$)/.exec(c.className); return { k: c.getAttribute("data-card"), n: m ? +m[1] : 99, i: i }; })
@@ -5535,7 +5585,7 @@ html { scroll-padding-top: 96px; }
   })();
 
   /* Accessibility: announce the page after a tab change */
-  var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", inventory: "Ref bag", history: "History", export: "Export", "app-settings": "Settings", profile: "Referee profile", ai: "AI", weather: "Weather", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
+  var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", wallet: "Referee Wallet", inventory: "Ref bag", history: "History", export: "Export", "app-settings": "Settings", profile: "Referee profile", ai: "AI", weather: "Weather", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
   function announceView(view) {
     var n = VIEW_NAMES[view] || "Home"; document.title = n + " - RefVault";
     var r = $("sr-route"); if (r) r.textContent = n + " page";
