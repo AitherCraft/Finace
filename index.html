@@ -603,6 +603,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .lk-act { display: flex; flex-wrap: wrap; gap: 8px; }
 .lk-act .mini { padding: 5px 10px; min-height: 30px; font-size: 11px; }
 .lk-due-now, .lk-due-overdue { color: var(--red); font-weight: 700; } .lk-due-soon { color: #ff9f43; font-weight: 700; }
+.hist-ai { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 4px; padding: 8px 10px; border-radius: var(--r-sm); background: rgba(46, 134, 255, 0.10); font-size: 14px; }
 .bag-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .bag-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--panel-line); }
 .bag-row:first-child { border-top: 0; }
@@ -1324,13 +1325,12 @@ html { scroll-padding-top: 96px; }
     </section>
 
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-dash">
-      <h2 id="h-dash">Dashboard</h2>
+      <h2 id="h-dash">App name</h2>
       <div class="grid">
         <div class="field"><label for="set-name">App name</label><input id="set-name" type="text" maxlength="40" data-ui autocomplete="off"></div>
         <div class="field"><label for="set-tagline">Tagline</label><input id="set-tagline" type="text" maxlength="60" data-ui autocomplete="off"></div>
       </div>
-      <p class="note">Show on the home screen:</p>
-      <div class="checks">
+      <div class="checks" hidden>
         <label class="check" for="show-tiles"><input id="show-tiles" type="checkbox" data-ui>Summary tiles</label>
         <label class="check" for="show-next"><input id="show-next" type="checkbox" data-ui>Next game</label>
         <label class="check" for="show-goal"><input id="show-goal" type="checkbox" data-ui>Monthly goal</label>
@@ -1440,8 +1440,8 @@ html { scroll-padding-top: 96px; }
 
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-hist">
       <div class="panel-head"><h2 id="h-hist">History</h2><span class="chip" id="hist-count"></span></div>
-      <p class="note">Every game, other income and expense you add, change or remove shows up here. Removed ones can be put back, and changes to a game can be undone. This list is kept on this device.</p>
-      <div class="row"><label class="sr-only" for="hist-f">Show</label><select id="hist-f"><option value="all">Everything</option><option value="added">Added</option><option value="removed">Removed</option><option value="edited">Changed</option></select><button class="mini" type="button" id="hist-clear">Clear history</button></div>
+      <p class="note">Every game, other income and expense you add, change or remove shows up here, along with your AI chat questions and answers. Removed ones can be put back, and changes to a game can be undone. This list is kept on this device.</p>
+      <div class="row"><label class="sr-only" for="hist-f">Show</label><select id="hist-f"><option value="all">Everything</option><option value="added">Added</option><option value="removed">Removed</option><option value="edited">Changed</option><option value="ai">AI chats</option></select><button class="mini" type="button" id="hist-clear">Clear history</button></div>
       <ul class="list tall" id="hist-list"></ul>
       <div class="row"><button class="btn ghost" type="button" id="hist-more" hidden>Show more</button></div>
       <p class="msg" id="hist-msg" role="status"></p>
@@ -3578,7 +3578,7 @@ html { scroll-padding-top: 96px; }
     if (!sbSession) { msg.textContent = "Sign in to chat with the AI."; msg.className = "msg err"; return; }
     aiChat.push({ role: "user", text: text.slice(0, 1000) }); aiChat = aiChat.slice(-30); aicBusy = true; $("aic-in").value = ""; aicRender();
     var facts; try { facts = aiFacts(); } catch (x) { facts = {}; }
-    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { aiChat.push({ role: "model", text: j.reply }); }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
+    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { aiChat.push({ role: "model", text: j.reply }); try { hist.unshift({ id: uid("h"), t: Date.now(), a: "asked", k: "ai", e: { id: uid("q"), q: text.slice(0, 300), a: String(j.reply).slice(0, 1000) }, prev: null }); hist = hist.slice(0, 300); histSave(); renderHistory(); } catch (x) { /* history is best effort */ } }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
       aicBusy = false; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* full */ } aicRender();
     });
   }
@@ -4522,15 +4522,16 @@ html { scroll-padding-top: 96px; }
     return (e.note || (BMAP[e.bucket] ? BMAP[e.bucket].name : "Expense")) + " (" + (e.date ? mdDate(e.date) : "") + ")";
   }
   function histAmt(h) { var e = h.e; return h.k === "games" ? fmt(gNet(e)) : fmt(toCents(e.amount)); }
-  var HIST_LABEL = { added: "Added", removed: "Removed", edited: "Changed", restored: "Put back", reverted: "Undone" };
+  var HIST_LABEL = { asked: "AI chat", added: "Added", removed: "Removed", edited: "Changed", restored: "Put back", reverted: "Undone" };
   function renderHistory() {
     var list = $("hist-list"); if (!list) return;
-    var f = $("hist-f").value, rows = hist.filter(function (h) { return f === "all" || h.a === f || (f === "added" && h.a === "restored") || (f === "edited" && h.a === "reverted"); });
-    $("hist-count").textContent = hist.length + (hist.length === 1 ? " change" : " changes");
+    var f = $("hist-f").value, rows = hist.filter(function (h) { return f === "all" || (f === "ai" ? h.k === "ai" : h.k !== "ai" && (h.a === f || (f === "added" && h.a === "restored") || (f === "edited" && h.a === "reverted"))); });
+    $("hist-count").textContent = hist.length + (hist.length === 1 ? " entry" : " entries");
     if (!rows.length) { list.innerHTML = '<li><p class="empty">' + (hist.length ? "Nothing matches this filter." : "Nothing yet. Add, change or remove a game and it shows up here.") + "</p></li>"; $("hist-more").hidden = true; return; }
     var shown = rows.slice(0, histLimit);
     list.innerHTML = shown.map(function (h) {
       var when = new Date(h.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      if (h.k === "ai") return '<li class="hist-row"><div class="hist-top"><strong>' + esc(h.e.q) + '</strong></div><div class="hist-when"><span class="hist-badge added">AI chat</span>' + esc(when) + '</div><div class="hist-ai">' + esc(h.e.a) + "</div></li>";
       var kind = h.k === "games" ? "Game" : h.k === "income" ? "Other income" : "Expense";
       var here = data[h.k].filter(function (x) { return x.id === h.e.id; })[0], act = "";
       if (h.a === "removed") act = here ? '<span class="hist-when">Back in your list</span>' : '<button class="mini" type="button" data-hist-restore="' + esc(h.id) + '">Put it back</button>';
