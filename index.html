@@ -343,6 +343,9 @@ button.badge { cursor: pointer; min-height: 26px; }
 .gc-bring li { color: var(--muted); } .gc-bring li.on { color: var(--fg); font-weight: 600; }
 .gc-note { margin: 0; font-size: 13px; color: #ff9f43; }
 .rp-head { display: flex; gap: 14px; align-items: center; }
+.has-photo { background-size: cover !important; background-position: center !important; color: transparent !important; }
+.ph-row { display: flex; align-items: center; gap: 14px; padding: 8px 0; } .ph-prev { width: 64px; height: 64px; } .ph-logo { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 1px solid var(--panel-line); }
+.ph-pick { cursor: pointer; display: inline-block; }
 .rp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 20px/1 var(--display); background: rgba(46, 134, 255, 0.2); border: 2px solid var(--blue); flex: 0 0 auto; }
 .rp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .rp-badge { display: grid; gap: 4px; padding: 12px; border-radius: var(--r-sm); border: 1px dashed var(--panel-line); opacity: 0.55; filter: grayscale(0.7); }
@@ -1388,6 +1391,15 @@ html { scroll-padding-top: 96px; }
       </form>
     </section>
 
+    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-photo">
+      <h2 id="h-photo">Photo and logo</h2>
+      <p class="note">Your photo shows on your profile and in the top corner. Your logo replaces the RefVault logo in the header and browser tab. Changes are previews until you click Save settings.</p>
+      <div class="ph-row"><div class="rp-avatar ph-prev" id="ph-prev" aria-hidden="true"></div><div><b>Profile photo</b><div class="wish-actions"><label class="mini ph-pick" for="ph-file">Choose photo</label><input id="ph-file" type="file" accept="image/*" hidden><button class="mini" type="button" id="ph-clear" hidden>Remove</button></div></div></div>
+      <div class="ph-row"><img class="ph-logo" id="lg-prev" alt="" width="56" height="56"><div><b>App logo</b><div class="wish-actions"><label class="mini ph-pick" for="lg-file">Choose logo</label><input id="lg-file" type="file" accept="image/*" hidden><button class="mini" type="button" id="lg-clear" hidden>Use default</button></div></div></div>
+      <p class="msg" id="ph-msg"></p>
+      <p class="note">Want your favorite stats on Home? Use <b>My widgets</b> above, and pick which cards to show and their order under Home layout below.</p>
+    </section>
+
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-colors">
       <h2 id="h-colors">Colors</h2>
       <div class="presets" id="presets" role="group" aria-label="Color themes">
@@ -1720,7 +1732,7 @@ html { scroll-padding-top: 96px; }
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
     show: { budget: true, ach: true, wallet: true, tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
-    widgets: [], season: "auto",
+    widgets: [], season: "auto", photo: "", logo: "",
     name: "RefVault", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
   var PRESETS = [
@@ -4249,6 +4261,7 @@ html { scroll-padding-top: 96px; }
         return { id: w.id.slice(0, 12), m: w.m, t: typeof w.t === "string" ? w.t.trim().slice(0, 24) : "", i: MW_ICONS.indexOf(w.i) >= 0 ? w.i : MW_METRICS[w.m].i, c: MW_COLORS[w.c] ? w.c : "blue", w: w.w === 2 ? 2 : 1 };
       });
     }
+    ["photo", "logo"].forEach(function (k) { if (typeof raw[k] === "string" && raw[k].length < 150000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(raw[k])) u[k] = raw[k]; });
     if (typeof raw.tagline === "string") u.tagline = raw.tagline.slice(0, 60);
     if (Array.isArray(raw.order) && raw.order.length) {
       var seen = {}, ord = raw.order.filter(function (k) { if (CARD_KEYS.indexOf(k) < 0 || seen[k]) return false; seen[k] = 1; return true; });
@@ -4298,6 +4311,10 @@ html { scroll-padding-top: 96px; }
     $("tagline").hidden = !u.tagline.trim();
     document.title = u.name;
     $("logo").alt = u.name + " logo";
+    if (!window.LOGO_DEF) window.LOGO_DEF = $("logo").getAttribute("src");
+    var lsrc = u.logo || window.LOGO_DEF; if ($("logo").getAttribute("src") !== lsrc) { $("logo").src = lsrc; var fv = document.getElementById("fav-ic"); if (fv) fv.href = lsrc; }
+    ["rp-avatar", "rp-open"].forEach(function (id) { var el = $(id); if (!el) return; el.classList.toggle("has-photo", !!u.photo); el.style.backgroundImage = u.photo ? 'url("' + u.photo + '")' : ""; });
+    if ($("ph-prev")) { $("ph-prev").style.backgroundImage = u.photo ? 'url("' + u.photo + '")' : ""; $("ph-prev").classList.toggle("has-photo", !!u.photo); $("lg-prev").src = lsrc; $("ph-clear").hidden = !u.photo; $("lg-clear").hidden = !u.logo; }
     renderChart();
   }
   var UI_COLOR_IDS = { "set-bg": "bg", "set-panel": "panel", "set-text": "text", "set-accent": "accent", "set-give": "give", "set-save": "save", "set-invest": "invest", "set-spend": "spend" };
@@ -5319,10 +5336,37 @@ html { scroll-padding-top: 96px; }
     });
   });
 
+
+  /* Profile photo and app logo: resized on this device, saved inside your settings so they sync */
+  function phMsg(t, err) { var m = $("ph-msg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+  function phLoad(file, size, crop, mime, key) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { phMsg("Choose an image file.", true); return; }
+    var fr = new FileReader();
+    fr.onerror = function () { phMsg("Could not read that file.", true); };
+    fr.onload = function () {
+      var im = new Image();
+      im.onerror = function () { phMsg("That image could not be opened. Try a JPG or PNG.", true); };
+      im.onload = function () {
+        var c = document.createElement("canvas"); c.width = c.height = size; var x = c.getContext("2d"), w = im.naturalWidth, h = im.naturalHeight;
+        if (crop) { var m = Math.min(w, h); x.drawImage(im, (w - m) / 2, (h - m) / 2, m, m, 0, 0, size, size); }
+        else { var r = Math.min(size / w, size / h), dw = w * r, dh = h * r; x.drawImage(im, (size - dw) / 2, (size - dh) / 2, dw, dh); }
+        var url = c.toDataURL(mime, 0.85); if (url.indexOf("data:" + mime) !== 0) url = c.toDataURL("image/png");
+        if (url.length >= 150000) { phMsg("That image is too detailed. Try a simpler one.", true); return; }
+        var o = {}; o[key] = url; draftUi = sanitizeUi(Object.assign(clone(draftUi), o)); applyUi(draftUi); updateUiState(); phMsg("Preview updated. Click Save settings to keep it.");
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  $("ph-file").addEventListener("change", function (e) { phLoad(e.target.files[0], 192, true, "image/jpeg", "photo"); e.target.value = ""; });
+  $("lg-file").addEventListener("change", function (e) { phLoad(e.target.files[0], 192, false, "image/webp", "logo"); e.target.value = ""; });
+  $("ph-clear").addEventListener("click", function () { draftUi = sanitizeUi(Object.assign(clone(draftUi), { photo: "" })); applyUi(draftUi); updateUiState(); phMsg("Photo removed. Click Save settings to keep that."); });
+  $("lg-clear").addEventListener("click", function () { draftUi = sanitizeUi(Object.assign(clone(draftUi), { logo: "" })); applyUi(draftUi); updateUiState(); phMsg("Using the default logo. Click Save settings to keep that."); });
   /* Browser tab icon uses the same logo. */
   try {
     var fav = document.createElement("link");
-    fav.rel = "icon"; fav.href = $("logo").src;
+    fav.rel = "icon"; fav.id = "fav-ic"; fav.href = $("logo").src;
     document.head.appendChild(fav);
   } catch (e) {}
 
