@@ -740,6 +740,17 @@ html { scroll-padding-top: 96px; }
 .wxp-hours { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
 .wxp-hours div { flex: 0 0 auto; min-width: 58px; text-align: center; background: var(--panel-2, rgba(255,255,255,.04)); border-radius: 12px; padding: 8px 6px; display: grid; gap: 3px; font-size: 12px; }
 .wxp-hours b { color: var(--muted); font-weight: 600; } .wxp-hours span { font-size: 20px; } .wxp-hours em { font-style: normal; color: var(--muted); }
+.wx-days div[data-wxday], .wxp-day[data-wxday] { cursor: pointer; } .wxp-day.sel { background: rgba(46, 134, 255, 0.10); border-radius: var(--r-sm); }
+.wxd { padding: 10px 4px 14px; display: grid; gap: 10px; border-top: 1px dashed var(--panel-line); }
+.wxd-lead { margin: 0; } .wxd h4 { margin: 4px 0 0; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.wxd-bars { display: flex; align-items: flex-end; gap: 3px; height: 110px; padding-top: 14px; }
+.wxd-bars > div { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
+.wxd-bars span { display: block; width: 100%; background: var(--blue); border-radius: 3px 3px 0 0; opacity: 0.85; }
+.wxd-bars em { font-style: normal; font-size: 9px; color: var(--muted); } .wxd-bars b { font-size: 9px; color: var(--muted); height: 12px; font-weight: 500; white-space: nowrap; }
+.wxd-tip { margin: 0; color: var(--green); font-size: 13px; }
+.wxd-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.wxd-grid div { display: grid; gap: 2px; padding: 8px 10px; border-radius: var(--r-sm); background: rgba(255,255,255,0.04); }
+.wxd-grid span { font-size: 12px; color: var(--muted); }
 .wxp-day { display: grid; grid-template-columns: 54px 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--panel-line); font-size: 14px; }
 .wxp-day:first-child { border-top: 0; } .wxp-day small { color: var(--muted); display: block; font-size: 12px; } .wxp-day b { font-variant-numeric: tabular-nums; text-align: right; }
 @media (max-width: 959px) {
@@ -3699,6 +3710,26 @@ html { scroll-padding-top: 96px; }
       '<div class="gc-bring"><strong>Bring:</strong><ul>' + c.bring.map(function (b) { return "<li" + (b[1] ? ' class="on"' : "") + '><span aria-hidden="true">' + (b[1] ? "☑" : "☐") + "</span> " + b[0] + (b[1] ? '<i class="sr"> (bring)</i>' : '<i class="sr"> (not needed)</i>') + "</li>"; }).join("") + "</ul></div>" +
       (c.note ? '<p class="gc-note">' + esc(c.note) + "</p>" : "") + "</div>";
   }
+  var wxSel = "";
+  function wxDayHtml(di) {
+    var d = wxData.daily, h = wxData.hourly, ds = d.time[di], idx = [], k;
+    for (k = 0; k < h.time.length; k++) if (h.time[k].slice(0, 10) === ds) idx.push(k);
+    if (!idx.length) return "";
+    var hr12 = function (n) { return (n % 12 || 12) + (n >= 12 ? "p" : "a"); }, t12 = function (iso) { var m = /T(\d{2}):(\d{2})/.exec(iso || ""); if (!m) return ""; var v = +m[1]; return (v % 12 || 12) + ":" + m[2] + (v >= 12 ? "p" : "a"); };
+    var day = idx.filter(function (i) { var n = +h.time[i].slice(11, 13); return n >= 6 && n <= 22; });
+    var uv = Math.max.apply(null, idx.map(function (i) { return h.uv_index[i] || 0; })), hum = null;
+    var best = null; for (k = 0; k + 2 < day.length; k++) { var a = (h.precipitation_probability[day[k]] + h.precipitation_probability[day[k + 1]] + h.precipitation_probability[day[k + 2]]) / 3; if (!best || a < best.a) best = { a: a, i: k }; }
+    var peak = day.reduce(function (m, i) { return h.precipitation_probability[i] > (m === null ? -1 : h.precipitation_probability[m]) ? i : m; }, null);
+    var feels = idx.map(function (i) { return h.apparent_temperature[i]; }), maxRain = d.precipitation_probability_max[di];
+    var rainWord = maxRain >= 70 ? "Rain is likely" : maxRain >= 40 ? "Rain is possible" : maxRain >= 20 ? "A small chance of rain" : "Rain is unlikely";
+    var out = '<div class="wxd"><p class="wxd-lead"><b>' + rainWord + '.</b> Up to ' + maxRain + '% chance' + (d.rain_sum[di] > 0 ? ", about " + d.rain_sum[di].toFixed(2) + " in expected" : "") + (peak !== null && maxRain >= 20 ? ", highest around " + hr12(+h.time[peak].slice(11, 13)) : "") + ".</p>";
+    out += '<div class="wxd-bars" role="img" aria-label="Rain chance by hour">' + day.map(function (i) { var p = h.precipitation_probability[i], n = +h.time[i].slice(11, 13); return '<div title="' + hr12(n) + ": " + p + '%"><em>' + (p >= 10 ? p : "") + '</em><span style="height:' + Math.max(3, p) + '%"></span><b>' + (n % 3 === 0 ? hr12(n) : "") + "</b></div>"; }).join("") + "</div>";
+    if (best && maxRain >= 20) out += '<p class="wxd-tip">Driest stretch: ' + hr12(+h.time[day[best.i]].slice(11, 13)) + " to " + hr12(+h.time[day[best.i + 2]].slice(11, 13) + 1) + " (about " + Math.round(best.a) + "% rain).</p>";
+    out += '<div class="wxd-grid"><div><span>🌡️ High / low</span><b>' + Math.round(d.temperature_2m_max[di]) + "° / " + Math.round(d.temperature_2m_min[di]) + '°</b></div><div><span>🤒 Feels like</span><b>' + Math.round(Math.min.apply(null, feels)) + "° to " + Math.round(Math.max.apply(null, feels)) + '°</b></div><div><span>💨 Wind</span><b>up to ' + Math.round(d.wind_speed_10m_max[di]) + ' mph</b></div><div><span>🌬️ Gusts</span><b>up to ' + Math.round(d.wind_gusts_10m_max[di]) + ' mph</b></div><div><span>☀️ UV index</span><b>' + Math.round(uv) + (uv >= 6 ? " (high)" : "") + '</b></div><div><span>🌅 Sun</span><b>' + t12(d.sunrise[di]) + " / " + t12(d.sunset[di]) + "</b></div></div>";
+    var gl = upcomingGames().filter(function (g) { return g.date === ds; }).map(function (g) { return { g: g, i: wxHourAt(g.date, g.time) }; }).filter(function (x) { return x.i >= 0; });
+    if (gl.length) out += "<h4>Your games this day</h4>" + gl.map(function (x) { return wxCondHtml(x.g, x.i); }).join("");
+    return out + "</div>";
+  }
   function renderWeather() {
     try { renderWeatherPage(); } catch (e) { /* ok */ }
     var card = $("wx-card"); if (!card) return;
@@ -3709,7 +3740,7 @@ html { scroll-padding-top: 96px; }
     var tm = function (iso) { var p = /T(\d{2}):(\d{2})/.exec(iso || ""); if (!p) return ""; var hr = +p[1]; return (hr % 12 || 12) + ":" + p[2] + (hr >= 12 ? " PM" : " AM"); };
     html += '<div class="wx-now"><span class="wx-ic" aria-hidden="true">' + cur.i + '</span><div><strong>' + Math.round(c.temperature_2m) + '°F</strong><br><small>' + esc(cur.t) + ", feels like " + Math.round(c.apparent_temperature) + '°F</small></div></div>';
     html += '<p class="wx-sub">Today: high ' + Math.round(d.temperature_2m_max[0]) + "°, low " + Math.round(d.temperature_2m_min[0]) + "°. Rain chance " + d.precipitation_probability_max[0] + "%. Wind " + Math.round(c.wind_speed_10m) + " mph, gusts " + Math.round(c.wind_gusts_10m) + " mph. Humidity " + Math.round(c.relative_humidity_2m) + "%. Sunrise " + tm(d.sunrise[0]) + ", sunset " + tm(d.sunset[0]) + ".</p>";
-    html += '<div class="wx-days">' + d.time.map(function (ds, i) { var w = wxInfo(d.weather_code[i], 1); return "<div><b>" + (i === 0 ? "Today" : parseD(ds).toLocaleDateString(undefined, { weekday: "short" })) + "</b><span aria-hidden=\"true\">" + w.i + "</span><em title=\"" + esc(w.t) + "\">" + Math.round(d.temperature_2m_max[i]) + "°</em><em>" + Math.round(d.temperature_2m_min[i]) + "°</em></div>"; }).join("") + "</div>";
+    html += '<div class="wx-days">' + d.time.map(function (ds, i) { var w = wxInfo(d.weather_code[i], 1); return "<div role=\"button\" tabindex=\"0\" data-wxday=\"" + ds + "\" aria-label=\"Weather details for " + esc(dayWord(ds)) + "\"><b>" + (i === 0 ? "Today" : parseD(ds).toLocaleDateString(undefined, { weekday: "short" })) + "</b><span aria-hidden=\"true\">" + w.i + "</span><em title=\"" + esc(w.t) + "\">" + Math.round(d.temperature_2m_max[i]) + "°</em><em>" + Math.round(d.temperature_2m_min[i]) + "°</em></div>"; }).join("") + "</div>";
     var gl = upcomingGames().map(function (g) { return { g: g, i: wxHourAt(g.date, g.time) }; }).filter(function (x) { return x.i >= 0; }).slice(0, 5);
     if (gl.length) html += "<h3>Your games</h3>" + gl.map(function (x) {
       return wxCondHtml(x.g, x.i);
@@ -3740,6 +3771,13 @@ html { scroll-padding-top: 96px; }
       $("wx-results").innerHTML = rs.map(function (x) { var nm = [x.name, x.admin1, x.country_code].filter(Boolean).join(", "); return '<div class="mw-row"><span>' + esc(nm) + '</span><button class="mini" type="button" data-wx-pick="' + esc(JSON.stringify({ lat: Math.round(x.latitude * 1000) / 1000, lon: Math.round(x.longitude * 1000) / 1000, name: nm })) + '">Use</button></div>'; }).join("");
     }).catch(function () { msg.textContent = "Could not search right now. Check your connection."; msg.className = "msg err"; });
   });
+  function wxDayPick(el) {
+    var ds = el.getAttribute("data-wxday"); if (!ds) return;
+    var onPage = !!(el.closest && el.closest("#wxp-body")); wxSel = onPage && wxSel === ds ? "" : ds;
+    if (onPage) { renderWeatherPage(); var row = document.querySelector('#wxp-body [data-wxday="' + ds + '"]'); if (row && wxSel) row.scrollIntoView({ block: "nearest", behavior: "smooth" }); } else location.hash = "#weather";
+  }
+  document.addEventListener("click", function (e) { var el = e.target.closest && e.target.closest("[data-wxday]"); if (el && !e.target.closest(".wxd")) wxDayPick(el); });
+  document.addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target.getAttribute && e.target.getAttribute("data-wxday")) { e.preventDefault(); wxDayPick(e.target); } });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) wxLoad(false); });
   setInterval(function () { if (!document.hidden) wxLoad(false); }, 30 * 60 * 1000);
   setTimeout(function () { wxLoad(false); }, 1500);
@@ -3776,7 +3814,7 @@ html { scroll-padding-top: 96px; }
     html += '<p class="wx-sub">Wind ' + Math.round(c.wind_speed_10m) + " mph, gusts " + Math.round(c.wind_gusts_10m) + " mph. Humidity " + Math.round(c.relative_humidity_2m) + "%. Sunrise " + tm(d.sunrise[0]) + ", sunset " + tm(d.sunset[0]) + ".</p>";
     var nowKey = (wxData.current && wxData.current.time ? wxData.current.time.slice(0, 13) : h.time[0].slice(0, 13)) + ":00", i0 = Math.max(0, h.time.indexOf(nowKey));
     html += "<h3>Next 24 hours</h3><div class=\"wxp-hours\">" + h.time.slice(i0, i0 + 24).map(function (t, k) { var i = i0 + k, w = wxInfo(h.weather_code[i], 1); return "<div><b>" + (k === 0 ? "Now" : hr12(t)) + "</b><span aria-hidden=\"true\">" + w.i + "</span><strong>" + Math.round(h.temperature_2m[i]) + "°</strong><em>" + h.precipitation_probability[i] + "%</em></div>"; }).join("") + "</div>";
-    html += "<h3>This week</h3>" + d.time.map(function (ds, i) { var w = wxInfo(d.weather_code[i], 1); return '<div class="wxp-day"><span>' + (i === 0 ? "Today" : esc(parseD(ds).toLocaleDateString(undefined, { weekday: "short" }))) + '</span><span aria-hidden="true">' + w.i + "</span><span>" + esc(w.t) + "<small>Rain " + d.precipitation_probability_max[i] + "%, wind up to " + Math.round(d.wind_speed_10m_max[i]) + " mph" + (d.rain_sum[i] > 0 ? ", " + d.rain_sum[i].toFixed(2) + " in" : "") + "</small></span><b>" + Math.round(d.temperature_2m_max[i]) + "° / " + Math.round(d.temperature_2m_min[i]) + "°</b></div>"; }).join("");
+    html += "<h3>This week</h3>" + d.time.map(function (ds, i) { var w = wxInfo(d.weather_code[i], 1); return '<div class="wxp-day' + (wxSel === ds ? " sel" : "") + '" role="button" tabindex="0" aria-expanded="' + (wxSel === ds) + '" data-wxday="' + ds + '"><span>' + (i === 0 ? "Today" : esc(parseD(ds).toLocaleDateString(undefined, { weekday: "short" }))) + '</span><span aria-hidden="true">' + w.i + "</span><span>" + esc(w.t) + "<small>Rain " + d.precipitation_probability_max[i] + "%, wind up to " + Math.round(d.wind_speed_10m_max[i]) + " mph" + (d.rain_sum[i] > 0 ? ", " + d.rain_sum[i].toFixed(2) + " in" : "") + "</small></span><b>" + Math.round(d.temperature_2m_max[i]) + "° / " + Math.round(d.temperature_2m_min[i]) + "°</b></div>" + (wxSel === ds ? wxDayHtml(i) : ""); }).join("");
     var gl = upcomingGames().map(function (g) { return { g: g, i: wxHourAt(g.date, g.time) }; }).filter(function (x) { return x.i >= 0; });
     if (gl.length) html += "<h3>Your games</h3>" + gl.map(function (x) {
       return wxCondHtml(x.g, x.i);
