@@ -514,11 +514,11 @@ h1 span { display: inline; }
 .tiles.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 720px) { .tiles.five { grid-template-columns: repeat(4, minmax(0, 1fr)); } .logo { width: 60px; height: 60px; } }
 @media (min-width: 960px) {
-  .nav { top: 0; right: auto; bottom: 0; width: 220px; flex-direction: column; justify-content: flex-start; gap: 4px; padding: 24px 14px; border-top: 0; border-right: 1px solid var(--panel-line); }
+  .nav { top: 0; right: auto; bottom: 0; width: 220px; overflow-y: auto; flex-direction: column; justify-content: flex-start; gap: 4px; padding: 24px 14px; border-top: 0; border-right: 1px solid var(--panel-line); }
   .nav a { flex: 0 0 auto; grid-auto-flow: column; justify-content: start; align-items: center; gap: 12px; font: 600 16px/1 var(--body); padding: 13px 14px; }
   .nav a[aria-current="page"] { background: var(--blue); color: var(--on-accent); }
   .nav .desk { display: grid; }
-  .nav-foot { display: block; margin-top: auto; color: var(--muted); font: italic 700 22px/1.1 var(--display); padding: 12px 14px; }
+  .nav-foot { display: block; margin-top: auto; position: sticky; bottom: -24px; z-index: 2; color: var(--muted); font: italic 700 22px/1.1 var(--display); padding: 14px 14px 24px; margin-bottom: -24px; background: var(--panel); border-top: 1px solid var(--panel-line); }
   body { padding-left: calc(220px + 32px); padding-bottom: 56px; padding-block-start: 24px; }
   .top-search { display: block; width: 300px; }
   .tiles.five { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
@@ -792,7 +792,7 @@ html { scroll-padding-top: 96px; }
   .nav a[aria-current="page"]::after { display: none; }
   .nav a[aria-current="page"] svg { transform: none; }
   .nav .desk { display: grid; }
-  .nav-foot { display: block; margin-top: auto; color: var(--muted); font: italic 700 20px/1.1 var(--display); padding: 12px 14px 0; }
+  .nav-foot { display: block; margin-top: auto; position: sticky; bottom: calc(-20px - env(safe-area-inset-bottom, 0px)); z-index: 2; color: var(--muted); font: italic 700 20px/1.1 var(--display); padding: 14px 14px calc(20px + env(safe-area-inset-bottom, 0px)); margin-bottom: calc(-20px - env(safe-area-inset-bottom, 0px)); background: var(--panel); border-top: 1px solid var(--panel-line); }
   .nav-close { display: inline-grid; place-items: center; align-self: flex-end; width: 40px; height: 40px; min-height: 40px; border-radius: 12px; border: 1.5px solid var(--panel-line); background: transparent; color: var(--fg); padding: 0; margin-bottom: 6px; cursor: pointer; }
   .nav-scrim { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 55; opacity: 0; pointer-events: none; transition: opacity 0.22s ease; }
   .nav-scrim.open { opacity: 1; pointer-events: auto; }
