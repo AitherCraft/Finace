@@ -1004,6 +1004,18 @@ html { scroll-padding-top: 96px; }
       </div>
       <p class="note">A game turns Overdue after 7 days without full payment.</p>
     </section>
+    <section class="panel" id="pp-card" aria-labelledby="h-pp" hidden>
+      <div class="panel-head"><h2 id="h-pp">Payment prediction</h2><span class="chip" id="pp-chip"></span></div>
+      <div id="pp-warn"></div>
+      <div class="wish-stats" id="pp-tiles"></div>
+      <h3>When payments usually arrive</h3>
+      <div id="pp-payers"></div>
+      <div id="pp-late-wrap"><h3>Late compared to normal</h3><div id="pp-late"></div></div>
+      <div class="panel-head"><h3>AI outlook</h3><button class="mini" type="button" id="pp-ai-btn">Ask AI</button></div>
+      <div id="pp-ai" class="fc-ai"></div>
+      <p class="msg" id="pp-msg" role="status"></p>
+      <p class="note">Based on how long past games took to get paid (from the date you marked them paid). The more games you mark paid, the better this gets.</p>
+    </section>
     <section class="panel" id="pc-compose" hidden aria-labelledby="h-pc-compose">
       <h2 id="h-pc-compose">Request payment</h2>
       <p class="note">A friendly message listing what is still owed. Edit it, then send it your way. Nothing is sent automatically.</p>
@@ -2503,6 +2515,63 @@ html { scroll-padding-top: 96px; }
     if (b.hasAttribute("data-lk-keep")) { lkConfirm = null; renderLocker(); return; }
     if (b.hasAttribute("data-lk-del")) { id = b.getAttribute("data-lk-del"); lkConfirm = null; if (lkEditId === id) lkFormReset(); lkSave(locker.filter(function (x) { return x.id !== id; }), "Gear removed."); }
   });
+  /* Payment prediction: when each payer usually pays, expected money this week, late alerts, AI write-up */
+  function ppMed(a) { a = a.slice().sort(function (x, y) { return x - y; }); var m = a.length >> 1; return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2); }
+  function ppPayer(g) { return g.assignor || g.assoc || ""; }
+  function ppCalc() {
+    var t = todayStr(), by = {}, all = [];
+    live().forEach(function (g) {
+      if (g.paid === false || !g.paidOn) return;
+      var d = Math.round((pdate(g.paidOn) - pdate(g.endDate && g.endDate > g.date ? g.endDate : g.date)) / 864e5); if (!isFinite(d) || d < 0 || d > 180) return;
+      var k = ppPayer(g); (by[k] = by[k] || []).push(d); all.push(d);
+    });
+    var overall = all.length >= 3 ? ppMed(all) : null, payers = Object.keys(by).filter(function (k) { return k && by[k].length >= 2; }).map(function (k) { return { name: k, n: by[k].length, med: ppMed(by[k]) }; }).sort(function (a, b) { return b.n - a.n; });
+    function typical(g) { var a = by[ppPayer(g)]; return a && a.length >= 2 ? ppMed(a) : overall; }
+    var sum = { pending: 0, week: 0, later: 0, late: 0, noest: 0 }, lateL = [], weekL = [], rows = {};
+    owedGames().forEach(function (g) {
+      var c = gOwedC(g), med = typical(g), ago = -dayDiff(g.endDate && g.endDate > g.date ? g.endDate : g.date); sum.pending += c;
+      if (med === null) { sum.noest += c; rows[g.id] = null; return; }
+      var tol = Math.max(3, Math.ceil(med * 0.25)), exp = ymd(new Date(pdate(g.endDate && g.endDate > g.date ? g.endDate : g.date).getTime() + med * 864e5)); rows[g.id] = exp;
+      if (ago > med + tol) { sum.late += c; lateL.push({ g: g, c: c, by: ago - med, med: med, ago: ago }); }
+      else if (exp <= ymd(new Date(pdate(t).getTime() + 6 * 864e5))) { sum.week += c; weekL.push({ g: g, c: c, exp: exp }); }
+      else sum.later += c;
+    });
+    lateL.sort(function (a, b) { return b.by - a.by; });
+    return { sum: sum, payers: payers, overall: overall, late: lateL, week: weekL, exp: rows, samples: all.length };
+  }
+  var PP_KEY = "rf-ppai-v1", ppAiC = null, ppBusy = false, ppBackoff = 0;
+  try { ppAiC = JSON.parse(localStorage.getItem(PP_KEY) || "null"); if (!ppAiC || typeof ppAiC.text !== "string") ppAiC = null; } catch (e) { ppAiC = null; }
+  function ppFacts(P) {
+    if (!P) return null; var d = function (c) { return Math.round(c) / 100; };
+    return { totalPending: d(P.sum.pending), expectedThisWeek: d(P.sum.week), expectedLater: d(P.sum.later), runningLate: d(P.sum.late), noEstimate: d(P.sum.noest), typicalDaysToGetPaid: P.overall, gamesLearnedFrom: P.samples,
+      payers: P.payers.slice(0, 6).map(function (x) { return { payer: x.name, usuallyPaysAfterDays: x.med, games: x.n }; }),
+      lateGames: P.late.slice(0, 5).map(function (x) { return { game: gTitle(x.g), payer: ppPayer(x.g), owed: d(x.c), daysSinceGame: x.ago, usuallyPaidAfterDays: x.med, daysLate: x.by }; }) };
+  }
+  function ppAskAi(manual) {
+    var msg = $("pp-msg"); if (ppBusy) return;
+    if (!sbSession) { if (manual) { msg.textContent = "Sign in to use AI."; msg.className = "msg err"; } return; }
+    if (!manual && (Date.now() < ppBackoff || (ppAiC && Date.now() - ppAiC.t < 12 * 3600 * 1000))) return;
+    var P = ppCalc(); if (!P.sum.pending) return; ppBusy = true; $("pp-ai-btn").disabled = true; if (manual) { msg.className = "msg"; msg.textContent = "Thinking..."; }
+    var facts; try { facts = aiFacts(); } catch (x) { facts = {}; }
+    facts.paymentPrediction = ppFacts(P);
+    aiCall({ mode: "chat", facts: facts, messages: [{ role: "user", text: "Using my paymentPrediction numbers, write 3 or 4 short sentences: how much money I can expect to be paid this week, how much is pending in total, which payer is running late compared to normal (name them and say how many days late), and one practical next step such as sending a reminder. Use only the numbers provided." }] }).then(function (j) {
+      ppAiC = { t: Date.now(), text: String(j.reply).slice(0, 1200) }; try { localStorage.setItem(PP_KEY, JSON.stringify(ppAiC)); } catch (x) { /* full */ } msg.className = "msg"; msg.textContent = "Written by AI from your numbers. Double-check anything important.";
+    }, function (err) { ppBackoff = Date.now() + 30 * 60 * 1000; if (manual) { msg.textContent = String(err.message || err); msg.className = "msg err"; } else msg.textContent = ""; }).then(function () { ppBusy = false; $("pp-ai-btn").disabled = false; renderPayPred(true); });
+  }
+  function renderPayPred(noAuto) {
+    var card = $("pp-card"); if (!card) return;
+    var P; try { P = ppCalc(); } catch (e) { P = null; }
+    card.hidden = !P || (!P.sum.pending && !P.samples); if (card.hidden) return;
+    var ch = $("pp-chip"); ch.textContent = P.late.length ? P.late.length + " late" : P.sum.pending ? "On schedule" : "All paid"; ch.className = "chip " + (P.late.length ? "bad" : "ok");
+    $("pp-warn").innerHTML = P.late.length ? '<div class="fc-warn"><strong>' + plural(P.late.length, "game") + " " + (P.late.length === 1 ? "is" : "are") + " late compared to normal.</strong> " + fmt(P.sum.late) + " is taking longer than these payers usually take.</div>" : "";
+    $("pp-tiles").innerHTML = [["⏳ Pending money", fmt(P.sum.pending)], ["📥 Expected this week", fmt(P.sum.week)], ["🗓️ Expected later", fmt(P.sum.later)], [P.sum.noest ? "❔ No estimate yet" : "⚠️ Running late", fmt(P.sum.noest ? P.sum.noest : P.sum.late)]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(x[1]) + "</strong></div>"; }).join("");
+    $("pp-payers").innerHTML = P.payers.length || P.overall !== null ? (P.overall !== null ? '<div class="fc-row"><b>All</b><div><span>Typical across everyone</span><small>' + plural(P.samples, "paid game") + ' learned from</small></div><strong>~' + P.overall + "d</strong></div>" : "") + P.payers.slice(0, 5).map(function (x) { return '<div class="fc-row"><b>' + esc(x.name.slice(0, 8)) + "</b><div><span>" + esc(x.name) + "</span><small>" + plural(x.n, "game") + ' paid</small></div><strong>~' + x.med + "d</strong></div>"; }).join("") : '<p class="empty">Mark a few games as paid (the date you mark them is remembered) and RefVault learns how long each payer takes.</p>';
+    $("pp-late-wrap").hidden = !P.late.length;
+    $("pp-late").innerHTML = P.late.slice(0, 6).map(function (x) { return '<div class="fc-row"><b>' + esc(mdDate(x.g.date)) + "</b><div><span>" + esc(gTitle(x.g)) + "</span><small>" + esc(ppPayer(x.g) || "No payer") + " usually pays in " + x.med + " days. It has been " + x.ago + ".</small></div><strong class=\"fc-down\">" + fmt(x.c) + "</strong></div>"; }).join("");
+    $("pp-ai").textContent = ppAiC ? ppAiC.text : "";
+    if (!noAuto && !card.closest("[hidden]") && sbSession && P.sum.pending) ppAskAi(false);
+  }
+  document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#pp-ai-btn")) ppAskAi(true); });
   /* Smart income forecast: predictions from past games and scheduled games, with an AI write-up */
   function fcCalc() {
     var S = seasonInfo(); if (S.none) return null;
@@ -2714,13 +2783,14 @@ html { scroll-padding-top: 96px; }
     list.forEach(function (g) { var k = g.assoc || "No league", a = g.assignor || "No assignor", v = gOwedC(g); by[k] = (by[k] || 0) + v; n[k] = (n[k] || 0) + gN(g); byA[a] = (byA[a] || 0) + v; nA[a] = (nA[a] || 0) + gN(g); });
     var rowsOf = function (m, c) { var keys = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }); return keys.length ? keys.map(function (k) { return '<div class="by-row"><span>' + esc(k) + " · " + plural(c[k], "game") + "</span><b>" + fmt(m[k]) + "</b></div>"; }).join("") : '<p class="note">Nothing owed for these filters.</p>'; };
     $("owed-by").innerHTML = rowsOf(by, n); $("owed-by2").innerHTML = rowsOf(byA, nA);
+    var ppRows = null; try { ppRows = ppCalc().exp; } catch (e) { ppRows = null; }
     var shown = pcTab === "paid" ? paidL : list;
     $("h-owed-list").textContent = pcTab === "paid" ? "Paid games" : "Unpaid and partly paid games";
     $("owed-list").innerHTML = shown.length ? shown.map(function (g) {
       var st = gStatus(g), p = gPay(g), days = -dayDiff(g.date), meta = [mdDate(g.date), g.assoc, g.assignor ? "Assignor " + g.assignor : ""].filter(Boolean).join(" · ");
       if (p === "paid") return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub"><span class="badge paid">Paid</span><span>' + esc(meta) + "</span></div><div class=\"a-sub\"><span>" + (g.paidOn ? "Paid " + esc(mdDate(g.paidOn)) : "Date paid not recorded") + '</span><button class="mini" type="button" data-edit="' + esc(g.id) + '">Edit</button><button class="mini" type="button" data-markunpaid="' + esc(g.id) + '">Undo</button></div></div><span class="amt">' + fmt(gNet(g)) + "</span></li>";
       var badge = st === "overdue" ? '<span class="badge overdue">Overdue</span>' : p === "partial" ? '<span class="badge partial">Partial</span>' : '<span class="badge pending">Unpaid</span>';
-      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub">' + badge + "<span>" + esc(meta) + " · " + days + (days === 1 ? " day" : " days") + ' ago</span></div>' +
+      return '<li class="owed-row"><div><strong>' + esc(gTitle(g)) + '</strong><div class="a-sub">' + badge + "<span>" + esc(meta) + " · " + days + (days === 1 ? " day" : " days") + ' ago' + (ppRows && ppRows[g.id] ? " · usually paid around " + mdDate(ppRows[g.id]) : "") + '</span></div>' +
         (p === "partial" ? '<div class="a-sub"><span>Received ' + fmt(gRcvd(g)) + " of " + fmt(gNet(g)) + (g.paidOn ? " · last payment " + esc(mdDate(g.paidOn)) : "") + "</span></div>" : "") +
         (g.remindedOn ? '<div class="a-sub"><span>Reminder sent ' + esc(mdDate(g.remindedOn)) + "</span></div>" : "") +
         '<div class="a-sub"><button class="mini" type="button" data-markpaid="' + esc(g.id) + '">Mark paid</button><button class="mini" type="button" data-partial="' + esc(g.id) + '">Partial</button><button class="mini" type="button" data-edit="' + esc(g.id) + '">Edit</button></div></div><span class="amt">' + fmt(gOwedC(g)) + "</span></li>";
@@ -3018,7 +3088,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3518,6 +3588,7 @@ html { scroll-padding-top: 96px; }
       var age = Math.round((pdate(t) - pdate(g.date)) / 864e5); if (age < nfPrefs.payDays) return;
       out.push({ id: "pay:" + g.id, type: "pay", title: "Payment reminder", body: gTitle(g) + " on " + dayWord(g.date) + " is still unpaid (" + fmt(gOwedC(g)) + ", " + age + " days)." });
     });
+    if (nfPrefs.pay) { var PPn; try { PPn = ppCalc(); } catch (e) { PPn = null; } if (PPn) PPn.late.slice(0, 5).forEach(function (x) { out.push({ id: "late:" + x.g.id, type: "pay", title: "Payment later than usual", body: (ppPayer(x.g) || "This payer") + " usually pays in about " + x.med + " days. " + gTitle(x.g) + " (" + fmt(x.c) + ") has been " + x.ago + "." }); }); }
     if (nfPrefs.goal && goal > 0) {
       var gC = Math.round(goal * 100), pct = Math.floor(Math.max(0, totalsFor(periodRange("month")).net) / gC * 100);
       [50, 75, 100].forEach(function (m) { if (pct >= m) out.push({ id: "goal:" + t.slice(0, 7) + ":" + m, type: "goal", title: m === 100 ? "Monthly goal reached!" : "Goal milestone: " + m + "%", body: m === 100 ? "You hit your " + fmt(gC) + " goal this month." : "You are " + m + "% of the way to your " + fmt(gC) + " monthly goal." }); });
@@ -3653,7 +3724,7 @@ html { scroll-padding-top: 96px; }
       season: S.none ? null : { inSeason: !S.off, inSeasonWeekly: S.inW === null ? null : d(S.inW), offSeasonWeekly: S.offW === null ? null : d(S.offW), quietMonths: S.quietMoy.map(function (m) { return MON[m - 1]; }), recentSeasons: sn.slice(-4).map(function (x) { return { name: x.name, earned: d(x.net), games: x.n, current: !!x.cur }; }) },
       wishList: wishes.slice(0, 8).map(function (w) { return { item: w.what, price: Number(w.amount) || 0, bucket: w.bucket, affordableNow: wishReadyList.some(function (r) { return r.id === w.id; }) }; }),
       averagePayPerGame: d(aiAvgGame()), howMuchEachBucketGetsFromAnAverageGame: BUCKETS.map(function (b, i) { return { bucket: b.name, dollars: d(aiAvgGame() * (split[b.k] || 0) / 100) }; }),
-      seasonCompare: aiSeasonCmp(), weather: aiWeather(), incomeForecast: (function () { try { return fcFacts(fcCalc()); } catch (e) { return null; } })()
+      seasonCompare: aiSeasonCmp(), weather: aiWeather(), paymentPrediction: (function () { try { return ppFacts(ppCalc()); } catch (e) { return null; } })(), incomeForecast: (function () { try { return fcFacts(fcCalc()); } catch (e) { return null; } })()
     };
   }
   function aiAvgGame() { var td = todayStr(), n = 0, c = 0; live().forEach(function (g) { if (g.date <= td) { n += gN(g); c += gNet(g); } }); return n ? c / n : 0; }
