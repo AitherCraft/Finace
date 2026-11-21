@@ -95,6 +95,12 @@ h1 span { display: block; }
 
 /* Summary tiles */
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.eye-btn { grid-column: 1 / -1; justify-self: end; margin-bottom: -4px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--panel-line); background: rgba(6, 13, 28, 0.55); color: var(--fg); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.eye-btn .e-off { display: none; }
+.tiles.five .eye-btn { margin-top: -54px; }
+html.mh .eye-btn .e-on { display: none; } html.mh .eye-btn .e-off { display: block; }
+html.mh .tile .t-val, html.mh .tile .t-d { filter: blur(9px); -webkit-user-select: none; user-select: none; pointer-events: none; }
+.tiles { }
 .tile {
   background: linear-gradient(135deg, var(--c-soft), transparent 65%), var(--panel);
   border: 1px solid var(--c-line);
@@ -899,6 +905,7 @@ html { scroll-padding-top: 96px; }
     </section>
 
     <section class="tiles five" data-card="tiles" aria-label="Summary">
+      <button class="eye-btn" type="button" data-eye aria-pressed="false" aria-label="Hide money amounts"><svg class="e-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="e-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.5 10.5 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.2M9.9 9.9a3 3 0 004.2 4.2"/></svg></button>
       <div class="tile t-green"><div class="t-head"><span class="ic" aria-hidden="true">$</span><span class="t-label">Today's Earnings</span></div><div class="t-val" id="h-today">$0.00</div><div class="t-d" id="h-today-d"></div></div>
       <div class="tile t-blue"><div class="t-head"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 17l5-5 4 4 7-8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span class="t-label">Total Earned</span></div><div class="t-val" id="h-total">$0.00</div><div class="t-d" id="h-total-d"></div></div>
       <div class="tile t-orange"><div class="t-head"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" stroke="#fff" stroke-width="2.4" fill="none"/><path d="M12 7.5V12l3 2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></span><span class="t-label">Owed to You</span></div><div class="t-val" id="h-owed">$0.00</div><div class="t-d" id="h-owed-d"></div></div>
@@ -1159,6 +1166,7 @@ html { scroll-padding-top: 96px; }
       <p class="note">Predictions come from your past games and the games you have scheduled. They are estimates, not promises.</p>
     </section>
     <section class="tiles" aria-label="Summary">
+      <button class="eye-btn" type="button" data-eye aria-pressed="false" aria-label="Hide money amounts"><svg class="e-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="e-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.5 10.5 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.2M9.9 9.9a3 3 0 004.2 4.2"/></svg></button>
       <div class="tile t-green">
         <div class="t-head"><span class="ic" aria-hidden="true">$</span><span class="t-label">Total Earnings</span></div>
         <div class="t-val" id="t-earn">$0.00</div>
@@ -3892,6 +3900,13 @@ html { scroll-padding-top: 96px; }
   document.addEventListener("visibilitychange", function () { if (!document.hidden) wxLoad(false); });
   setInterval(function () { if (!document.hidden) wxLoad(false); }, 30 * 60 * 1000);
   setTimeout(function () { wxLoad(false); }, 1500);
+  /* Hide money amounts (eye button on the summary tiles), remembered on this device */
+  (function () {
+    var K = "rf-mh-v1", on = false; try { on = localStorage.getItem(K) === "1"; } catch (e) { /* private mode */ }
+    function apply() { document.documentElement.classList.toggle("mh", on); Array.prototype.forEach.call(document.querySelectorAll("[data-eye]"), function (b) { b.setAttribute("aria-pressed", on ? "true" : "false"); b.setAttribute("aria-label", on ? "Show money amounts" : "Hide money amounts"); b.title = on ? "Show amounts" : "Hide amounts"; }); }
+    document.addEventListener("click", function (e) { if (!e.target.closest || !e.target.closest("[data-eye]")) return; on = !on; try { localStorage.setItem(K, on ? "1" : "0"); } catch (x) { /* ok */ } apply(); });
+    apply();
+  })();
   /* Sticky header: stays at the top on every page and shrinks a little once you scroll */
   (function () {
     var hero = document.querySelector("#main > .hero"), on = false; if (!hero) return;
