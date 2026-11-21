@@ -346,6 +346,7 @@ button.badge { cursor: pointer; min-height: 26px; }
 .has-photo { background-size: cover !important; background-position: center !important; color: transparent !important; }
 .ph-row { display: flex; align-items: center; gap: 14px; padding: 8px 0; } .ph-prev { width: 64px; height: 64px; } .ph-logo { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 1px solid var(--panel-line); }
 .ph-pick { cursor: pointer; display: inline-block; }
+.xi-row { display: grid; gap: 4px; padding: 8px 0; border-top: 1px solid var(--panel-line); } .xi-row > div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; } .xi-row small { color: var(--muted); font-size: 12px; }
 .szi { margin-top: 12px; display: grid; gap: 8px; } .szi h3 { margin: 0; }
 .szi-hd { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; } .szi-hd span { color: var(--muted); font-size: 13px; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
@@ -1209,6 +1210,7 @@ html { scroll-padding-top: 96px; }
 
   <div class="view" data-view="reports" hidden>
     <div class="row"><div class="periods" id="periods" role="group" aria-label="Time period"></div></div>
+    <section class="panel" id="xi-card" aria-labelledby="h-xi" hidden><div class="panel-head"><h2 id="h-xi">Expense insights</h2><span class="chip" id="xi-chip"></span></div><div id="xi-body"></div></section>
     <section class="panel" id="fc-card" aria-labelledby="h-fc" hidden>
       <div class="panel-head"><h2 id="h-fc">Income forecast</h2><span class="chip" id="fc-chip"></span></div>
       <div id="fc-warn"></div>
@@ -3278,7 +3280,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3675,6 +3677,63 @@ html { scroll-padding-top: 96px; }
     else { var j = i + (b.hasAttribute("data-mw-up") ? -1 : 1); if (j < 0 || j >= list.length) return; var t = list[i]; list[i] = list[j]; list[j] = t; }
     mwSet(list);
   });
+
+  /* Smart Expense Insights: categories, this month vs last month, equipment warning, cost per game */
+  function xiCalc() {
+    var t = todayStr(), y = +t.slice(0, 4), m = +t.slice(5, 7), day = +t.slice(8, 10);
+    var cs = ymd(new Date(y, m - 1, 1)), ps = ymd(new Date(y, m - 2, 1)), pend = new Date(y, m - 1, 0).getDate(), pe = ymd(new Date(y, m - 2, Math.min(day, pend))), pfull = ymd(new Date(y, m - 1, 0));
+    var d90 = ymd(new Date(pdate(t).getTime() - 90 * 864e5));
+    function inR(d, a, b) { return !!d && d >= a && d <= b; }
+    function calc(a, b) {
+      var c = { game: 0, equip: 0, spend: 0, give: 0, save: 0, invest: 0 }, games = 0, fees = 0;
+      live().forEach(function (g) { if (g.date > t || !inR(g.date, a, b)) return; c.game += toCents(g.expenses); games += gN(g); fees += toCents(g.fee); });
+      locker.forEach(function (it) { if (inR(it.bought, a, b)) c.equip += Math.round((Number(it.cost) || 0) * 100); });
+      data.spending.forEach(function (x) { if (!inR(x.date, a, b)) return; var k = { donate: "give", save: "save", invest: "invest" }[x.bucket] || "spend"; c[k] += toCents(x.amount); });
+      var tot = c.game + c.equip + c.spend + c.give + c.save + c.invest, gear = c.game + c.equip;
+      return { c: c, tot: tot, games: games, fees: fees, cpg: games ? Math.round(gear / games) : null };
+    }
+    var cur = calc(cs, t), prev = calc(ps, pe), prevFull = calc(ps, pfull), all = calc("0000-01-01", t), r90 = calc(d90, t);
+    var names = { game: "Game expenses", equip: "Equipment", spend: "Personal spending", give: "Giving", save: "Taken from Savings", invest: "Taken from Investing" };
+    var keys = Object.keys(names);
+    var useC = cur.tot > 0 ? cur : (prevFull.tot > 0 ? prevFull : all), useLabel = cur.tot > 0 ? "this month" : prevFull.tot > 0 ? "last month" : "all time";
+    var top = keys.slice().sort(function (a, b) { return useC.c[b] - useC.c[a]; })[0];
+    var warn = null;
+    if (r90.c.equip >= 5000 && r90.fees > 0) {
+      var sh = r90.c.equip / r90.fees;
+      if (sh >= 0.2) warn = { lvl: sh >= 0.35 ? "high" : "warn", pct: Math.round(sh * 100), amt: r90.c.equip };
+    }
+    if (!warn && cur.c.equip >= 5000 && prev.c.equip > 0 && cur.c.equip >= prev.c.equip * 2) warn = { lvl: "warn", dbl: true, amt: cur.c.equip, prev: prev.c.equip };
+    return { cur: cur, prev: prev, prevFull: prevFull, all: all, names: names, keys: keys, use: useC, useLabel: useLabel, top: top, warn: warn };
+  }
+  function xiDelta(a, b, lowGood) {
+    if (!b) return "";
+    var pc = Math.round((a - b) / b * 100); if (pc === 0) return ' <span class="note">same as last month</span>';
+    var good = lowGood ? pc < 0 : pc > 0;
+    return ' <span class="' + (good ? "up" : "down") + '">' + (pc > 0 ? "+" : "") + pc + "% vs last month</span>";
+  }
+  function renderExpIns() {
+    var box = $("xi-body"); if (!box) return;
+    var X = xiCalc(), h = "";
+    if (!X.all.tot) { $("xi-card").hidden = true; return; }
+    $("xi-card").hidden = false;
+    if (X.warn) {
+      h += '<div class="szi-hd ' + (X.warn.lvl === "high" ? "bad" : "warn") + '"><b>' + (X.warn.lvl === "high" ? "Equipment spending is very high" : "Equipment spending is getting high") + '</b><span>' +
+        (X.warn.dbl ? "You spent " + fmt(X.warn.amt) + " on gear this month, more than double last month (" + fmt(X.warn.prev) + ")." : fmt(X.warn.amt) + " on gear in the last 90 days is " + X.warn.pct + "% of what you were paid in that time. Check the Equipment Locker before buying more.") + '</span></div>';
+    }
+    var U = X.use, tot = U.tot || 1;
+    h += '<div class="wal-grid"><div><span>Biggest category</span><b>' + esc(X.names[X.top]) + '</b><small>' + fmt(U.c[X.top]) + ", " + Math.round(U.c[X.top] / tot * 100) + "% of " + X.useLabel + '</small></div>' +
+      '<div><span>Spent this month</span><b>' + fmt(X.cur.tot) + '</b><small>' + (X.prev.tot ? fmt(X.prev.tot) + " by this day last month" + xiDelta(X.cur.tot, X.prev.tot, true) : (X.prevFull.tot ? "Last month in full: " + fmt(X.prevFull.tot) : "Nothing logged last month")) + '</small></div>' +
+      '<div><span>Cost per game</span><b>' + (X.cur.cpg !== null ? fmt(X.cur.cpg) : X.all.cpg !== null ? fmt(X.all.cpg) : "—") + '</b><small>' + (X.cur.cpg !== null ? "this month" + (X.prev.cpg !== null ? xiDelta(X.cur.cpg, X.prev.cpg, true) : "") : "all time") + (X.all.cpg !== null && X.cur.cpg !== null ? " · " + fmt(X.all.cpg) + " all time" : "") + '</small></div>' +
+      '<div><span>Costs vs pay</span><b>' + (X.all.fees ? Math.round((X.all.c.game + X.all.c.equip) / X.all.fees * 100) + "%" : "—") + '</b><small>game costs and gear as a share of fees, all time</small></div></div>';
+    h += '<h3>Where it went (' + X.useLabel + ')</h3>' + X.keys.filter(function (k) { return U.c[k] > 0; }).sort(function (a, b) { return U.c[b] - U.c[a]; }).map(function (k) {
+      var pc = Math.round(U.c[k] / tot * 100), pv = X.useLabel === "this month" ? X.prev.c[k] : 0;
+      return '<div class="xi-row"><div><span>' + esc(X.names[k]) + '</span><b>' + fmt(U.c[k]) + '</b></div><div class="meter"><span style="width:' + pc + '%;background:' + (k === "equip" ? "var(--orange)" : "var(--blue)") + '"></span></div><small>' + pc + "% of total" + (pv ? xiDelta(U.c[k], pv, true) : "") + '</small></div>';
+    }).join("");
+    h += '<p class="note">Equipment counts purchases in your Equipment Locker by purchase date. If you also log a gear purchase as spending, it counts twice.</p>';
+    box.innerHTML = h;
+    $("xi-chip").textContent = X.warn ? "Gear alert" : fmt(X.cur.tot) + " this month";
+    $("xi-chip").className = "chip " + (X.warn ? "bad" : "ok");
+  }
   /* Seasonal mode: detect the off-season, estimate reduced income, compare seasons */
   var curSeasonMode = "auto", MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function seasonName(ym) { var p = ym.split("-"), m = +p[1]; return (m >= 8 && m <= 11 ? "Fall" : m === 12 || m <= 2 ? "Winter" : m <= 6 ? "Spring" : "Summer") + " " + (m <= 2 ? +p[0] - 1 : p[0]); }
@@ -3980,7 +4039,7 @@ html { scroll-padding-top: 96px; }
       season: S.none ? null : { inSeason: !S.off, inSeasonWeekly: S.inW === null ? null : d(S.inW), offSeasonWeekly: S.offW === null ? null : d(S.offW), quietMonths: S.quietMoy.map(function (m) { return MON[m - 1]; }), recentSeasons: sn.slice(-4).map(function (x) { return { name: x.name, earned: d(x.net), games: x.n, current: !!x.cur }; }) },
       wishList: wishes.slice(0, 8).map(function (w) { return { item: w.what, price: Number(w.amount) || 0, bucket: w.bucket, affordableNow: wishReadyList.some(function (r) { return r.id === w.id; }) }; }),
       averagePayPerGame: d(aiAvgGame()), howMuchEachBucketGetsFromAnAverageGame: BUCKETS.map(function (b, i) { return { bucket: b.name, dollars: d(aiAvgGame() * (split[b.k] || 0) / 100) }; }),
-      seasonCompare: aiSeasonCmp(), weather: aiWeather(), paymentPrediction: (function () { try { return ppFacts(ppCalc()); } catch (e) { return null; } })(), incomeForecast: (function () { try { return fcFacts(fcCalc()); } catch (e) { return null; } })()
+      seasonCompare: aiSeasonCmp(), expenseInsights: (function () { try { var X = xiCalc(); return { spentThisMonth: X.cur.tot / 100, spentSamePointLastMonth: X.prev.tot / 100, biggestCategory: X.names[X.top], costPerGameThisMonth: X.cur.cpg === null ? null : X.cur.cpg / 100, costPerGameAllTime: X.all.cpg === null ? null : X.all.cpg / 100, equipmentAlert: !!X.warn }; } catch (e) { return null; } })(), weather: aiWeather(), paymentPrediction: (function () { try { return ppFacts(ppCalc()); } catch (e) { return null; } })(), incomeForecast: (function () { try { return fcFacts(fcCalc()); } catch (e) { return null; } })()
     };
   }
   function aiAvgGame() { var td = todayStr(), n = 0, c = 0; live().forEach(function (g) { if (g.date <= td) { n += gN(g); c += gNet(g); } }); return n ? c / n : 0; }
