@@ -406,6 +406,7 @@ html[data-hide~="wish"] [data-card="wish"],
 html[data-hide~="bag"] [data-card="bag"],
 html[data-hide~="wallet"] [data-card="wallet"],
 html[data-hide~="ach"] [data-card="ach"],
+html[data-hide~="budget"] [data-card="budget"],
 html[data-hide~="mywid"] [data-card="mywid"],
 html[data-hide~="season"] [data-card="season"],
 html[data-hide~="insights"] [data-card="insights"],
@@ -620,6 +621,10 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .fc-ai { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px 12px; border-radius: var(--r-sm); background: rgba(46, 134, 255, 0.10); } .fc-ai:empty { display: none; }
 .fc-up { color: var(--green); } .fc-down { color: var(--red); }
 .game-note.recap { border-left: 3px solid var(--blue); padding-left: 10px; }
+.sb-top { margin-bottom: 8px; } .sb-sw { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; cursor: pointer; }
+.sb-ok b { color: var(--green); } .sb-warn b { color: var(--orange); } .sb-bad b { color: var(--red, #ff6b6b); }
+.sb-goal { display: grid; gap: 4px; padding: 8px 0; border-top: 1px solid var(--panel-line); } .sb-goal > div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; } .sb-goal small, .sb-sug small { color: var(--muted); font-size: 12px; }
+.sb-sug { display: grid; gap: 6px; justify-items: start; margin-top: 10px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--blue); font-size: 14px; }
 .wal-big { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--r-sm); background: linear-gradient(135deg, rgba(46,204,113,0.18), transparent 70%), var(--panel-2, rgba(255,255,255,0.04)); border: 1px solid rgba(46,204,113,0.4); margin-bottom: 10px; }
 .wal-big b { font: 800 30px/1.1 var(--display); } .wal-big span { color: var(--muted); font-size: 13px; }
 .wal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
@@ -969,6 +974,7 @@ html { scroll-padding-top: 96px; }
         <div class="row" id="wish-undo" hidden><button class="btn ghost" type="button" id="wish-undo-go">Undo purchase</button></div>
         </section>
         <section class="panel hc o2" id="wallet-card" data-card="wallet" aria-labelledby="h-wallet-home"><div class="panel-head"><h2 id="h-wallet-home">Referee Wallet</h2><a class="mini" href="#wallet">Details</a></div><div id="wallet-home"></div></section>
+        <section class="panel hc o2" id="sb-card" data-card="budget" aria-labelledby="h-sbh"><div class="panel-head"><h2 id="h-sbh">Smart Budget</h2><a class="mini" href="#money">Details</a></div><div id="sb-home"></div></section>
         <section class="panel hc o4" id="ach-card" data-card="ach" aria-labelledby="h-ach"><div class="panel-head"><h2 id="h-ach">Achievements</h2><span class="chip" id="ach-count"></span><a class="mini" href="#profile">All badges</a></div><div id="ach-home"></div></section>
         <section class="panel hc o6" id="bag-card" data-card="bag"><div class="panel-head"><h2>Ref Bag</h2><a class="mini" href="#inventory">View all</a></div><div id="bag-home"></div></section>
         <section class="panel hc o6" data-card="quick" aria-labelledby="h-quick">
@@ -1179,6 +1185,7 @@ html { scroll-padding-top: 96px; }
       <div class="planbar" id="planbar" aria-hidden="true"></div>
       <div class="bk-grid" id="buckets"></div>
     </section>
+    <section class="panel" aria-labelledby="h-sb"><div class="panel-head"><h2 id="h-sb">Smart Budget</h2><span class="chip" id="sb-chip"></span></div><div id="sb-page"></div></section>
     <section class="panel" aria-labelledby="h-moves">
       <h2 id="h-moves">Money Moves</h2>
       <div class="qa">
@@ -1448,6 +1455,7 @@ html { scroll-padding-top: 96px; }
         <label class="check" for="show-weather"><input id="show-weather" type="checkbox" data-ui>Weather</label>
         <label class="check" for="show-insights"><input id="show-insights" type="checkbox" data-ui>Insights</label>
         <label class="check" for="show-season"><input id="show-season" type="checkbox" data-ui>Season</label>
+        <label class="check" for="show-budget"><input id="show-budget" type="checkbox" data-ui>Smart Budget</label>
         <label class="check" for="show-ach"><input id="show-ach" type="checkbox" data-ui>Achievements</label>
         <label class="check" for="show-wallet"><input id="show-wallet" type="checkbox" data-ui>Referee wallet</label>
         <label class="check" for="show-bag"><input id="show-bag" type="checkbox" data-ui>Ref bag</label>
@@ -1705,13 +1713,13 @@ html { scroll-padding-top: 96px; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "ach", label: "Achievements" }, { k: "wallet", label: "Referee wallet" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }, { k: "weather", label: "Weather" }
+    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "ach", label: "Achievements" }, { k: "budget", label: "Smart Budget" }, { k: "wallet", label: "Referee wallet" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }, { k: "weather", label: "Weather" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { ach: true, wallet: true, tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
+    show: { budget: true, ach: true, wallet: true, tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
     widgets: [], season: "auto",
     name: "RefVault", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
@@ -2611,6 +2619,75 @@ html { scroll-padding-top: 96px; }
     $("wal-chip").textContent = W.od.length ? W.od.length + " overdue" : W.owed.length ? fmt(W.owedC) + " owed" : "All paid";
   }
   document.addEventListener("click", function (e) { if (!e.target.closest || !e.target.closest("[data-wal-remind]")) return; location.hash = "#owed"; setTimeout(function () { var b = $("pc-remind"); if (b && !b.disabled) b.click(); }, 350); });
+
+  /* Smart Budget Mode: safe to spend, spending limits, goal tracking, goal-based split suggestion */
+  var BM_KEY = "rf-sb-v1", bmMsgT = "";
+  function bmIsOn() { try { return localStorage.getItem(BM_KEY) !== "off"; } catch (e) { return true; } }
+  function bmCalc() {
+    var info = allTimeInfo(), W = walletCalc(), monthly = Math.round(info.nowWeekly * 4.33);
+    var tot = BUCKETS.reduce(function (t, b) { return t + (Number(split[b.k]) || 0); }, 0) || 100, spendPct = (Number(split.spend) || 0) / tot;
+    var si = 0; BUCKETS.forEach(function (b, n) { if (b.k === "spend") si = n; });
+    var spendLeft = info.a.out[si] - info.used.spend, r = periodRange("month"), mtd = 0;
+    data.spending.forEach(function (x) { if (x.date && x.date >= r[0] && x.date <= r[1] && (x.bucket || "spend") === "spend") mtd += toCents(x.amount); });
+    var limitM = Math.round(monthly * spendPct), reserve = 0, goals = [], need = { save: 0, invest: 0 };
+    sgoals.forEach(function (g) {
+      if (sgProgress(g) >= 100) return;
+      var d = g.deadline ? dayDiff(g.deadline) : null;
+      if (d !== null && d > 0 && (g.type === "equip" || g.type === "save" || g.type === "invest")) {
+        var rem = Math.max(0, Math.round((g.target - g.saved) * 100)), mo = Math.max(1, d / 30.4), m = rem / mo;
+        if (g.type === "equip") reserve += Math.round(m); else need[g.type] += m;
+      }
+      goals.push({ g: g, pct: sgProgress(g), pace: sgPace(g) });
+    });
+    reserve = Math.min(reserve, Math.max(0, spendLeft));
+    var safe = Math.max(0, spendLeft - W.pendExp - reserve);
+    var sug = null;
+    if (monthly > 0 && (need.save > 0 || need.invest > 0)) {
+      var cur = {}, nw = {}; BUCKETS.forEach(function (b) { cur[b.k] = Number(split[b.k]) || 0; nw[b.k] = cur[b.k]; });
+      var extra = 0;
+      ["save", "invest"].forEach(function (k) { var np = Math.ceil(need[k] / monthly * 100); if (np > cur[k]) { np = Math.min(np, cur[k] + 20); nw[k] = np; extra += np - cur[k]; } });
+      if (extra > 0) {
+        var take = Math.min(extra, Math.max(0, nw.spend - 10)); nw.spend -= take; var short = extra - take;
+        if (short > 0) { ["invest", "save"].forEach(function (k) { var back = Math.min(short, nw[k] - cur[k]); nw[k] -= back; short -= back; }); }
+        var chg = BUCKETS.some(function (b) { return nw[b.k] !== cur[b.k]; });
+        if (chg && BUCKETS.reduce(function (t, b) { return t + nw[b.k]; }, 0) === Math.round(tot)) sug = { from: cur, to: nw };
+      }
+    }
+    return { monthly: monthly, spendPct: spendPct, spendLeft: spendLeft, pend: W.pendExp, reserve: reserve, safe: safe, limitM: limitM, limitW: Math.round(limitM / 4.33), limitD: Math.round(limitM / 30.4), mtd: mtd, goals: goals, sug: sug };
+  }
+  function bmHtml(C, full) {
+    var h = '<div class="sb-top"><label class="sb-sw"><input type="checkbox" data-bm-toggle' + (bmIsOn() ? " checked" : "") + '> Smart Budget Mode ' + (bmIsOn() ? "on" : "off") + '</label></div>';
+    if (!bmIsOn()) return h + '<p class="note">Turn Smart Budget Mode on to see your safe to spend amount, spending limits and goal-based suggestions.</p>';
+    var tone = C.safe <= 0 ? "bad" : C.safe < C.spendLeft * 0.25 ? "warn" : "ok";
+    h += '<div class="wal-big sb-' + tone + '"><span>Safe to spend</span><b>' + fmt(C.safe) + '</b><span>' + (C.spendLeft <= 0 ? "Your Spend money is used up, so hold off on extras." : "What is left in Spend" + (C.pend ? ", minus " + fmt(C.pend) + " of expenses on unpaid and upcoming games" : "") + (C.reserve ? ", minus " + fmt(C.reserve) + " set aside for gear goals" : "")) + '</span></div>';
+    if (C.monthly > 0) {
+      var left = C.limitM - C.mtd, rat = C.limitM > 0 ? Math.min(100, Math.round(C.mtd / C.limitM * 100)) : 0;
+      h += '<h3>Recommended spending limits</h3><div class="wal-grid"><div><span>Per month</span><b>' + fmt(C.limitM) + '</b><small>' + Math.round(C.spendPct * 100) + '% of about ' + fmt(C.monthly) + ' a month</small></div><div><span>Per week</span><b>' + fmt(C.limitW) + '</b><small>about ' + fmt(C.limitD) + ' a day</small></div></div>';
+      h += '<div class="meter" role="img" aria-label="' + rat + ' percent of monthly limit used"><span style="width:' + rat + '%;background:' + (left < 0 ? "var(--orange)" : "var(--c-spend)") + '"></span></div><p class="note">' + (left < 0 ? "You are " + fmt(-left) + " over this month's limit (" + fmt(C.mtd) + " spent)." : fmt(C.mtd) + " spent this month. " + fmt(left) + " left under your limit.") + '</p>';
+    } else h += '<p class="note">Log some paid games and I will recommend spending limits from your typical income.</p>';
+    if (C.goals.length) {
+      h += '<h3>Progress toward your goals</h3>' + C.goals.slice(0, full ? 8 : 3).map(function (x) {
+        return '<div class="sb-goal"><div><b>' + esc(x.g.name) + '</b><span>' + x.pct + '%</span></div><div class="meter"><span style="width:' + x.pct + '%;background:' + (SG_TYPES[x.g.type].color) + '"></span></div><small>' + esc(x.pace.text) + '</small></div>';
+      }).join("");
+    } else h += '<p class="note">Add a goal on the Goals page and Smart Budget will track it here.</p>';
+    if (C.sug) {
+      var chips = BUCKETS.filter(function (b) { return C.sug.to[b.k] !== C.sug.from[b.k]; }).map(function (b) { return b.name + " " + C.sug.from[b.k] + "% → " + C.sug.to[b.k] + "%"; }).join(", ");
+      h += '<div class="sb-sug"><b>Suggested split</b><span>To hit your deadlines: ' + esc(chips) + '.</span>' + (full ? '<button class="btn" type="button" data-bm-apply>Apply suggested split</button><small>This changes your percentages for all earnings, including past games, the same as saving them on the Money page.</small>' : '<a class="mini" href="#money">Review</a>') + '</div>';
+    } else if (C.goals.length && C.monthly > 0) h += '<p class="note">' + (C.goals.some(function (x) { return x.pace.ok === false; }) ? "Some goals need more than your income can cover at this pace. Smart Budget will not squeeze Spend below 10%, so consider a later deadline or a smaller target." : "Your current split supports your goal deadlines.") + "</p>";
+    if (bmMsgT && full) h += '<p class="msg">' + esc(bmMsgT) + '</p>';
+    return h;
+  }
+  function renderBudget() {
+    if (!$("sb-page")) return; var C = bmCalc();
+    $("sb-page").innerHTML = bmHtml(C, true); $("sb-home").innerHTML = bmHtml(C, false);
+    $("sb-chip").textContent = bmIsOn() ? fmt(C.safe) + " safe" : "Off";
+  }
+  document.addEventListener("change", function (e) { var t = e.target; if (!t.closest || !t.closest("[data-bm-toggle]")) return; try { localStorage.setItem(BM_KEY, t.checked ? "on" : "off"); } catch (x) {} renderBudget(); });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest || !e.target.closest("[data-bm-apply]")) return;
+    var C = bmCalc(); if (!C.sug) return; split = Object.assign({}, C.sug.to); bmMsgT = "Applied. Your percentages are now " + BUCKETS.map(function (b) { return b.name + " " + split[b.k] + "%"; }).join(", ") + ".";
+    render(); fillSplitInputs(); persistSplit().then(function (ok) { if (!ok) { bmMsgT = "Applied here, but could not save to your account. Save again on the Money page."; renderBudget(); } });
+  });
   /* Payment prediction: when each payer usually pays, expected money this week, late alerts, AI write-up */
   function ppMed(a) { a = a.slice().sort(function (x, y) { return x - y; }); var m = a.length >> 1; return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2); }
   function ppPayer(g) { return g.assignor || g.assoc || ""; }
@@ -3184,7 +3261,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3472,7 +3549,7 @@ html { scroll-padding-top: 96px; }
   var HOME_ORIG = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll("[data-card]")) : [];
   var HOME_HOME = HOME_ORIG.map(function (c) { return { el: c, col: HOME_COLS.indexOf(c.parentNode) }; });
   var CARD_KEYS = HOME_ORIG.map(function (c) { return c.getAttribute("data-card"); });
-  var CARD_LABEL = { ach: "Achievements", wallet: "Referee wallet", weather: "Weather", insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
+  var CARD_LABEL = { budget: "Smart Budget", ach: "Achievements", wallet: "Referee wallet", weather: "Weather", insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
   var curOrder = [], deskMq = window.matchMedia ? window.matchMedia("(min-width: 960px)") : null;
   function defaultOrder() {
     return HOME_ORIG.map(function (c, i) { var m = /(?:^|\s)o(\d)(?:\s|$)/.exec(c.className); return { k: c.getAttribute("data-card"), n: m ? +m[1] : 99, i: i }; })
