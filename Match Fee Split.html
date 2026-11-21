@@ -856,6 +856,7 @@ html { scroll-padding-top: 96px; }
     <a class="desk" href="#inventory" data-nav="inventory"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="2.5"/><path d="M9 8V6a3 3 0 0 1 6 0v2M12 12v4M10 14h4"/></svg><span>Inventory</span></a>
     <a href="#ai" data-nav="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg><span>AI</span></a>
     <a href="#weather" data-nav="weather"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4 4 0 010-8 5.5 5.5 0 0110.6 1.2A3.4 3.4 0 0117 18z"/></svg><span>Weather</span></a>
+    <a href="#history" data-nav="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></a>
     <a href="#app-settings" data-nav="app-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg><span>Settings</span></a>
     <div class="nav-foot">Referees Make the Game Better</div>
   </nav>
@@ -1065,6 +1066,17 @@ html { scroll-padding-top: 96px; }
       </div>
       <p class="note">Set a restock level and the item shows Low, and appears on your home screen, when you have that many or fewer.</p>
       <div class="row"><button class="btn" id="bg-save" type="button">Add item</button><button class="btn ghost" id="bg-cancel" type="button" hidden>Cancel</button></div>
+    </section>
+  </div>
+
+  <div class="view" data-view="history" hidden>
+    <section class="panel" aria-labelledby="h-hist">
+      <div class="panel-head"><h2 id="h-hist">History</h2><span class="chip" id="hist-count"></span></div>
+      <p class="note">Every game, other income and expense you add, change or remove shows up here, along with your AI chat questions and answers. Removed ones can be put back, and changes to a game can be undone. This list is kept on this device.</p>
+      <div class="row"><label class="sr-only" for="hist-f">Show</label><select id="hist-f"><option value="all">Everything</option><option value="added">Added</option><option value="removed">Removed</option><option value="edited">Changed</option><option value="ai">AI chats</option></select><button class="mini" type="button" id="hist-clear">Clear history</button></div>
+      <ul class="list tall" id="hist-list"></ul>
+      <div class="row"><button class="btn ghost" type="button" id="hist-more" hidden>Show more</button></div>
+      <p class="msg" id="hist-msg" role="status"></p>
     </section>
   </div>
 
@@ -1438,14 +1450,6 @@ html { scroll-padding-top: 96px; }
       <p class="msg" id="bk-msg" role="status"></p>
     </section>
 
-    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-hist">
-      <div class="panel-head"><h2 id="h-hist">History</h2><span class="chip" id="hist-count"></span></div>
-      <p class="note">Every game, other income and expense you add, change or remove shows up here, along with your AI chat questions and answers. Removed ones can be put back, and changes to a game can be undone. This list is kept on this device.</p>
-      <div class="row"><label class="sr-only" for="hist-f">Show</label><select id="hist-f"><option value="all">Everything</option><option value="added">Added</option><option value="removed">Removed</option><option value="edited">Changed</option><option value="ai">AI chats</option></select><button class="mini" type="button" id="hist-clear">Clear history</button></div>
-      <ul class="list tall" id="hist-list"></ul>
-      <div class="row"><button class="btn ghost" type="button" id="hist-more" hidden>Show more</button></div>
-      <p class="msg" id="hist-msg" role="status"></p>
-    </section>
 
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-sec">
       <h2 id="h-sec">Extra security</h2>
@@ -3125,7 +3129,7 @@ html { scroll-padding-top: 96px; }
 
   /* Pages: the dashboard is the home view. Each quick action opens one section on its own page. */
   var PAGES = { "add-game": "g-match", "other-income": "o-amt", "i-spent": "s-amt", "can-i-afford": "a-amt", "app-settings": "", "profile": "" };
-  var TABS = ["home", "games", "money", "reports", "ai", "weather", "goals", "owed", "calendar", "inventory", "export"];
+  var TABS = ["home", "games", "money", "reports", "ai", "weather", "goals", "owed", "calendar", "inventory", "history", "export"];
   var MOB = ["home", "games", "calendar", "money", "reports", "ai", "weather", "app-settings"], lastView = "";
   function route(first) {
     var h = (location.hash || "").replace(/^#/, "");
@@ -5277,7 +5281,7 @@ html { scroll-padding-top: 96px; }
   })();
 
   /* Accessibility: announce the page after a tab change */
-  var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", inventory: "Ref bag", export: "Export", "app-settings": "Settings", profile: "Referee profile", ai: "AI", weather: "Weather", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
+  var VIEW_NAMES = { home: "Home", games: "Games", calendar: "Calendar", money: "Money", reports: "Reports", goals: "Goals", owed: "Owed to you", inventory: "Ref bag", history: "History", export: "Export", "app-settings": "Settings", profile: "Referee profile", ai: "AI", weather: "Weather", "add-game": "Add a game", "other-income": "Other income", "i-spent": "I spent", "can-i-afford": "Can I afford it" };
   function announceView(view) {
     var n = VIEW_NAMES[view] || "Home"; document.title = n + " - RefVault";
     var r = $("sr-route"); if (r) r.textContent = n + " page";
