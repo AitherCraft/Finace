@@ -3417,8 +3417,27 @@ html { scroll-padding-top: 96px; }
       gamesPlayedTotal: rpStats().played, owedToYou: d(owedGames().reduce(function (a, g) { return a + gOwedC(g); }, 0)), perWeekPace: d(info.perWeek), payPerWeekend: d(wk),
       split: split, bucketsLeft: BUCKETS.map(function (b, i) { return { bucket: b.name, left: d(info.a.out[i] - info.used[b.k]) }; }),
       season: S.none ? null : { inSeason: !S.off, inSeasonWeekly: S.inW === null ? null : d(S.inW), offSeasonWeekly: S.offW === null ? null : d(S.offW), quietMonths: S.quietMoy.map(function (m) { return MON[m - 1]; }), recentSeasons: sn.slice(-4).map(function (x) { return { name: x.name, earned: d(x.net), games: x.n, current: !!x.cur }; }) },
-      wishList: wishes.slice(0, 8).map(function (w) { return { item: w.what, price: Number(w.amount) || 0, bucket: w.bucket }; })
+      wishList: wishes.slice(0, 8).map(function (w) { return { item: w.what, price: Number(w.amount) || 0, bucket: w.bucket, affordableNow: wishReadyList.some(function (r) { return r.id === w.id; }) }; }),
+      averagePayPerGame: d(aiAvgGame()), howMuchEachBucketGetsFromAnAverageGame: BUCKETS.map(function (b, i) { return { bucket: b.name, dollars: d(aiAvgGame() * (split[b.k] || 0) / 100) }; }),
+      seasonCompare: aiSeasonCmp(), weather: aiWeather()
     };
+  }
+  function aiAvgGame() { var td = todayStr(), n = 0, c = 0; live().forEach(function (g) { if (g.date <= td) { n += gN(g); c += gNet(g); } }); return n ? c / n : 0; }
+  function aiSeasonCmp() {
+    try {
+      var S = seasonInfo(), sn = S.seasons || []; if (!sn.length) return null;
+      var cur = sn.filter(function (x) { return x.cur; })[0] || sn[sn.length - 1], prev = sn[sn.indexOf(cur) - 1], o = { thisSeason: cur.name, gamesThisSeason: cur.n, earnedThisSeason: Math.round(cur.net) / 100 };
+      if (prev) { o.lastSeason = prev.name; o.gamesLastSeason = prev.n; o.earnedLastSeason = Math.round(prev.net) / 100; if (prev.net > 0) o.earnedChangePercent = Math.round((cur.net - prev.net) / prev.net * 100); }
+      return o;
+    } catch (e) { return null; }
+  }
+  function aiWeather() {
+    if (!wxLoc || !wxData) return null;
+    try {
+      var dl = wxData.daily, out = { place: wxLoc.name || "my location", unit: "F and mph", days: dl.time.slice(0, 5).map(function (t, i) { return { date: t, summary: wxInfo(dl.weather_code[i], 1).t, high: Math.round(dl.temperature_2m_max[i]), low: Math.round(dl.temperature_2m_min[i]), rainChancePercent: dl.precipitation_probability_max[i], windUpToMph: Math.round(dl.wind_speed_10m_max[i]) }; }) };
+      out.myGames = upcomingGames().map(function (g) { return { g: g, i: wxHourAt(g.date, g.time) }; }).filter(function (x) { return x.i >= 0; }).slice(0, 4).map(function (x) { var c = wxCond(x.i); return { game: gTitle(x.g), date: x.g.date, time: x.g.time || "", conditions: c.label, temp: c.t, windMph: c.wind, rainChancePercent: c.rain, bring: c.bring.filter(function (b) { return b[1]; }).map(function (b) { return b[0]; }) }; });
+      return out;
+    } catch (e) { return null; }
   }
   function aiCall(payload, retried) {
     if (!sbSession || !sbSession.access_token) return Promise.reject(new Error("Sign in to use AI."));
@@ -3446,7 +3465,7 @@ html { scroll-padding-top: 96px; }
   setTimeout(aiAuto, 6000); document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(aiAuto, 1500); });
   document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#ai-ask")) aiRefresh(true); });
   /* chat tab */
-  var AIC_Q = ["How much should I save from each game?", "Do I need to pay taxes on referee income?", "Can I afford my wish list?", "How do I budget for the off-season?"];
+  var AIC_Q = ["Can I afford new flags?", "How was my season?", "What will the weather be like?", "Can I afford my wish list?", "How much should I save from each game?", "Do I need to pay taxes on referee income?"];
   function aicRender() {
     var log = $("aic-log"); if (!log) return;
     log.innerHTML = aiChat.map(function (m) { return '<div class="ai-m ' + (m.role === "user" ? "u" : "a") + '">' + esc(m.text) + "</div>"; }).join("") + (aicBusy ? '<div class="ai-m a">Thinking...</div>' : "");
