@@ -356,6 +356,8 @@ button.badge { cursor: pointer; min-height: 26px; }
 .lv-top { display: flex; gap: 12px; align-items: center; } .lv-ico { font-size: 34px; line-height: 1; } .lv-top b { font: 800 20px/1.1 var(--display); display: block; } .lv-top small { color: var(--muted); font-size: 13px; }
 .lv-req { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; padding: 4px 0; border-top: 1px solid var(--panel-line); } .lv-req.on { color: var(--green); }
 .lv-steps { display: flex; flex-wrap: wrap; gap: 6px; } .lv-steps span { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--panel-line); color: var(--muted); } .lv-steps .on { border-color: var(--blue); color: var(--fg); font-weight: 700; }
+.score { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid var(--panel-line); white-space: nowrap; }
+.score.great { color: var(--yellow); border-color: var(--yellow); } .score.good { color: var(--green); border-color: var(--green); } .score.low { color: var(--orange); border-color: var(--orange); }
 .rp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 20px/1 var(--display); background: rgba(46, 134, 255, 0.2); border: 2px solid var(--blue); flex: 0 0 auto; }
 .rp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .rp-badge { display: grid; gap: 4px; padding: 12px; border-radius: var(--r-sm); border: 1px dashed var(--panel-line); opacity: 0.55; filter: grayscale(0.7); }
@@ -3319,14 +3321,34 @@ html { scroll-padding-top: 96px; }
     }
   }
 
+  /* Game profitability score: pay, expenses and what you keep, rated against your own average */
+  function gScoreBase() {
+    var n = 0, sum = 0;
+    live().forEach(function (g) { var f = toCents(g.fee); if (f <= 0) return; sum += (f - toCents(g.expenses)) / gN(g); n++; });
+    return n >= 5 ? sum / n : null;
+  }
+  function gScore(g, base) {
+    if (g.cancelled) return null;
+    if (base === undefined) base = gScoreBase();
+    var fee = toCents(g.fee), ex = toCents(g.expenses), net = fee - ex, per = net / gN(g), margin = fee > 0 ? net / fee : 0, vs = base ? (per - base) / base : null, key, why;
+    if (fee <= 0) { key = "low"; why = "No pay entered for this game."; }
+    else if (net <= 0) { key = "low"; why = "Expenses took all of the pay."; }
+    else if (margin < 0.6) { key = "low"; why = "Expenses took " + Math.round((1 - margin) * 100) + "% of the pay."; }
+    else if (vs !== null && vs < -0.3) { key = "low"; why = "Pays " + Math.round(-vs * 100) + "% below your average per game."; }
+    else if (margin >= 0.85 && (vs === null || vs >= 0.1)) { key = "great"; why = "You keep " + Math.round(margin * 100) + "% of the pay" + (vs !== null ? ", and it pays " + Math.round(vs * 100) + "% above your average." : "."); }
+    else { key = "good"; why = "You keep " + Math.round(margin * 100) + "% of the pay" + (vs !== null ? (Math.abs(vs) < 0.05 ? ", right around your average." : vs > 0 ? ", " + Math.round(vs * 100) + "% above your average." : ", " + Math.round(-vs * 100) + "% below your average.") : "."); }
+    return { key: key, icon: { great: "⭐", good: "👍", low: "⚠️" }[key], label: { great: "Great game", good: "Good game", low: "Low profit game" }[key], pay: fee, exp: ex, net: net, margin: margin, why: why };
+  }
+  function gScoreChip(g, base) { var sc = gScore(g, base); return sc ? ' <span class="score ' + sc.key + '" title="' + esc(sc.why) + '">' + sc.icon + " " + sc.label + "</span>" : ""; }
   var ledgerLimit = 50, ledgerSig = "";
   function renderLedger(S) {
-    var items = [];
+    var items = [], scBase = gScoreBase();
     S.games.forEach(function (g) {
       var fee = toCents(g.fee), ex = toCents(g.expenses), paid = g.paid !== false;
       var st = gStatus(g), stLabel = st === "paid" ? "Paid" : st === "overdue" ? "Overdue" : st === "cancelled" ? "Cancelled" : "Pending";
       var badge = '<button type="button" class="badge ' + (paid ? "" : st) + '" data-paid="' + esc(g.id) + '" data-val="' + (paid ? "0" : "1") + '" aria-label="' + (paid ? "Paid. Click to mark pending" : stLabel + ". Click to mark paid") + '">' + stLabel + "</button>";
       if (g.cancelled) badge = '<span class="badge cancelled">Cancelled</span>';
+      else badge += gScoreChip(g, scBase);
       items.push({ kind: "games", count: gN(g), id: g.id, date: g.date, created: g.created || 0, title: gTitle(g), notes: g.notes || "", recap: g.recap || "", tourn: g.tourn || "", season: seasonName(g.date.slice(0, 7)), editId: g.id,
         paid: paid, cancelled: !!g.cancelled, status: st, assignor: g.assignor || "", assoc: g.assoc || "", badge: badge, detail: [gSpan(g), g.assoc, g.tourn ? "🏆 " + g.tourn : "", g.assignor ? "Assignor " + g.assignor : "", g.role, g.field, g.loc ? "📍 " + g.loc : ""].filter(Boolean).join(" · ") + (gMiles(g) ? " · " + fmtMiles(gMiles(g)) : "") + " · " + fmt(fee) + (ex ? " − " + fmt(ex) + " expenses" : ""),
         amt: Math.max(0, fee - ex), sign: paid ? "+" : "", unpaid: paid || g.cancelled ? 0 : Math.max(0, fee - ex) });
@@ -4353,6 +4375,7 @@ html { scroll-padding-top: 96px; }
     if (g.field) row("Field", '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(g.field + (g.assoc ? " " + g.assoc : "")) + '" target="_blank" rel="noopener">' + esc(g.field) + "</a>", true);
     if (gMiles(g)) row("Distance", fmtMiles(gMiles(g)));
     row("Fee", fmt(toCents(g.fee))); if (toCents(g.expenses)) row("Expenses", fmt(toCents(g.expenses))); row("You keep", fmt(gNet(g)));
+    var sc = gScore(g); if (sc) row("Profit score", '<span class="score ' + sc.key + '">' + sc.icon + " " + sc.label + "</span><br><small>" + esc(sc.why) + "</small>", true);
     var pay = g.cancelled ? "Cancelled" : p === "paid" ? "Paid" + (g.paidOn ? " on " + mdDate(g.paidOn) : "") : p === "partial" ? "Partly paid: " + fmt(gRcvd(g)) + " received, " + fmt(gOwedC(g)) + " owed" : g.date >= todayStr() ? "Not paid yet" : (st === "overdue" ? "Overdue: " : "Pending: ") + fmt(gOwedC(g)) + " owed";
     row("Payment", pay); if (g.remindedOn && g.paid === false) row("Reminder", "Sent " + mdDate(g.remindedOn));
     try { var wi = wxHourAt(g.date, g.time); if (wi >= 0) { var h = wxData.hourly; row("Weather", wxInfo(h.weather_code[wi], 1).i + " " + Math.round(h.temperature_2m[wi]) + "°F, rain " + h.precipitation_probability[wi] + "%, wind " + Math.round(h.wind_speed_10m[wi]) + " mph"); } } catch (e) { /* no forecast */ }
