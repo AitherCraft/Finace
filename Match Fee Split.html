@@ -352,6 +352,10 @@ button.badge { cursor: pointer; min-height: 26px; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
 .szi-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; height: 84px; align-items: end; } .szi-strip > div { display: grid; grid-template-rows: 1fr auto; height: 100%; justify-items: center; gap: 2px; font-size: 11px; color: var(--muted); }
 .szi-strip i { align-self: end; width: 100%; border-radius: 4px 4px 0 0; background: var(--blue); } .szi-strip .q i { background: var(--orange); } .szi-strip .now span { color: var(--fg); font-weight: 800; }
+.lv-card { margin: 10px 0 14px; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--blue); display: grid; gap: 8px; } .lv-home { display: grid; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--panel-line); }
+.lv-top { display: flex; gap: 12px; align-items: center; } .lv-ico { font-size: 34px; line-height: 1; } .lv-top b { font: 800 20px/1.1 var(--display); display: block; } .lv-top small { color: var(--muted); font-size: 13px; }
+.lv-req { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; padding: 4px 0; border-top: 1px solid var(--panel-line); } .lv-req.on { color: var(--green); }
+.lv-steps { display: flex; flex-wrap: wrap; gap: 6px; } .lv-steps span { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--panel-line); color: var(--muted); } .lv-steps .on { border-color: var(--blue); color: var(--fg); font-weight: 700; }
 .rp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 20px/1 var(--display); background: rgba(46, 134, 255, 0.2); border: 2px solid var(--blue); flex: 0 0 auto; }
 .rp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .rp-badge { display: grid; gap: 4px; padding: 12px; border-radius: var(--r-sm); border: 1px dashed var(--panel-line); opacity: 0.55; filter: grayscale(0.7); }
@@ -1311,6 +1315,7 @@ html { scroll-padding-top: 96px; }
 
     <section class="panel" data-page="profile" hidden aria-labelledby="h-profile">
       <div class="rp-head"><div class="rp-avatar" id="rp-avatar" aria-hidden="true">R</div><div><h2 id="h-profile">Referee career profile</h2><p class="page-sub" id="rp-line"></p></div></div>
+      <div class="lv-card" id="rp-lvcard"></div>
       <div class="wish-stats" id="rp-stats"></div>
       <h3>About you</h3>
       <form id="form-rp" novalidate class="fs">
@@ -4869,6 +4874,27 @@ html { scroll-padding-top: 96px; }
     var seasonsDone = achSeasonsDone();
     return { seasonsDone: seasonsDone, played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first, tourn: tourn, gstreak: bestG };
   }
+  /* Referee levels: Rookie, Experienced, Advanced, Elite. A level is reached when you meet 2 of its 3 goals (games, income, seasons). */
+  var RP_LEVELS = [
+    { n: "Rookie", i: "🌱", g: 0, e: 0, s: 0 }, { n: "Experienced", i: "⚽", g: 25, e: 1000, s: 1 },
+    { n: "Advanced", i: "🎯", g: 100, e: 5000, s: 3 }, { n: "Elite", i: "👑", g: 300, e: 15000, s: 6 }
+  ];
+  function rpReqs(L, st) { return [{ k: "Games", cur: st.played, t: L.g, f: function (v) { return String(Math.floor(v)); } }, { k: "Income", cur: st.earned / 100, t: L.e, f: function (v) { return fmt(Math.round(v * 100)); } }, { k: "Seasons", cur: st.seasonsDone, t: L.s, f: function (v) { return String(Math.floor(v)); } }].map(function (r) { r.met = r.cur >= r.t; r.p = r.t ? Math.min(1, r.cur / r.t) : 1; return r; }); }
+  function rpLevel(st) {
+    var idx = 0;
+    RP_LEVELS.forEach(function (L, i) { if (i && rpReqs(L, st).filter(function (r) { return r.met; }).length >= 2) idx = i; });
+    var nx = RP_LEVELS[idx + 1] || null, reqs = nx ? rpReqs(nx, st) : null, pct = nx ? Math.round(reqs.reduce(function (a, r) { return a + r.p; }, 0) / 3 * 100) : 100;
+    return { idx: idx, lvl: RP_LEVELS[idx], next: nx, reqs: reqs, pct: pct, need: reqs ? 2 - reqs.filter(function (r) { return r.met; }).length : 0 };
+  }
+  function rpLevelHtml(st, full) {
+    var L = rpLevel(st), h = '<div class="lv-top"><span class="lv-ico" aria-hidden="true">' + L.lvl.i + '</span><div><b>' + L.lvl.n + ' referee</b><small>' + (L.next ? L.pct + "% of the way to " + L.next.n : "Top level reached. Legend!") + '</small></div></div>';
+    h += '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + L.pct + '" aria-label="Progress to next level"><span style="width:' + L.pct + '%;background:var(--blue)"></span></div>';
+    if (L.next && full) {
+      h += '<p class="note">To reach ' + L.next.i + " " + L.next.n + ", meet any 2 of these 3:</p>" + L.reqs.map(function (r) { return '<div class="lv-req' + (r.met ? " on" : "") + '"><span>' + (r.met ? "✅" : "⬜") + " " + r.k + "</span><span>" + r.f(Math.min(r.cur, r.t)) + " / " + r.f(r.t) + "</span></div>"; }).join("");
+      h += '<div class="lv-steps">' + RP_LEVELS.map(function (x, i) { return '<span class="' + (i <= L.idx ? "on" : "") + '" title="' + x.n + (i ? ": " + x.g + " games, $" + x.e + ", " + x.s + (x.s === 1 ? " season" : " seasons") : "") + '">' + x.i + " " + x.n + "</span>"; }).join("") + "</div>";
+    } else if (L.next) h += '<small class="note">Next: ' + L.next.i + " " + L.next.n + " (need " + L.need + " more of 3 goals)</small>";
+    return h;
+  }
   var RP_BADGES = [
     { i: "🥇", n: "First Game", d: "Referee your first game", v: function (s) { return s.played; }, t: 1, vk: "played" },
     { i: "💵", n: "First $100", d: "Earn your first $100 in game fees", v: function (s) { return s.earned / 100; }, t: 100, m: 1, vk: "earned" },
@@ -4886,6 +4912,9 @@ html { scroll-padding-top: 96px; }
     { i: "🗓️", n: "Twelve-Week Streak", d: "Referee in 12 weeks in a row", v: function (s) { return s.streak; }, t: 12 },
     { i: "🎭", n: "All-Rounder", d: "Work as Center, assistant and 4th official", v: function (s) { return (s.roles.Center ? 1 : 0) + ((s.roles.AR1 || s.roles.AR2) ? 1 : 0) + (s.roles["4th"] ? 1 : 0); }, t: 3 },
     { i: "🌎", n: "Multi-League", d: "Work games in 3 different leagues", v: function (s) { return s.nLeagues; }, t: 3 },
+    { i: "⚽", n: "Experienced Referee", d: "Level up: reach the Experienced level", v: function (s) { return rpLevel(s).idx; }, t: 1, lvl: 1 },
+    { i: "🎯", n: "Advanced Referee", d: "Level up: reach the Advanced level", v: function (s) { return rpLevel(s).idx; }, t: 2, lvl: 1 },
+    { i: "👑", n: "Elite Referee", d: "Level up: reach the Elite level", v: function (s) { return rpLevel(s).idx; }, t: 3, lvl: 1 },
     { i: "✅", n: "Paid in Full", d: "5 or more games played and none unpaid", v: function (s) { return s.unpaidN === 0 ? s.paidN : 0; }, t: 5 }
   ];
   /* Achievements: badges with unlock dates, a Home card, and a celebration when one is earned */
@@ -4921,7 +4950,7 @@ html { scroll-padding-top: 96px; }
   var ACH_KEY = "rf-ach-v1";
   function achPop(list) {
     var el = $("ach-pop"); if (!el) { el = document.createElement("div"); el.id = "ach-pop"; el.setAttribute("role", "alert"); document.body.appendChild(el); }
-    var b = list[0]; el.innerHTML = '<div class="ach-card"><div class="ach-conf" aria-hidden="true">🎉 ✨ 🎊 ✨ 🎉</div><div class="ach-ico" aria-hidden="true">' + b.i + '</div><strong>Achievement unlocked!</strong><span>' + esc(b.n) + '</span><small>' + esc(b.d) + (list.length > 1 ? " (+" + (list.length - 1) + " more)" : "") + '</small><button class="btn" type="button" id="ach-ok">Nice!</button></div>';
+    var b = list[0]; el.innerHTML = '<div class="ach-card"><div class="ach-conf" aria-hidden="true">🎉 ✨ 🎊 ✨ 🎉</div><div class="ach-ico" aria-hidden="true">' + b.i + '</div><strong>' + (b.lvl ? 'Level up!' : 'Achievement unlocked!') + '</strong><span>' + esc(b.n) + '</span><small>' + esc(b.d) + (list.length > 1 ? " (+" + (list.length - 1) + " more)" : "") + '</small><button class="btn" type="button" id="ach-ok">Nice!</button></div>';
     el.className = "show"; clearTimeout(achPop.h); achPop.h = setTimeout(function () { el.className = ""; }, 9000);
   }
   document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#ach-ok")) { var el = $("ach-pop"); if (el) el.className = ""; } });
@@ -4938,9 +4967,9 @@ html { scroll-padding-top: 96px; }
     var box = $("ach-home"); if (!box) return;
     var got = RP_BADGES.filter(function (b) { return b.v(st) >= b.t; }), todo = RP_BADGES.filter(function (b) { return b.v(st) < b.t; });
     todo.sort(function (a, b) { return b.v(st) / b.t - a.v(st) / a.t; });
-    var nx = todo[0], recent = got.slice().sort(function (a, b) { return (dates[b.n] || "") < (dates[a.n] || "") ? -1 : 1; }).slice(0, 5), pct = Math.round(got.length / RP_BADGES.length * 100);
+    var lvH = rpLevelHtml(st, false), nx = todo[0], recent = got.slice().sort(function (a, b) { return (dates[b.n] || "") < (dates[a.n] || "") ? -1 : 1; }).slice(0, 5), pct = Math.round(got.length / RP_BADGES.length * 100);
     $("ach-count").textContent = got.length + " of " + RP_BADGES.length;
-    var h = '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Badges earned"><span style="width:' + pct + '%;background:var(--blue)"></span></div>';
+    var h = '<div class="lv-home">' + lvH + "</div>" + '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Badges earned"><span style="width:' + pct + '%;background:var(--blue)"></span></div>';
     if (recent.length) h += '<div class="ach-row">' + recent.map(function (b) { return '<span class="ach-b" title="' + esc(b.n) + '">' + b.i + "</span>"; }).join("") + "</div>";
     if (nx) { var v = nx.v(st), p = Math.min(100, Math.round(v / nx.t * 100)); h += '<div class="ach-next"><div class="wish-top"><span>Next up: <b>' + esc(nx.n) + "</b></span><span>" + (nx.m ? fmt(Math.round(v * 100)) + " / " + fmt(nx.t * 100) : Math.floor(v) + " / " + nx.t) + '</span></div><div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="' + esc(nx.n) + '"><span style="width:' + p + '%;background:var(--green)"></span></div><p class="note">' + esc(nx.d) + "</p></div>"; }
     else h += '<p class="note">Every badge earned. Legend!</p>';
@@ -4955,6 +4984,7 @@ html { scroll-padding-top: 96px; }
     var box = $("form-rp"); if (!box) return;
     var st = rpStats(), name = rp.name || "", ini = name ? name.split(/\s+/).map(function (x) { return x.charAt(0); }).join("").slice(0, 2).toUpperCase() : "R";
     $("rp-avatar").textContent = ini; $("rp-ini").textContent = ini;
+    $("rp-lvcard").innerHTML = rpLevelHtml(st, true);
     $("rp-line").textContent = [rp.level, rp.cert].filter(Boolean).join(" · ") || "Add your certification and level below.";
     var yrs = rp.since ? new Date().getFullYear() - rp.since : (st.first ? new Date().getFullYear() - Number(st.first.slice(0, 4)) : null);
     $("rp-stats").innerHTML = [["🎽 Total games", st.played], ["💵 Lifetime earnings", fmt(st.earned)], ["📆 Years officiating", yrs === null ? "—" : yrs < 1 ? "First year" : yrs + (yrs === 1 ? " year" : " years")], ["🌎 Leagues worked", st.nLeagues], ["📜 Certification", rp.cert || "Not set"], ["🎚️ Referee level", rp.level || "Not set"], ["⭐ Favorite leagues", (rp.favs || []).join(", ") || "Not set"], ["⏳ Cert. status", certStatus()]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("");
