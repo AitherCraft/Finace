@@ -325,6 +325,17 @@ button.badge { cursor: pointer; min-height: 26px; }
 .lay-row.off .lay-name { opacity: 0.55; }
 .lay-row.dragging { background: rgba(46, 134, 255, 0.15); border-radius: var(--r-sm); box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
 .rp-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--blue); color: var(--fg); font: 700 14px/1 var(--display); text-decoration: none; background: rgba(46, 134, 255, 0.15); flex: 0 0 auto; margin-right: 8px; }
+.gc { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--panel-line); border-radius: var(--r-sm); background: var(--panel-2, rgba(255,255,255,0.04)); margin-bottom: 10px; }
+.gc h4 { margin: 0; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.gc-when { font-weight: 600; overflow-wrap: anywhere; }
+.gc-rate { font: 800 22px/1.2 var(--display); }
+.gc-excellent { color: var(--green); } .gc-good { color: #e6c229; } .gc-fair { color: #ff9f43; } .gc-poor { color: #ff5c6c; }
+.gc-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gc-stats div { display: grid; gap: 2px; padding: 8px; border-radius: var(--r-sm); background: rgba(255,255,255,0.04); min-width: 0; }
+.gc-stats b { font-size: 15px; } .gc-stats small { color: var(--muted); font-size: 12px; }
+.gc-bring ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 4px 12px; }
+.gc-bring li { color: var(--muted); } .gc-bring li.on { color: var(--fg); font-weight: 600; }
+.gc-note { margin: 0; font-size: 13px; color: #ff9f43; }
 .rp-head { display: flex; gap: 14px; align-items: center; }
 .rp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 20px/1 var(--display); background: rgba(46, 134, 255, 0.2); border: 2px solid var(--blue); flex: 0 0 auto; }
 .rp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
@@ -3548,6 +3559,23 @@ html { scroll-padding-top: 96px; }
     if (!wxData) return -1; var tm = /^(\d{1,2}):/.exec(time || ""), hh = tm ? +tm[1] : 9, key = date + "T" + (hh < 10 ? "0" : "") + hh + ":00";
     return wxData.hourly.time.indexOf(key);
   }
+  function wxCond(i) {
+    var h = wxData.hourly, code = h.weather_code[i], rain = h.precipitation_probability[i], app = h.apparent_temperature[i], t = h.temperature_2m[i], wind = h.wind_speed_10m[i], gust = h.wind_gusts_10m[i], vis = h.visibility[i], uv = h.uv_index[i];
+    var wet = rain >= 40 || (code >= 51 && code <= 67) || (code >= 80 && code <= 82), snow = (code >= 71 && code <= 77) || code === 85 || code === 86, storm = code >= 95, cold = app <= 40, hot = t >= 85, sun = uv >= 6;
+    var bad = (storm ? 4 : 0) + (rain >= 70 || (code >= 61 && code <= 67) ? 2 : wet ? 1 : 0) + (snow ? 2 : 0) + (app <= 20 || t >= 95 ? 3 : app <= 32 || t >= 90 ? 2 : cold || hot ? 1 : 0) + (gust >= 35 ? 3 : gust >= 25 ? 2 : wind >= 15 ? 1 : 0) + (vis < 3000 ? 1 : 0);
+    var lv = storm || bad >= 4 ? ["🔴", "Poor"] : bad >= 2 ? ["🟠", "Fair"] : bad === 1 ? ["🟡", "Good"] : ["🟢", "Excellent"];
+    var note = storm ? "Thunderstorms possible. Check league rules on lightning delays." : vis < 3000 ? "Low visibility (fog)." : snow ? "Snow possible. Check with the assignor." : "";
+    return { dot: lv[0], label: lv[1], t: Math.round(t), feels: Math.round(app), wind: Math.round(wind), gust: Math.round(gust), rain: rain, w: wxInfo(code, 1), note: note,
+      bring: [["Water", true], ["Rain Jacket", wet || storm], ["Extra Socks", wet || storm || snow], ["Sunscreen", sun], ["Warm Layers", cold || snow], ["Cooling Towel", t >= 90]] };
+  }
+  function wxCondHtml(g, i) {
+    var c = wxCond(i);
+    return '<div class="gc"><div class="gc-top"><span class="gc-when">' + esc(dayWord(g.date)) + (g.time ? " at " + esc(fmtTime(g.time)) : "") + ": " + esc(gTitle(g)) + '</span></div>' +
+      '<h4>Game Conditions</h4><div class="gc-rate gc-' + c.label.toLowerCase() + '"><span aria-hidden="true">' + c.dot + "</span> " + c.label + "</div>" +
+      '<div class="gc-stats"><div><span aria-hidden="true">' + c.w.i + "</span><b>" + c.t + '°F</b><small>' + esc(c.w.t) + ", feels " + c.feels + '°</small></div><div><span aria-hidden="true">💨</span><b>Wind ' + c.wind + ' mph</b><small>Gusts ' + c.gust + ' mph</small></div><div><span aria-hidden="true">🌧️</span><b>Rain ' + c.rain + '%</b><small>chance</small></div></div>' +
+      '<div class="gc-bring"><strong>Bring:</strong><ul>' + c.bring.map(function (b) { return "<li" + (b[1] ? ' class="on"' : "") + '><span aria-hidden="true">' + (b[1] ? "☑" : "☐") + "</span> " + b[0] + (b[1] ? '<i class="sr"> (bring)</i>' : '<i class="sr"> (not needed)</i>') + "</li>"; }).join("") + "</ul></div>" +
+      (c.note ? '<p class="gc-note">' + esc(c.note) + "</p>" : "") + "</div>";
+  }
   function renderWeather() {
     try { renderWeatherPage(); } catch (e) { /* ok */ }
     var card = $("wx-card"); if (!card) return;
@@ -3561,8 +3589,7 @@ html { scroll-padding-top: 96px; }
     html += '<div class="wx-days">' + d.time.map(function (ds, i) { var w = wxInfo(d.weather_code[i], 1); return "<div><b>" + (i === 0 ? "Today" : parseD(ds).toLocaleDateString(undefined, { weekday: "short" })) + "</b><span aria-hidden=\"true\">" + w.i + "</span><em title=\"" + esc(w.t) + "\">" + Math.round(d.temperature_2m_max[i]) + "°</em><em>" + Math.round(d.temperature_2m_min[i]) + "°</em></div>"; }).join("") + "</div>";
     var gl = upcomingGames().map(function (g) { return { g: g, i: wxHourAt(g.date, g.time) }; }).filter(function (x) { return x.i >= 0; }).slice(0, 5);
     if (gl.length) html += "<h3>Your games</h3>" + gl.map(function (x) {
-      var g = x.g, i = x.i, row = { weather_code: h.weather_code[i], precipitation_probability: h.precipitation_probability[i], apparent_temperature: h.apparent_temperature[i], temperature_2m: h.temperature_2m[i], wind_gusts_10m: h.wind_gusts_10m[i], visibility: h.visibility[i], uv_index: h.uv_index[i] }, w = wxInfo(row.weather_code, 1), tips = wxGameTips(row);
-      return '<div class="wx-game"><span>' + w.i + " " + esc(dayWord(g.date)) + (g.time ? " at " + esc(fmtTime(g.time)) : "") + ": " + esc(gTitle(g)) + "</span><small>" + Math.round(row.temperature_2m) + "°F (feels " + Math.round(row.apparent_temperature) + "°), " + esc(w.t) + ", rain " + row.precipitation_probability + "%, wind " + Math.round(h.wind_speed_10m[i]) + " mph</small>" + tips.map(function (t) { return '<span class="tip">' + esc(t) + "</span>"; }).join("") + "</div>";
+      return wxCondHtml(x.g, x.i);
     }).join("");
     else if (upcomingGames().length) html += '<p class="wx-sub">Weather for a game appears here once it is within the next 7 days.</p>';
     html += '<p class="wx-sub">Updated ' + esc(agoText(wxAt)) + ". Forecast by Open-Meteo.</p>";
@@ -3629,8 +3656,7 @@ html { scroll-padding-top: 96px; }
     html += "<h3>This week</h3>" + d.time.map(function (ds, i) { var w = wxInfo(d.weather_code[i], 1); return '<div class="wxp-day"><span>' + (i === 0 ? "Today" : esc(parseD(ds).toLocaleDateString(undefined, { weekday: "short" }))) + '</span><span aria-hidden="true">' + w.i + "</span><span>" + esc(w.t) + "<small>Rain " + d.precipitation_probability_max[i] + "%, wind up to " + Math.round(d.wind_speed_10m_max[i]) + " mph" + (d.rain_sum[i] > 0 ? ", " + d.rain_sum[i].toFixed(2) + " in" : "") + "</small></span><b>" + Math.round(d.temperature_2m_max[i]) + "° / " + Math.round(d.temperature_2m_min[i]) + "°</b></div>"; }).join("");
     var gl = upcomingGames().map(function (g) { return { g: g, i: wxHourAt(g.date, g.time) }; }).filter(function (x) { return x.i >= 0; });
     if (gl.length) html += "<h3>Your games</h3>" + gl.map(function (x) {
-      var g = x.g, i = x.i, row = { weather_code: h.weather_code[i], precipitation_probability: h.precipitation_probability[i], apparent_temperature: h.apparent_temperature[i], temperature_2m: h.temperature_2m[i], wind_gusts_10m: h.wind_gusts_10m[i], visibility: h.visibility[i], uv_index: h.uv_index[i] }, w = wxInfo(row.weather_code, 1), tips = wxGameTips(row);
-      return '<div class="wx-game"><span>' + w.i + " " + esc(dayWord(g.date)) + (g.time ? " at " + esc(fmtTime(g.time)) : "") + ": " + esc(gTitle(g)) + "</span><small>" + Math.round(row.temperature_2m) + "°F (feels " + Math.round(row.apparent_temperature) + "°), " + esc(w.t) + ", rain " + row.precipitation_probability + "%, wind " + Math.round(h.wind_speed_10m[i]) + " mph</small>" + tips.map(function (t) { return '<span class="tip">' + esc(t) + "</span>"; }).join("") + "</div>";
+      return wxCondHtml(x.g, x.i);
     }).join("");
     html += '<p class="wx-sub">Updated ' + esc(agoText(wxAt)) + '. Forecast by Open-Meteo. <a href="#app-settings">Change location</a></p>';
     body.innerHTML = html;
