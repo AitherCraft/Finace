@@ -595,6 +595,14 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .badge.cancelled { background: var(--red); color: #fff; }
 .badge.worked { background: var(--green); color: #04180b; }
 .cal .cd.sel .cnt { color: inherit !important; }
+.lk-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.lk-item { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--panel-line); border-radius: var(--r-sm); background: var(--panel-2, rgba(255,255,255,0.04)); }
+.lk-item.now, .lk-item.overdue { border-color: rgba(255, 92, 108, 0.6); } .lk-item.soon { border-color: rgba(255, 159, 67, 0.6); }
+.lk-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; } .lk-top strong { overflow-wrap: anywhere; }
+.lk-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 13px; }
+.lk-act { display: flex; flex-wrap: wrap; gap: 8px; }
+.lk-act .mini { padding: 5px 10px; min-height: 30px; font-size: 11px; }
+.lk-due-now, .lk-due-overdue { color: var(--red); font-weight: 700; } .lk-due-soon { color: #ff9f43; font-weight: 700; }
 .bag-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .bag-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--panel-line); }
 .bag-row:first-child { border-top: 0; }
@@ -1021,6 +1029,24 @@ html { scroll-padding-top: 96px; }
   </div>
 
   <div class="view" data-view="inventory" hidden>
+    <section class="panel" aria-labelledby="h-lk" id="lk-card">
+      <div class="panel-head"><h2 id="h-lk">Equipment Locker</h2><span class="chip" id="lk-count"></span></div>
+      <p class="note">Track the gear you own: when you bought it, what it cost, its condition, and when to replace it.</p>
+      <div class="wish-stats" id="lk-sum"></div>
+      <ul class="lk-list" id="lk-list"></ul>
+      <h3 id="h-lkform">Add gear</h3>
+      <div class="grid">
+        <div class="field"><label for="lk-type">Type</label><select id="lk-type"><option>Whistle</option><option>Cards</option><option>Flags</option><option>Watch</option><option>Jersey</option><option>Shoes</option><option>Bag</option><option>Other</option></select></div>
+        <div class="field"><label for="lk-name">Name</label><input id="lk-name" type="text" maxlength="40" autocomplete="off" placeholder="e.g. Fox 40 Classic"></div>
+        <div class="field"><label for="lk-bought">Purchase date</label><input id="lk-bought" type="date"></div>
+        <div class="field"><label for="lk-cost">Cost ($)</label><input id="lk-cost" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label for="lk-cond">Condition</label><select id="lk-cond"><option>New</option><option selected>Good</option><option>Fair</option><option>Worn</option><option>Replace now</option></select></div>
+        <div class="field"><label for="lk-life">Replace after (months)</label><input id="lk-life" type="number" inputmode="numeric" min="0" max="120" step="1" placeholder="Off"></div>
+      </div>
+      <p class="note">Set "Replace after" and RefVault shows when it is due and reminds you before then. Leave it blank for no reminder.</p>
+      <div class="row"><button class="btn" id="lk-save" type="button">Add gear</button><button class="btn ghost" id="lk-cancel" type="button" hidden>Cancel</button></div>
+      <p class="msg" id="lk-msg" role="status"></p>
+    </section>
     <section class="panel" aria-labelledby="h-bag">
       <div class="panel-head"><h2 id="h-bag">Ref Bag Inventory</h2><span class="chip" id="bag-count"></span></div>
       <div id="bag-low"></div>
@@ -1217,6 +1243,7 @@ html { scroll-padding-top: 96px; }
         <div class="field"><label for="nf-paydays">Remind after</label><select id="nf-paydays"><option value="3">3 days unpaid</option><option value="7">7 days unpaid</option><option value="14">14 days unpaid</option></select></div>
         <label class="check" for="nf-goal"><input id="nf-goal" type="checkbox">Goal milestones (50%, 75%, 100% of monthly goal)</label>
         <label class="check" for="nf-wish"><input id="nf-wish" type="checkbox">Wish list item affordable</label>
+        <label class="check" for="nf-gear"><input id="nf-gear" type="checkbox">Equipment replacement reminders (set in the Equipment Locker)</label>
         <label class="check" for="nf-cert"><input id="nf-cert" type="checkbox">Certification renewal (set the date in your Referee profile)</label>
       </div>
       <div class="wish-actions"><button class="mini" type="button" id="nf-test">Send a test</button><button class="mini" type="button" id="nf-clear">Clear list</button></div>
@@ -2363,6 +2390,74 @@ html { scroll-padding-top: 96px; }
   }
 
 
+  /* Equipment Locker: gear you own, with purchase date, cost, condition and a replacement reminder */
+  var LK_TYPES = ["Whistle", "Cards", "Flags", "Watch", "Jersey", "Shoes", "Bag", "Other"], LK_ICON = { Whistle: "📣", Cards: "🟨", Flags: "🚩", Watch: "⌚", Jersey: "👕", Shoes: "👟", Bag: "🎒", Other: "📦" }, LK_LIFE = { Whistle: 24, Cards: 12, Flags: 24, Watch: 36, Jersey: 18, Shoes: 8, Bag: 48, Other: 0 }, LK_COND = ["New", "Good", "Fair", "Worn", "Replace now"];
+  var locker = [], lkEditId = null, lkConfirm = null;
+  function sanitizeLocker(a) {
+    var out = [], seen = {}; if (!Array.isArray(a)) return out;
+    a.slice(0, 100).forEach(function (x) {
+      if (!x || typeof x !== "object") return;
+      var name = String(x.name || "").trim().slice(0, 40), cost = Math.round(Number(x.cost)), life = Math.round(Number(x.life)), id = typeof x.id === "string" && x.id && !seen[x.id] ? x.id.slice(0, 24) : uid("k");
+      if (!name) return; seen[id] = 1;
+      out.push({ id: id, type: LK_TYPES.indexOf(x.type) >= 0 ? x.type : "Other", name: name, bought: /^\d{4}-\d{2}-\d{2}$/.test(x.bought || "") ? x.bought : "", cost: isFinite(cost) && cost >= 0 && cost <= 1e8 ? cost : 0, cond: LK_COND.indexOf(x.cond) >= 0 ? x.cond : "Good", life: isFinite(life) && life > 0 && life <= 120 ? life : 0 });
+    });
+    return out;
+  }
+  function lkDue(it) { if (!it.bought || !it.life) return ""; var p = parseD(it.bought); p.setMonth(p.getMonth() + it.life); return ymd(p); }
+  function lkState(it) {
+    if (it.cond === "Replace now") return "now"; var d = lkDue(it); if (!d) return "ok"; var t = todayStr();
+    if (d < t) return "overdue"; var days = Math.round((parseD(d) - parseD(t)) / 864e5); return days <= 30 ? "soon" : "ok";
+  }
+  function lkMsg(t, err) { var m = $("lk-msg"); if (!m) return; m.className = "msg" + (err ? " err" : ""); m.textContent = t || ""; }
+  function lkSave(next, okMsg) {
+    var before = locker; locker = sanitizeLocker(next); render();
+    return persistSplit().then(function (ok) { if (!ok) { locker = before; render(); lkMsg("Could not save that. Try again in a moment.", true); return false; } if (okMsg) lkMsg(okMsg); return true; });
+  }
+  function lkFormReset() {
+    lkEditId = null; $("lk-name").value = ""; $("lk-bought").value = ""; $("lk-cost").value = ""; $("lk-cond").value = "Good"; $("lk-type").value = "Whistle"; $("lk-life").value = LK_LIFE.Whistle || "";
+    $("lk-save").textContent = "Add gear"; $("lk-cancel").hidden = true; $("h-lkform").textContent = "Add gear";
+  }
+  function renderLocker() {
+    var list = $("lk-list"); if (!list) return;
+    var need = locker.filter(function (i) { return lkState(i) !== "ok"; }).length, spent = locker.reduce(function (a, i) { return a + i.cost; }, 0);
+    $("lk-count").textContent = locker.length ? locker.length + (locker.length === 1 ? " item" : " items") : "";
+    $("lk-sum").innerHTML = locker.length ? [["🧰 Items", locker.length], ["💵 Total spent", fmt(spent)], ["🔁 Need replacing", need]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("") : "";
+    var html = locker.slice().sort(function (a, b) { var o = { now: 0, overdue: 1, soon: 2, ok: 3 }; return o[lkState(a)] - o[lkState(b)] || LK_TYPES.indexOf(a.type) - LK_TYPES.indexOf(b.type); }).map(function (i) {
+      var st = lkState(i), due = lkDue(i), ask = lkConfirm === i.id;
+      var dueTxt = st === "now" ? "Replace now" : !due ? "No reminder set" : st === "overdue" ? "Overdue since " + shortDate(due) : (st === "soon" ? "Replace by " : "Replace around ") + shortDate(due);
+      return '<li class="lk-item ' + st + '"><div class="lk-top"><strong><span aria-hidden="true">' + LK_ICON[i.type] + "</span> " + esc(i.name) + '</strong><span class="badge ' + (i.cond === "Replace now" || i.cond === "Worn" ? "cancelled" : i.cond === "Fair" ? "pending" : "worked") + '">' + esc(i.cond) + "</span></div>" +
+        '<div class="lk-meta"><span>' + esc(i.type) + "</span>" + (i.bought ? "<span>Bought " + esc(shortDate(i.bought)) + "</span>" : "") + (i.cost ? "<span>" + fmt(i.cost) + "</span>" : "") + '<span class="lk-due-' + st + '">' + esc(dueTxt) + "</span></div>" +
+        '<div class="lk-act"><button class="mini" type="button" data-lk-replaced="' + esc(i.id) + '">Replaced it</button><button class="mini" type="button" data-lk-edit="' + esc(i.id) + '">Edit</button>' +
+        (ask ? '<button class="mini danger" type="button" data-lk-del="' + esc(i.id) + '">Delete</button><button class="mini" type="button" data-lk-keep="1">Keep</button>' : '<button class="mini" type="button" data-lk-ask="' + esc(i.id) + '">Remove</button>') + "</div></li>";
+    }).join("");
+    if (!html) html = '<li><p class="empty">No gear yet. Add your whistle, cards, flags, watch, jerseys, shoes and bag below.</p></li>';
+    list.innerHTML = html;
+  }
+  document.addEventListener("change", function (e) { if (e.target.id === "lk-type" && !lkEditId) $("lk-life").value = LK_LIFE[e.target.value] || ""; });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#lk-save,#lk-cancel,[data-lk-replaced],[data-lk-edit],[data-lk-ask],[data-lk-keep],[data-lk-del]"); if (!b) return;
+    var id;
+    if (b.id === "lk-cancel") { lkFormReset(); lkMsg(""); return; }
+    if (b.id === "lk-save") {
+      var name = $("lk-name").value.trim(), cv = $("lk-cost").value, cost = cv === "" ? 0 : Number(cv), lv = $("lk-life").value, life = lv === "" ? 0 : Math.round(Number(lv)), bought = $("lk-bought").value;
+      if (!name) return lkMsg("Give the gear a name.", true);
+      if (!isFinite(cost) || cost < 0 || cost > 1000000) return lkMsg("Type a cost like 24.99.", true);
+      if (!isFinite(life) || life < 0 || life > 120) return lkMsg("Replace after must be 0 to 120 months.", true);
+      var item = { type: $("lk-type").value, name: name, bought: bought, cost: Math.round(cost * 100), cond: $("lk-cond").value, life: life }, next;
+      if (lkEditId) next = locker.map(function (x) { return x.id === lkEditId ? Object.assign({}, x, item) : x; });
+      else { if (locker.length >= 100) return lkMsg("That is the most gear the locker can hold.", true); next = locker.concat([Object.assign({ id: uid("k") }, item)]); }
+      var was = !!lkEditId; lkSave(next, was ? "Gear updated." : "Gear added.").then(function (ok) { if (ok) lkFormReset(); }); return;
+    }
+    if (b.hasAttribute("data-lk-replaced")) { id = b.getAttribute("data-lk-replaced"); lkSave(locker.map(function (x) { return x.id === id ? Object.assign({}, x, { bought: todayStr(), cond: "New" }) : x; }), "Marked as replaced today. The clock starts over."); return; }
+    if (b.hasAttribute("data-lk-edit")) {
+      id = b.getAttribute("data-lk-edit"); var it = locker.filter(function (x) { return x.id === id; })[0]; if (!it) return; lkEditId = id;
+      $("lk-type").value = it.type; $("lk-name").value = it.name; $("lk-bought").value = it.bought; $("lk-cost").value = it.cost ? (it.cost / 100).toFixed(2) : ""; $("lk-cond").value = it.cond; $("lk-life").value = it.life || "";
+      $("lk-save").textContent = "Save changes"; $("lk-cancel").hidden = false; $("h-lkform").textContent = "Edit gear"; $("lk-name").focus(); lkMsg(""); return;
+    }
+    if (b.hasAttribute("data-lk-ask")) { lkConfirm = b.getAttribute("data-lk-ask"); renderLocker(); return; }
+    if (b.hasAttribute("data-lk-keep")) { lkConfirm = null; renderLocker(); return; }
+    if (b.hasAttribute("data-lk-del")) { id = b.getAttribute("data-lk-del"); lkConfirm = null; if (lkEditId === id) lkFormReset(); lkSave(locker.filter(function (x) { return x.id !== id; }), "Gear removed."); }
+  });
   /* Ref bag inventory */
   var BAG_DEFAULTS = [["whistle", "Whistle (Fox 40)", 2, 1], ["flags", "Flags", 1, 0], ["yellow", "Yellow card", 1, 0], ["red", "Red card", 1, 0], ["pens", "Pens and pencils", 3, 1], ["cards", "Game cards / notepad", 5, 2], ["coin", "Coin", 1, 0], ["watch", "Watch / stopwatch", 1, 0],
     ["jersey", "Referee jersey", 1, 0], ["jersey2", "Backup jersey", 1, 0], ["shorts", "Black shorts", 1, 0], ["socks", "Black socks", 1, 0], ["cleats", "Cleats", 1, 0], ["water", "Water bottle", 1, 0], ["jacket", "Rain jacket", 1, 0], ["wallet", "Wallet and keys", 1, 0]];
@@ -2789,7 +2884,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -2956,7 +3051,7 @@ html { scroll-padding-top: 96px; }
 
   /* Storage: a private store when the viewer has one, this browser otherwise. */
   function saveLocal() {
-    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, rp: rp })); } catch (e) { showToast("Could not save on this device. Storage may be full or blocked. Download a backup from Settings.", 9000); }
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ games: data.games, income: data.income, spending: data.spending, split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, locker: locker, rp: rp })); } catch (e) { showToast("Could not save on this device. Storage may be full or blocked. Download a backup from Settings.", 9000); }
   }
   function loadLocal() {
     try {
@@ -2974,12 +3069,13 @@ html { scroll-padding-top: 96px; }
       if (d && Array.isArray(d.sgoals)) sgoals = sanitizeSGoals(d.sgoals);
       if (d && d.rp && typeof d.rp === "object") rp = sanitizeRp(d.rp);
       if (d && Array.isArray(d.bag)) bag = sanitizeBag(d.bag);
+      if (d && Array.isArray(d.locker)) locker = sanitizeLocker(d.locker);
     } catch (e) {
       try { var bad = localStorage.getItem(LOCAL_KEY); if (bad) { localStorage.setItem(LOCAL_KEY + "-damaged", bad); localStorage.removeItem(LOCAL_KEY); setTimeout(function () { showToast("Saved data on this device was damaged, so the app started fresh. A copy was kept in case it can be recovered.", 12000); }, 300); } } catch (x) {}
     }
   }
   function persistSplit() {
-    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, rp: rp, sec: sec }).then(function () { return true; }, function () { return false; });
+    if (store) return store.profile.set({ split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, locker: locker, rp: rp, sec: sec }).then(function () { return true; }, function () { return false; });
     saveLocal();
     return Promise.resolve(true);
   }
@@ -3256,7 +3352,7 @@ html { scroll-padding-top: 96px; }
       (S.off ? '<p class="note">Your wish list and savings forecasts count the slower off-season pace.</p>' : "");
   }
   /* Notifications: reminders kept on this device, shown in the app and as system alerts when allowed */
-  var NF_KEY = "rf-notif-v1", NP_KEY = "rf-notif-prefs-v1", nfPrefs = { on: false, game: true, lead: "both", pay: true, payDays: 7, goal: true, wish: true, cert: true }, nfState = { sent: {}, inbox: [] }, wishReadyList = [];
+  var NF_KEY = "rf-notif-v1", NP_KEY = "rf-notif-prefs-v1", nfPrefs = { on: false, game: true, lead: "both", pay: true, payDays: 7, goal: true, wish: true, cert: true, gear: true }, nfState = { sent: {}, inbox: [] }, wishReadyList = [];
   try { var np = JSON.parse(localStorage.getItem(NP_KEY) || "{}"); if (np && typeof np === "object") Object.keys(nfPrefs).forEach(function (k) { if (typeof np[k] === typeof nfPrefs[k]) nfPrefs[k] = np[k]; }); } catch (e) {}
   try { var ns = JSON.parse(localStorage.getItem(NF_KEY) || "{}"); if (ns && ns.sent && typeof ns.sent === "object") nfState.sent = ns.sent; if (ns && Array.isArray(ns.inbox)) nfState.inbox = ns.inbox.filter(function (x) { return x && x.title; }).slice(0, 40); } catch (e) {}
   function nfSave() { try { localStorage.setItem(NP_KEY, JSON.stringify(nfPrefs)); localStorage.setItem(NF_KEY, JSON.stringify(nfState)); } catch (e) {} }
@@ -3293,6 +3389,10 @@ html { scroll-padding-top: 96px; }
       [50, 75, 100].forEach(function (m) { if (pct >= m) out.push({ id: "goal:" + t.slice(0, 7) + ":" + m, type: "goal", title: m === 100 ? "Monthly goal reached!" : "Goal milestone: " + m + "%", body: m === 100 ? "You hit your " + fmt(gC) + " goal this month." : "You are " + m + "% of the way to your " + fmt(gC) + " monthly goal." }); });
     }
     if (nfPrefs.wish) wishReadyList.forEach(function (w) { out.push({ id: "wish:" + (w.id || w.what) + ":" + toCents(w.amount), type: "wish", title: "You can afford it", body: w.what + " (" + fmt(toCents(w.amount)) + ") is ready to buy." }); });
+    if (nfPrefs.gear) locker.forEach(function (i) {
+      var st = lkState(i), due = lkDue(i); if (st === "ok") return;
+      out.push({ id: "gear:" + i.id + ":" + st + ":" + (due || i.cond), type: "gear", title: st === "soon" ? "Gear replacement coming up" : "Time to replace gear", body: i.name + (st === "now" ? " is marked Replace now." : st === "overdue" ? " was due for replacement on " + shortDate(due) + "." : " is due for replacement by " + shortDate(due) + ".") });
+    });
     if (nfPrefs.cert && rp && rp.exp) {
       var d = Math.round((pdate(rp.exp) - pdate(t)) / 864e5), th = [1, 7, 14, 30, 60].filter(function (x) { return d <= x; })[0];
       if (d < 0) out.push({ id: "cert:" + rp.exp + ":exp", type: "cert", title: "Certification expired", body: (rp.cert || "Your certification") + " expired on " + shortDate(rp.exp) + ". Renew it to keep getting games." });
@@ -3321,7 +3421,7 @@ html { scroll-padding-top: 96px; }
   function renderNotifs() {
     var p = $("nf-panel"); if (!p) return;
     $("nf-on").checked = nfPrefs.on; $("nf-opts").style.display = nfPrefs.on ? "" : "none";
-    ["game", "pay", "goal", "wish", "cert"].forEach(function (k) { $("nf-" + k).checked = nfPrefs[k]; });
+    ["game", "pay", "goal", "wish", "cert", "gear"].forEach(function (k) { $("nf-" + k).checked = nfPrefs[k]; });
     $("nf-lead").value = nfPrefs.lead; $("nf-paydays").value = String(nfPrefs.payDays);
     var perm = nfSupported() ? Notification.permission : "none", st = $("nf-state");
     st.textContent = !nfPrefs.on ? "Off" : perm === "granted" ? "Alerts on" : perm === "denied" ? "In app only" : perm === "none" ? "In app only" : "Allow alerts";
@@ -3344,7 +3444,7 @@ html { scroll-padding-top: 96px; }
       if (nfPrefs.on && nfSupported() && Notification.permission === "default") { try { var r = Notification.requestPermission(); if (r && r.then) r.then(function () { renderNotifs(); nfPermMsg(); }); } catch (x) { /* older Safari */ } }
     } else if (id === "nf-lead") nfPrefs.lead = e.target.value;
     else if (id === "nf-paydays") nfPrefs.payDays = +e.target.value || 7;
-    else if (/^nf-(game|pay|goal|wish|cert)$/.test(id)) nfPrefs[id.slice(3)] = e.target.checked;
+    else if (/^nf-(game|pay|goal|wish|cert|gear)$/.test(id)) nfPrefs[id.slice(3)] = e.target.checked;
     nfSave(); renderNotifs(); nfPermMsg();
     if (nfPrefs.on) nfRun(first ? ["goal", "wish"] : ["goal", "wish"].filter(function (k) { return id === "nf-" + k; }));
   });
@@ -4848,6 +4948,7 @@ html { scroll-padding-top: 96px; }
     if (Array.isArray(d.sgoals)) { var ng = sanitizeSGoals(d.sgoals); if (!sameJson(ng, sgoals)) { sgoals = ng; render(); } }
     if (d.rp && typeof d.rp === "object") { var nr = sanitizeRp(d.rp); if (!sameJson(nr, rp)) { rp = nr; render(); } }
     if (Array.isArray(d.bag)) { var nb = sanitizeBag(d.bag); if (!sameJson(nb, bag)) { bag = nb; render(); } }
+    if (Array.isArray(d.locker)) { var nl = sanitizeLocker(d.locker); if (!sameJson(nl, locker)) { locker = nl; render(); } }
     if (d.sec) { var nsec = sanitizeSec(d.sec); if (!sameJson(nsec, sec)) { sec = nsec; saveSecLocal(); secRender(); if (sec.mode === "pin" && wasFirst && !lockOn) showLock(); } }
     if (d.ui) { var eu = uiDirty(); ui = sanitizeUi(d.ui); if (!eu) { draftUi = clone(ui); fillUiInputs(); applyUi(ui); } }
     if (validSplit(d.split)) { var ed = draftDirty(); split = d.split; if (ed) updateDraftUI(); else fillSplitInputs(); }
@@ -4885,14 +4986,14 @@ html { scroll-padding-top: 96px; }
     if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
-    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs), goal: goal, sgoals: sgoals.slice(), bag: bag.slice(), rp: clone(rp) };
+    var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs), goal: goal, sgoals: sgoals.slice(), bag: bag.slice(), locker: locker.slice(), rp: clone(rp) };
     var hasMine = mine.games.length + mine.income.length + mine.spending.length + mine.wishes.length + mine.assocs.length > 0 || mine.goal > 0 || mine.sgoals.length > 0 || mine.start !== DEFAULT_START || JSON.stringify(mine.split) !== JSON.stringify(DEFAULT_SPLIT);
     sbOn = true; store = makeSbStore(); acctRender();
     setStatus("Syncing with your account…");
     return sbFetchAll().then(function (all) {
       var cloudEmpty = !all.count && !(all.prof && Object.keys(all.prof).length);
       if (cloudEmpty && hasMine) {
-        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay, assocs: mine.assocs, goal: mine.goal, sgoals: mine.sgoals, bag: mine.bag, rp: mine.rp, sec: sec })];
+        var ups = [store.profile.set({ split: mine.split, start: mine.start, ui: mine.ui, wishes: mine.wishes, pay: mine.pay, assocs: mine.assocs, goal: mine.goal, sgoals: mine.sgoals, bag: mine.bag, locker: mine.locker, rp: mine.rp, sec: sec })];
         KINDS.forEach(function (k) { mine[k].forEach(function (e) { ups.push(store[k].doc(e.id).set(e)); }); });
         return Promise.all(ups).then(function () { loaded = true; acctStatus(); return "moved"; });
       }
@@ -5040,7 +5141,7 @@ html { scroll-padding-top: 96px; }
   var undoDoc = null;
   function backupDoc() {
     return { app: "RefVault", version: 1, exported: new Date().toISOString(), games: data.games, income: data.income, spending: data.spending,
-      split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, rp: rp };
+      split: split, start: start, ui: ui, wishes: wishes, pay: pay, assocs: assocs, goal: goal, sgoals: sgoals, bag: bag, locker: locker, rp: rp };
   }
   function bkInfo() {
     var t = ""; try { t = localStorage.getItem("rf-last-backup") || ""; } catch (e) {}
@@ -5074,6 +5175,7 @@ html { scroll-padding-top: 96px; }
     doc.goal = sanitizeGoal(d.goal) !== null ? d.goal : goal;
     doc.sgoals = Array.isArray(d.sgoals) ? sanitizeSGoals(d.sgoals) : sgoals;
     doc.bag = Array.isArray(d.bag) ? sanitizeBag(d.bag) : bag;
+    doc.locker = Array.isArray(d.locker) ? sanitizeLocker(d.locker) : locker;
     doc.rp = d.rp && typeof d.rp === "object" ? sanitizeRp(d.rp) : rp;
     doc.dropped = rep.dropped;
     return { doc: doc };
@@ -5081,7 +5183,7 @@ html { scroll-padding-top: 96px; }
   function applyDoc(doc, persist) {
     var prev = { games: data.games, income: data.income, spending: data.spending };
     KINDS.forEach(function (k) { data[k] = doc[k]; });
-    split = doc.split; start = doc.start; ui = doc.ui; wishes = doc.wishes; pay = doc.pay; assocs = doc.assocs; goal = doc.goal; sgoals = doc.sgoals; bag = doc.bag; rp = doc.rp;
+    split = doc.split; start = doc.start; ui = doc.ui; wishes = doc.wishes; pay = doc.pay; assocs = doc.assocs; goal = doc.goal; sgoals = doc.sgoals; bag = doc.bag; locker = doc.locker; rp = doc.rp;
     draftUi = clone(ui); applyUi(ui); fillSplitInputs(); fillStartInput(); fillUiInputs(); renderPay(); renderAssocs(); render();
     if (!persist) return Promise.resolve(true);
     if (!store) { saveLocal(); return Promise.resolve(true); }
@@ -5572,6 +5674,7 @@ html { scroll-padding-top: 96px; }
         if (d && Array.isArray(d.sgoals)) { var ng = sanitizeSGoals(d.sgoals); if (!sameJson(ng, sgoals)) { sgoals = ng; render(); } }
         if (d && d.rp && typeof d.rp === "object") { var nr = sanitizeRp(d.rp); if (!sameJson(nr, rp)) { rp = nr; render(); } }
         if (d && Array.isArray(d.bag)) { var nb = sanitizeBag(d.bag); if (!sameJson(nb, bag)) { bag = nb; render(); } }
+        if (d && Array.isArray(d.locker)) { var nl = sanitizeLocker(d.locker); if (!sameJson(nl, locker)) { locker = nl; render(); } }
         if (d && d.ui) {
           var editingUi = uiDirty();
           ui = sanitizeUi(d.ui);
