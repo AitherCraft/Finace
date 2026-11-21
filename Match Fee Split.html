@@ -405,6 +405,7 @@ html[data-hide~="goals"] [data-card="goals"],
 html[data-hide~="wish"] [data-card="wish"],
 html[data-hide~="bag"] [data-card="bag"],
 html[data-hide~="wallet"] [data-card="wallet"],
+html[data-hide~="ach"] [data-card="ach"],
 html[data-hide~="mywid"] [data-card="mywid"],
 html[data-hide~="season"] [data-card="season"],
 html[data-hide~="insights"] [data-card="insights"],
@@ -627,6 +628,15 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .wal-split { display: grid; gap: 6px; margin-bottom: 10px; } .wal-split div { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; } .wal-split .t { border-top: 1px solid var(--panel-line); padding-top: 6px; font-weight: 700; }
 .wal-rem { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 html.mh .wal-big b, html.mh .wal-grid b, html.mh .wal-split b, html.mh .wal-split span.v { filter: blur(9px); user-select: none; }
+#ach-pop { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; background: rgba(2, 6, 16, 0.6); padding: 20px; }
+#ach-pop.show { display: grid; }
+.ach-card { display: grid; gap: 8px; justify-items: center; text-align: center; width: min(320px, 100%); padding: 24px 20px; border-radius: 18px; border: 1px solid var(--blue); background: var(--panel); box-shadow: 0 20px 60px rgba(0,0,0,0.6); animation: achIn 0.45s cubic-bezier(.2,1.4,.4,1); }
+.ach-ico { font-size: 64px; line-height: 1; animation: achSpin 0.9s ease; } .ach-conf { font-size: 22px; letter-spacing: 6px; }
+.ach-card strong { font: 800 14px/1.2 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); } .ach-card span { font: 800 26px/1.15 var(--display); } .ach-card small { color: var(--muted); }
+@keyframes achIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } } @keyframes achSpin { from { transform: rotate(-30deg) scale(0.4); } to { transform: rotate(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ach-card, .ach-ico { animation: none; } }
+.ach-row { display: flex; gap: 8px; margin: 10px 0; } .ach-b { font-size: 26px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: rgba(46,134,255,0.12); border: 1px solid var(--blue); }
+.ach-next { margin-top: 8px; display: grid; gap: 6px; }
 .bag-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .bag-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--panel-line); }
 .bag-row:first-child { border-top: 0; }
@@ -959,6 +969,7 @@ html { scroll-padding-top: 96px; }
         <div class="row" id="wish-undo" hidden><button class="btn ghost" type="button" id="wish-undo-go">Undo purchase</button></div>
         </section>
         <section class="panel hc o2" id="wallet-card" data-card="wallet" aria-labelledby="h-wallet-home"><div class="panel-head"><h2 id="h-wallet-home">Referee Wallet</h2><a class="mini" href="#wallet">Details</a></div><div id="wallet-home"></div></section>
+        <section class="panel hc o4" id="ach-card" data-card="ach" aria-labelledby="h-ach"><div class="panel-head"><h2 id="h-ach">Achievements</h2><span class="chip" id="ach-count"></span><a class="mini" href="#profile">All badges</a></div><div id="ach-home"></div></section>
         <section class="panel hc o6" id="bag-card" data-card="bag"><div class="panel-head"><h2>Ref Bag</h2><a class="mini" href="#inventory">View all</a></div><div id="bag-home"></div></section>
         <section class="panel hc o6" data-card="quick" aria-labelledby="h-quick">
           <h2 id="h-quick">Quick Actions</h2>
@@ -1437,6 +1448,7 @@ html { scroll-padding-top: 96px; }
         <label class="check" for="show-weather"><input id="show-weather" type="checkbox" data-ui>Weather</label>
         <label class="check" for="show-insights"><input id="show-insights" type="checkbox" data-ui>Insights</label>
         <label class="check" for="show-season"><input id="show-season" type="checkbox" data-ui>Season</label>
+        <label class="check" for="show-ach"><input id="show-ach" type="checkbox" data-ui>Achievements</label>
         <label class="check" for="show-wallet"><input id="show-wallet" type="checkbox" data-ui>Referee wallet</label>
         <label class="check" for="show-bag"><input id="show-bag" type="checkbox" data-ui>Ref bag</label>
       </div>
@@ -1693,13 +1705,13 @@ html { scroll-padding-top: 96px; }
   var DEFAULT_START = 715;
   var start = DEFAULT_START;
   var SECTIONS = [
-    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "wallet", label: "Referee wallet" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }, { k: "weather", label: "Weather" }
+    { k: "tiles", label: "Summary tiles" }, { k: "wish", label: "Wish list" }, { k: "next", label: "Next game" }, { k: "goal", label: "Monthly goal" }, { k: "recent", label: "Recent games" }, { k: "league", label: "League breakdown" }, { k: "quick", label: "Quick actions" }, { k: "career", label: "Career stats" }, { k: "upcoming", label: "Upcoming games" }, { k: "calendar", label: "Calendar" }, { k: "records", label: "Personal records" }, { k: "tips", label: "Referee tips" }, { k: "earnings", label: "Earnings overview" }, { k: "reminders", label: "Collect your pay" }, { k: "owed", label: "Owed to you" }, { k: "goals", label: "Goals progress" }, { k: "ach", label: "Achievements" }, { k: "wallet", label: "Referee wallet" }, { k: "bag", label: "Ref bag" }, { k: "mywid", label: "My widgets" }, { k: "season", label: "Season" }, { k: "insights", label: "Insights" }, { k: "weather", label: "Weather" }
   ];
   var DEFAULT_UI = {
     bg: "#060d1c", panel: "#0b1630", text: "#eaf1ff", accent: "#2f8cff",
     give: "#f0525b", save: "#22c55e", invest: "#2f8cff", spend: "#fbbf24",
     size: "m", round: "m", density: "c", glow: true,
-    show: { wallet: true, tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
+    show: { ach: true, wallet: true, tiles: true, next: true, goal: true, recent: true, league: true, quick: true, career: true, upcoming: true, calendar: true, records: true, wish: true, tips: true, earnings: true, reminders: true, owed: true, goals: true, bag: true, mywid: true, season: true, insights: true, weather: true },
     widgets: [], season: "auto",
     name: "RefVault", tagline: "Track \u2022 Plan \u2022 Earn", order: []
   };
@@ -3460,7 +3472,7 @@ html { scroll-padding-top: 96px; }
   var HOME_ORIG = HOME_BOX ? Array.prototype.slice.call(HOME_BOX.querySelectorAll("[data-card]")) : [];
   var HOME_HOME = HOME_ORIG.map(function (c) { return { el: c, col: HOME_COLS.indexOf(c.parentNode) }; });
   var CARD_KEYS = HOME_ORIG.map(function (c) { return c.getAttribute("data-card"); });
-  var CARD_LABEL = { wallet: "Referee wallet", weather: "Weather", insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
+  var CARD_LABEL = { ach: "Achievements", wallet: "Referee wallet", weather: "Weather", insights: "Insights", season: "Season", mywid: "My widgets", next: "Next game", recent: "Recent games", goal: "Monthly goal", goals: "Goals", wish: "Wish list", league: "League breakdown", owed: "Owed to you", bag: "Ref bag", quick: "Quick actions", career: "Career stats", upcoming: "Upcoming games", reminders: "Collect your pay", calendar: "Assignment calendar", records: "Personal records", tips: "Referee bag tips", earnings: "Earnings overview" };
   var curOrder = [], deskMq = window.matchMedia ? window.matchMedia("(min-width: 960px)") : null;
   function defaultOrder() {
     return HOME_ORIG.map(function (c, i) { var m = /(?:^|\s)o(\d)(?:\s|$)/.exec(c.className); return { k: c.getAttribute("data-card"), n: m ? +m[1] : 99, i: i }; })
@@ -4632,17 +4644,19 @@ html { scroll-padding-top: 96px; }
     var ks = Object.keys(weeks).map(Number).sort(function (a, b) { return a - b; }), best = 0, run = 0, prev = null;
     ks.forEach(function (k) { run = prev !== null && k === prev + 1 ? run + 1 : 1; prev = k; if (run > best) best = run; });
     var maxDay = 0; Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxDay) maxDay = byDay[k]; });
-    return { played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first, tourn: tourn, gstreak: bestG };
+    var seasonsDone = achSeasonsDone();
+    return { seasonsDone: seasonsDone, played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first, tourn: tourn, gstreak: bestG };
   }
   var RP_BADGES = [
-    { i: "🥇", n: "First Whistle", d: "Referee your first game", v: function (s) { return s.played; }, t: 1 },
-    { i: "🔟", n: "Ten Games", d: "Referee 10 games", v: function (s) { return s.played; }, t: 10 },
-    { i: "🎖️", n: "Quarter Century", d: "Referee 25 games", v: function (s) { return s.played; }, t: 25 },
-    { i: "🏅", n: "100 Games", d: "Referee 100 games", v: function (s) { return s.played; }, t: 100 },
-    { i: "🏆", n: "Veteran", d: "Referee 250 games", v: function (s) { return s.played; }, t: 250 },
-    { i: "💵", n: "First $100", d: "Earn $100 in game fees", v: function (s) { return s.earned / 100; }, t: 100, m: 1 },
-    { i: "💵", n: "Thousand Club", d: "Earn $1,000 in game fees", v: function (s) { return s.earned / 100; }, t: 1000, m: 1 },
-    { i: "💰", n: "$5,000 Earned", d: "Earn $5,000 in game fees", v: function (s) { return s.earned / 100; }, t: 5000, m: 1 },
+    { i: "🥇", n: "First Game", d: "Referee your first game", v: function (s) { return s.played; }, t: 1, vk: "played" },
+    { i: "💵", n: "First $100", d: "Earn your first $100 in game fees", v: function (s) { return s.earned / 100; }, t: 100, m: 1, vk: "earned" },
+    { i: "🎖️", n: "25 Games", d: "Complete 25 games", v: function (s) { return s.played; }, t: 25, vk: "played" },
+    { i: "🏅", n: "100 Games", d: "Complete 100 games", v: function (s) { return s.played; }, t: 100, vk: "played" },
+    { i: "💰", n: "$1,000 Earned", d: "Earn $1,000 in game fees", v: function (s) { return s.earned / 100; }, t: 1000, m: 1, vk: "earned" },
+    { i: "🏁", n: "Full Season", d: "Complete a full season: work most weeks of a season that has ended", v: function (s) { return s.seasonsDone; }, t: 1 },
+    { i: "🔟", n: "Ten Games", d: "Referee 10 games", v: function (s) { return s.played; }, t: 10, vk: "played" },
+    { i: "🏆", n: "Veteran", d: "Referee 250 games", v: function (s) { return s.played; }, t: 250, vk: "played" },
+    { i: "💎", n: "$5,000 Earned", d: "Earn $5,000 in game fees", v: function (s) { return s.earned / 100; }, t: 5000, m: 1, vk: "earned" },
     { i: "🚩", n: "Tournament Referee", d: "Work a tournament (name it in the game or notes) or 4 games in one day", v: function (s) { return s.tourn > 0 || s.maxDay >= 4 ? 1 : 0; }, t: 1 },
     { i: "🔥", n: "10 Game Streak", d: "Referee 10 games in a row with no cancellations", v: function (s) { return s.gstreak; }, t: 10 },
     { i: "⚡", n: "Tournament Day", d: "Referee 4 games in one day", v: function (s) { return s.maxDay; }, t: 4 },
@@ -4652,6 +4666,64 @@ html { scroll-padding-top: 96px; }
     { i: "🌎", n: "Multi-League", d: "Work games in 3 different leagues", v: function (s) { return s.nLeagues; }, t: 3 },
     { i: "✅", n: "Paid in Full", d: "5 or more games played and none unpaid", v: function (s) { return s.unpaidN === 0 ? s.paidN : 0; }, t: 5 }
   ];
+  /* Achievements: badges with unlock dates, a Home card, and a celebration when one is earned */
+  function achWeek(ds) { return Math.floor((parseD(ds).getTime() / 864e5 + 3) / 7); }
+  function achSeasonsDone() {
+    var td = todayStr(), done = 0, gs = live().filter(function (g) { return g.date <= td; });
+    if (hasSeasons()) {
+      assocs.forEach(function (a) {
+        if (!a.start || !a.end || a.end >= td || a.end < a.start) return;
+        var total = achWeek(a.end) - achWeek(a.start) + 1; if (total < 4) return;
+        var wk = {}; gs.forEach(function (g) { if (g.assoc === a.name && g.date >= a.start && g.date <= a.end) wk[achWeek(g.date)] = 1; });
+        if (Object.keys(wk).length >= Math.ceil(total * 0.7)) done++;
+      });
+      return done;
+    }
+    var by = {}; gs.forEach(function (g) { var k = seasonName(g.date.slice(0, 7)); (by[k] = by[k] || {})[achWeek(g.date)] = 1; });
+    Object.keys(by).forEach(function (k) {
+      var y = +k.split(" ")[1], nm = k.split(" ")[0], end = nm === "Fall" ? y + "-11-30" : nm === "Winter" ? (y + 1) + "-02-28" : nm === "Spring" ? y + "-06-30" : y + "-07-31";
+      if (end >= td) return;
+      var ws = Object.keys(by[k]).map(Number), span = Math.max.apply(null, ws) - Math.min.apply(null, ws) + 1;
+      if (ws.length >= 6 && ws.length >= span * 0.6) done++;
+    });
+    return done;
+  }
+  function achDates() {
+    var td = todayStr(), out = {}, played = 0, earned = 0;
+    live().filter(function (g) { return g.date <= td; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }).forEach(function (g) {
+      played += gN(g); earned += g.paid !== false ? toCents(g.fee) : gRcvd(g);
+      RP_BADGES.forEach(function (b) { if (out[b.n]) return; var v = b.vk === "played" ? played : b.vk === "earned" ? earned / 100 : null; if (v !== null && v >= b.t) out[b.n] = g.date; });
+    });
+    return out;
+  }
+  var ACH_KEY = "rf-ach-v1";
+  function achPop(list) {
+    var el = $("ach-pop"); if (!el) { el = document.createElement("div"); el.id = "ach-pop"; el.setAttribute("role", "alert"); document.body.appendChild(el); }
+    var b = list[0]; el.innerHTML = '<div class="ach-card"><div class="ach-conf" aria-hidden="true">🎉 ✨ 🎊 ✨ 🎉</div><div class="ach-ico" aria-hidden="true">' + b.i + '</div><strong>Achievement unlocked!</strong><span>' + esc(b.n) + '</span><small>' + esc(b.d) + (list.length > 1 ? " (+" + (list.length - 1) + " more)" : "") + '</small><button class="btn" type="button" id="ach-ok">Nice!</button></div>';
+    el.className = "show"; clearTimeout(achPop.h); achPop.h = setTimeout(function () { el.className = ""; }, 9000);
+  }
+  document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#ach-ok")) { var el = $("ach-pop"); if (el) el.className = ""; } });
+  function achCheck(st) {
+    var got = RP_BADGES.filter(function (b) { return b.v(st) >= b.t; }), ids = got.map(function (b) { return b.n; }), seen = null;
+    try { seen = JSON.parse(localStorage.getItem(ACH_KEY) || "null"); } catch (e) { seen = null; }
+    if (!data.games.length && !seen) return;
+    if (!seen || !Array.isArray(seen.ids)) { try { localStorage.setItem(ACH_KEY, JSON.stringify({ ids: ids, at: {} })); } catch (e) { /* ok */ } return; }
+    var fresh = got.filter(function (b) { return seen.ids.indexOf(b.n) < 0; }); if (!fresh.length) return;
+    seen.ids = seen.ids.concat(fresh.map(function (b) { return b.n; })); try { localStorage.setItem(ACH_KEY, JSON.stringify(seen)); } catch (e) { /* ok */ }
+    achPop(fresh);
+  }
+  function renderAchHome(st, dates) {
+    var box = $("ach-home"); if (!box) return;
+    var got = RP_BADGES.filter(function (b) { return b.v(st) >= b.t; }), todo = RP_BADGES.filter(function (b) { return b.v(st) < b.t; });
+    todo.sort(function (a, b) { return b.v(st) / b.t - a.v(st) / a.t; });
+    var nx = todo[0], recent = got.slice().sort(function (a, b) { return (dates[b.n] || "") < (dates[a.n] || "") ? -1 : 1; }).slice(0, 5), pct = Math.round(got.length / RP_BADGES.length * 100);
+    $("ach-count").textContent = got.length + " of " + RP_BADGES.length;
+    var h = '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Badges earned"><span style="width:' + pct + '%;background:var(--blue)"></span></div>';
+    if (recent.length) h += '<div class="ach-row">' + recent.map(function (b) { return '<span class="ach-b" title="' + esc(b.n) + '">' + b.i + "</span>"; }).join("") + "</div>";
+    if (nx) { var v = nx.v(st), p = Math.min(100, Math.round(v / nx.t * 100)); h += '<div class="ach-next"><div class="wish-top"><span>Next up: <b>' + esc(nx.n) + "</b></span><span>" + (nx.m ? fmt(Math.round(v * 100)) + " / " + fmt(nx.t * 100) : Math.floor(v) + " / " + nx.t) + '</span></div><div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="' + esc(nx.n) + '"><span style="width:' + p + '%;background:var(--green)"></span></div><p class="note">' + esc(nx.d) + "</p></div>"; }
+    else h += '<p class="note">Every badge earned. Legend!</p>';
+    box.innerHTML = h;
+  }
   function certStatus() {
     if (!rp.exp) return rp.cert ? "No expiry set" : "—";
     var d = Math.round((parseD(rp.exp) - parseD(todayStr())) / 864e5);
@@ -4669,10 +4741,11 @@ html { scroll-padding-top: 96px; }
     }
     var top = Object.keys(st.leagues).sort(function (a, b) { return st.leagues[b] - st.leagues[a]; }).slice(0, 5);
     $("rp-leagues").innerHTML = top.length ? top.map(function (l) { var fav = (rp.favs || []).some(function (f) { return f.toLowerCase() === l.toLowerCase(); }); return '<li class="row-line"><span>' + (fav ? "⭐ " : "") + esc(l) + '</span><strong>' + st.leagues[l] + (st.leagues[l] === 1 ? " game" : " games") + "</strong></li>"; }).join("") : '<li><p class="empty">Log games with a league and your most-worked leagues show here. Favorites you list above get a star.</p></li>';
-    var got = 0;
+    var got = 0, dts = {}; try { dts = achDates(); } catch (e) { dts = {}; }
+    try { renderAchHome(st, dts); achCheck(st); } catch (e) { reportErr(e, "achievements"); }
     $("rp-badges").innerHTML = RP_BADGES.map(function (b) {
       var v = b.v(st), ok = v >= b.t; if (ok) got++;
-      var prog = ok ? "Earned" : (b.m ? fmt(Math.round(v * 100)) + " of " + fmt(b.t * 100) : Math.floor(v) + " of " + b.t);
+      var prog = ok ? "Earned" + (dts[b.n] ? " " + mdDate(dts[b.n]) : "") : (b.m ? fmt(Math.round(v * 100)) + " of " + fmt(b.t * 100) : Math.floor(v) + " of " + b.t);
       return '<div class="rp-badge' + (ok ? " on" : "") + '"><span class="rp-ico" aria-hidden="true">' + b.i + '</span><strong>' + esc(b.n) + '</strong><span class="hist-when">' + esc(b.d) + '</span><span class="rp-prog">' + esc(prog) + "</span></div>";
     }).join("");
     $("rp-badge-count").textContent = got + " of " + RP_BADGES.length;
