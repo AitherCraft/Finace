@@ -356,6 +356,8 @@ button.badge { cursor: pointer; min-height: 26px; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
 .szi-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; height: 84px; align-items: end; } .szi-strip > div { display: grid; grid-template-rows: 1fr auto; height: 100%; justify-items: center; gap: 2px; font-size: 11px; color: var(--muted); }
 .szi-strip i { align-self: end; width: 100%; border-radius: 4px 4px 0 0; background: var(--blue); } .szi-strip .q i { background: var(--orange); } .szi-strip .now span { color: var(--fg); font-weight: 800; }
+.stk-card { margin: 0 0 14px; display: grid; gap: 6px; } .stk-card h3 { margin: 0; } .stk-row { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--panel-line); } .stk-ico { font-size: 26px; line-height: 1; } .stk-row b { display: block; font: 800 17px/1.2 var(--display); } .stk-row small { display: block; color: var(--muted); font-size: 12px; } .stk-row.rec b { color: var(--yellow); }
+.stk-mini { display: grid; gap: 0; margin-top: 8px; } .stk-mini .stk-row { padding: 6px 0; } .stk-mini .stk-ico { font-size: 20px; } .stk-mini .stk-row b { font-size: 15px; }
 .lv-card { margin: 10px 0 14px; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--blue); display: grid; gap: 8px; } .lv-home { display: grid; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--panel-line); }
 .lv-top { display: flex; gap: 12px; align-items: center; } .lv-ico { font-size: 34px; line-height: 1; } .lv-top b { font: 800 20px/1.1 var(--display); display: block; } .lv-top small { color: var(--muted); font-size: 13px; }
 .lv-req { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; padding: 4px 0; border-top: 1px solid var(--panel-line); } .lv-req.on { color: var(--green); }
@@ -1327,6 +1329,7 @@ html { scroll-padding-top: 96px; }
     <section class="panel" data-page="profile" hidden aria-labelledby="h-profile">
       <div class="rp-head"><div class="rp-avatar" id="rp-avatar" aria-hidden="true">R</div><div><h2 id="h-profile">Referee career profile</h2><p class="page-sub" id="rp-line"></p></div></div>
       <div class="lv-card" id="rp-lvcard"></div>
+      <div class="stk-card" id="rp-stk"></div>
       <div class="wish-stats" id="rp-stats"></div>
       <h3>About you</h3>
       <form id="form-rp" novalidate class="fs">
@@ -5049,6 +5052,52 @@ html { scroll-padding-top: 96px; }
     return { name: String(o.name || "").trim().slice(0, 40), cert: String(o.cert || "").trim().slice(0, 60), level: RP_LEVELS.indexOf(o.level) >= 0 ? o.level : "",
       since: since >= 1970 && since <= yr ? since : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(o.exp || "") ? o.exp : "", favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5) };
   }
+  /* Streaks: weeks in a row with games, months in a row meeting your goal, seasons in a row */
+  function stkRun(keys, curKey, cont, graceNow) {
+    var set = {}; keys.forEach(function (k) { set[k] = 1; });
+    var ks = keys.slice().sort(function (a, b) { return a - b; }), best = 0, run = 0, prev = null;
+    ks.forEach(function (k) { run = prev !== null && k === prev + 1 ? run + 1 : 1; prev = k; if (run > best) best = run; });
+    var k = set[curKey] ? curKey : (graceNow && set[curKey - 1] ? curKey - 1 : null), cur = 0;
+    while (k !== null && set[k]) { cur++; k--; }
+    return { cur: cur, best: best, hasNow: !!set[curKey] };
+  }
+  function stkCalc() {
+    var t = todayStr(), td = parseD(t), wk = function (d) { return Math.floor((parseD(d).getTime() / 864e5 + 3) / 7); }, wNow = Math.floor((td.getTime() / 864e5 + 3) / 7), weeks = [], seen = {};
+    live().forEach(function (g) { if (g.date > t) return; var w = wk(g.date); if (!seen[w]) { seen[w] = 1; weeks.push(w); } });
+    var W = stkRun(weeks, wNow, true, true); W.sched = live().some(function (g) { return g.date >= t && wk(g.date) === wNow; });
+    var M = { cur: 0, best: 0, on: goal > 0, met: false, pct: 0 };
+    if (goal > 0 && data.games.length) {
+      var gC = Math.round(goal * 100), first = "9999-99", curK = t.slice(0, 7);
+      live().forEach(function (g) { var k = g.date.slice(0, 7); if (k < first) first = k; });
+      var y = +first.slice(0, 4), mo = +first.slice(5, 7), idx = 0, ok = [], curIdx = -1;
+      while (true) {
+        var k = y + "-" + (mo < 10 ? "0" : "") + mo, last = new Date(y, mo, 0).getDate(), net = totalsFor([k + "-01", k + "-" + (last < 10 ? "0" : "") + last]).net;
+        if (net >= gC) ok.push(idx); if (k === curK) { curIdx = idx; M.pct = Math.min(100, Math.floor(Math.max(0, net) / gC * 100)); break; }
+        idx++; if (++mo > 12) { mo = 1; y++; }
+      }
+      var R = stkRun(ok, curIdx, false, true); M.cur = R.cur; M.best = R.best; M.met = R.hasNow;
+      if (!R.hasNow && R.cur === 0) { /* previous months may still count */ }
+    }
+    var S = seasonInfo(), SS = { cur: 0, best: 0 };
+    if (!S.none && S.seasons.length) {
+      var mi = function (k) { return +k.slice(0, 4) * 12 + (+k.slice(5, 7)); }, run = 0, best = 0, runs = [];
+      S.seasons.forEach(function (x, i) { run = i && mi(x.s) - mi(S.seasons[i - 1].e) <= 13 ? run + 1 : 1; runs.push(run); if (run > best) best = run; });
+      var lastX = S.seasons[S.seasons.length - 1];
+      SS.best = best; SS.cur = mi(t.slice(0, 7)) - mi(lastX.e) <= 13 ? runs[runs.length - 1] : 0;
+    }
+    return { w: W, m: M, s: SS };
+  }
+  function stkHtml(k, full) {
+    var w = k.w, m = k.m, s = k.s;
+    var rows = [
+      ["🔥", "Weeks in a row", w.cur + (w.cur === 1 ? " week" : " weeks"), "Best: " + w.best, w.cur > 0 && w.cur >= w.best && w.cur > 1,
+        w.cur === 0 ? "Work a game this week to start a streak." : w.hasNow ? "Your streak is safe this week." : w.sched ? "You have a game scheduled this week to keep it going." : "No game yet this week. Work or schedule one to keep your streak alive."],
+      ["🎯", "Months meeting your goal", m.on ? m.cur + (m.cur === 1 ? " month" : " months") : "No goal set", m.on ? "Best: " + m.best : "", m.on && m.cur > 0 && m.cur >= m.best && m.cur > 1,
+        !m.on ? "Set a monthly goal on the Home page to track this streak." : m.met ? "This month's goal is reached, so it counts." : "This month is at " + m.pct + "% of your goal. Reaching it adds to your streak."],
+      ["🏅", "Seasons in a row", s.cur + (s.cur === 1 ? " season" : " seasons"), "Longest: " + s.best, s.cur > 1 && s.cur >= s.best, "Counts back-to-back seasons with no full year off."]
+    ];
+    return rows.map(function (r) { return '<div class="stk-row' + (r[4] ? " rec" : "") + '"><span class="stk-ico" aria-hidden="true">' + r[0] + '</span><div><b>' + r[2] + '</b><small>' + r[1] + (r[3] ? " · " + r[3] : "") + (r[4] ? " 🏆 personal best" : "") + "</small>" + (full ? "<small>" + esc(r[5]) + "</small>" : "") + "</div></div>"; }).join("");
+  }
   function rpStats() {
     var td = todayStr(), played = 0, earned = 0, byDay = {}, leagues = {}, roles = {}, weeks = {}, paidN = 0, unpaidN = 0, first = "", tourn = 0;
     live().forEach(function (g) {
@@ -5067,8 +5116,8 @@ html { scroll-padding-top: 96px; }
     var ks = Object.keys(weeks).map(Number).sort(function (a, b) { return a - b; }), best = 0, run = 0, prev = null;
     ks.forEach(function (k) { run = prev !== null && k === prev + 1 ? run + 1 : 1; prev = k; if (run > best) best = run; });
     var maxDay = 0; Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxDay) maxDay = byDay[k]; });
-    var seasonsDone = achSeasonsDone();
-    return { seasonsDone: seasonsDone, played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first, tourn: tourn, gstreak: bestG };
+    var seasonsDone = achSeasonsDone(), stk = stkCalc();
+    return { seasonsDone: seasonsDone, played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first, tourn: tourn, gstreak: bestG, stk: stk, mgBest: stk.m.best, ssBest: stk.s.best };
   }
   /* Referee levels: Rookie, Experienced, Advanced, Elite. A level is reached when you meet 2 of its 3 goals (games, income, seasons). */
   var RP_TIERS = [
@@ -5104,6 +5153,10 @@ html { scroll-padding-top: 96px; }
     { i: "🚩", n: "Tournament Referee", d: "Work a tournament (name it in the game or notes) or 4 games in one day", v: function (s) { return s.tourn > 0 || s.maxDay >= 4 ? 1 : 0; }, t: 1 },
     { i: "🔥", n: "10 Game Streak", d: "Referee 10 games in a row with no cancellations", v: function (s) { return s.gstreak; }, t: 10 },
     { i: "⚡", n: "Tournament Day", d: "Referee 4 games in one day", v: function (s) { return s.maxDay; }, t: 4 },
+    { i: "🌟", n: "Twelve-Week Streak", d: "Referee in 12 weeks in a row", v: function (s) { return s.streak; }, t: 12 },
+    { i: "🎯", n: "Goal Getter", d: "Meet your monthly goal 3 months in a row", v: function (s) { return s.mgBest; }, t: 3 },
+    { i: "🏹", n: "On Target", d: "Meet your monthly goal 6 months in a row", v: function (s) { return s.mgBest; }, t: 6 },
+    { i: "🤝", n: "Loyal Referee", d: "Work 3 seasons in a row", v: function (s) { return s.ssBest; }, t: 3 },
     { i: "📅", n: "Four-Week Streak", d: "Referee in 4 weeks in a row", v: function (s) { return s.streak; }, t: 4 },
     { i: "🗓️", n: "Twelve-Week Streak", d: "Referee in 12 weeks in a row", v: function (s) { return s.streak; }, t: 12 },
     { i: "🎭", n: "All-Rounder", d: "Work as Center, assistant and 4th official", v: function (s) { return (s.roles.Center ? 1 : 0) + ((s.roles.AR1 || s.roles.AR2) ? 1 : 0) + (s.roles["4th"] ? 1 : 0); }, t: 3 },
@@ -5165,7 +5218,7 @@ html { scroll-padding-top: 96px; }
     todo.sort(function (a, b) { return b.v(st) / b.t - a.v(st) / a.t; });
     var lvH = rpLevelHtml(st, false), nx = todo[0], recent = got.slice().sort(function (a, b) { return (dates[b.n] || "") < (dates[a.n] || "") ? -1 : 1; }).slice(0, 5), pct = Math.round(got.length / RP_BADGES.length * 100);
     $("ach-count").textContent = got.length + " of " + RP_BADGES.length;
-    var h = '<div class="lv-home">' + lvH + "</div>" + '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Badges earned"><span style="width:' + pct + '%;background:var(--blue)"></span></div>';
+    var h = '<div class="lv-home">' + lvH + '<div class="stk-mini">' + stkHtml(st.stk, false) + "</div></div>" + '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Badges earned"><span style="width:' + pct + '%;background:var(--blue)"></span></div>';
     if (recent.length) h += '<div class="ach-row">' + recent.map(function (b) { return '<span class="ach-b" title="' + esc(b.n) + '">' + b.i + "</span>"; }).join("") + "</div>";
     if (nx) { var v = nx.v(st), p = Math.min(100, Math.round(v / nx.t * 100)); h += '<div class="ach-next"><div class="wish-top"><span>Next up: <b>' + esc(nx.n) + "</b></span><span>" + (nx.m ? fmt(Math.round(v * 100)) + " / " + fmt(nx.t * 100) : Math.floor(v) + " / " + nx.t) + '</span></div><div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="' + esc(nx.n) + '"><span style="width:' + p + '%;background:var(--green)"></span></div><p class="note">' + esc(nx.d) + "</p></div>"; }
     else h += '<p class="note">Every badge earned. Legend!</p>';
@@ -5180,7 +5233,7 @@ html { scroll-padding-top: 96px; }
     var box = $("form-rp"); if (!box) return;
     var st = rpStats(), name = rp.name || "", ini = name ? name.split(/\s+/).map(function (x) { return x.charAt(0); }).join("").slice(0, 2).toUpperCase() : "R";
     $("rp-avatar").textContent = ini; $("rp-ini").textContent = ini;
-    $("rp-lvcard").innerHTML = rpLevelHtml(st, true);
+    $("rp-lvcard").innerHTML = rpLevelHtml(st, true); $("rp-stk").innerHTML = "<h3>Streaks</h3>" + stkHtml(st.stk, true);
     $("rp-line").textContent = [rp.level, rp.cert].filter(Boolean).join(" · ") || "Add your certification and level below.";
     var yrs = rp.since ? new Date().getFullYear() - rp.since : (st.first ? new Date().getFullYear() - Number(st.first.slice(0, 4)) : null);
     $("rp-stats").innerHTML = [["🎽 Total games", st.played], ["💵 Lifetime earnings", fmt(st.earned)], ["📆 Years officiating", yrs === null ? "—" : yrs < 1 ? "First year" : yrs + (yrs === 1 ? " year" : " years")], ["🌎 Leagues worked", st.nLeagues], ["📜 Certification", rp.cert || "Not set"], ["🎚️ Referee level", rp.level || "Not set"], ["⭐ Favorite leagues", (rp.favs || []).join(", ") || "Not set"], ["⏳ Cert. status", certStatus()]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("");
