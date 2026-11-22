@@ -1133,9 +1133,10 @@ html { scroll-padding-top: 96px; }
         <div class="field"><label for="lk-bought">Purchase date</label><input id="lk-bought" type="date"></div>
         <div class="field"><label for="lk-cost">Cost ($)</label><input id="lk-cost" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
         <div class="field"><label for="lk-cond">Condition</label><select id="lk-cond"><option>New</option><option selected>Good</option><option>Fair</option><option>Worn</option><option>Replace now</option></select></div>
+        <div class="field"><label for="lk-lifeg">Replace after (games)</label><input id="lk-lifeg" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="Off"></div>
         <div class="field"><label for="lk-life">Replace after (months)</label><input id="lk-life" type="number" inputmode="numeric" min="0" max="120" step="1" placeholder="Off"></div>
       </div>
-      <p class="note">Set "Replace after" and RefVault shows when it is due and reminds you before then. Leave it blank for no reminder.</p>
+      <p class="note">Set "Replace after" by games, months or both. RefVault counts the games you worked since the purchase date, estimates the replacement date from how often you work, and reminds you before then. Leave both blank for no reminder.</p>
       <div class="row"><button class="btn" id="lk-save" type="button">Add gear</button><button class="btn ghost" id="lk-cancel" type="button" hidden>Cancel</button></div>
       <p class="msg" id="lk-msg" role="status"></p>
     </section>
@@ -2553,15 +2554,34 @@ html { scroll-padding-top: 96px; }
     var out = [], seen = {}; if (!Array.isArray(a)) return out;
     a.slice(0, 100).forEach(function (x) {
       if (!x || typeof x !== "object") return;
-      var name = String(x.name || "").trim().slice(0, 40), cost = Math.round(Number(x.cost)), life = Math.round(Number(x.life)), id = typeof x.id === "string" && x.id && !seen[x.id] ? x.id.slice(0, 24) : uid("k");
+      var name = String(x.name || "").trim().slice(0, 40), cost = Math.round(Number(x.cost)), life = Math.round(Number(x.life)), lifeG = Math.round(Number(x.lifeG)), id = typeof x.id === "string" && x.id && !seen[x.id] ? x.id.slice(0, 24) : uid("k");
       if (!name) return; seen[id] = 1;
-      out.push({ id: id, type: LK_TYPES.indexOf(x.type) >= 0 ? x.type : "Other", name: name, bought: /^\d{4}-\d{2}-\d{2}$/.test(x.bought || "") ? x.bought : "", cost: isFinite(cost) && cost >= 0 && cost <= 1e8 ? cost : 0, cond: LK_COND.indexOf(x.cond) >= 0 ? x.cond : "Good", life: isFinite(life) && life > 0 && life <= 120 ? life : 0 });
+      out.push({ id: id, type: LK_TYPES.indexOf(x.type) >= 0 ? x.type : "Other", name: name, bought: /^\d{4}-\d{2}-\d{2}$/.test(x.bought || "") ? x.bought : "", cost: isFinite(cost) && cost >= 0 && cost <= 1e8 ? cost : 0, cond: LK_COND.indexOf(x.cond) >= 0 ? x.cond : "Good", life: isFinite(life) && life > 0 && life <= 120 ? life : 0, lifeG: isFinite(lifeG) && lifeG > 0 && lifeG <= 5000 ? lifeG : 0 });
     });
     return out;
   }
-  function lkDue(it) { if (!it.bought || !it.life) return ""; var p = parseD(it.bought); p.setMonth(p.getMonth() + it.life); return ymd(p); }
+  /* Games used, games-based and time-based replacement estimates */
+  var LK_GAMES = { Shoes: 120, Jersey: 100, Flags: 100 };
+  function lkPlayed() { var td = todayStr(); return live().filter(function (g) { return g.date <= td; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }); }
+  function lkUsed(it, pl) { if (!it.bought) return 0; var n = 0; (pl || lkPlayed()).forEach(function (g) { if (g.date >= it.bought) n += gN(g); }); return n; }
+  function lkEst(it, pl) {
+    pl = pl || lkPlayed(); var t = todayStr(), used = lkUsed(it, pl), out = { used: used, date: "", by: "" }, dm = "";
+    if (it.bought && it.life) { var p = parseD(it.bought); p.setMonth(p.getMonth() + it.life); dm = ymd(p); }
+    var dg = "";
+    if (it.bought && it.lifeG) {
+      if (used >= it.lifeG) { var c = 0; pl.forEach(function (g) { if (dg || g.date < it.bought) return; c += gN(g); if (c >= it.lifeG) dg = g.date; }); }
+      else {
+        var from = ymd(new Date(pdate(t).getTime() - 180 * 864e5)), n180 = 0; pl.forEach(function (g) { if (g.date >= from) n180 += gN(g); });
+        var pace = n180 / 180; if (pace > 0) dg = ymd(new Date(pdate(t).getTime() + Math.min(1825, Math.ceil((it.lifeG - used) / pace)) * 864e5));
+      }
+    }
+    if (dm && (!dg || dm <= dg)) { out.date = dm; out.by = "months"; } else if (dg) { out.date = dg; out.by = "games"; }
+    return out;
+  }
+  function lkDue(it) { return lkEst(it).date; }
   function lkState(it) {
     if (it.cond === "Replace now") return "now"; var d = lkDue(it); if (!d) return "ok"; var t = todayStr();
+    if (it.lifeG && lkUsed(it) >= it.lifeG) return "overdue";
     if (d < t) return "overdue"; var days = Math.round((parseD(d) - parseD(t)) / 864e5); return days <= 30 ? "soon" : "ok";
   }
   function lkMsg(t, err) { var m = $("lk-msg"); if (!m) return; m.className = "msg" + (err ? " err" : ""); m.textContent = t || ""; }
@@ -2570,36 +2590,38 @@ html { scroll-padding-top: 96px; }
     return persistSplit().then(function (ok) { if (!ok) { locker = before; render(); lkMsg("Could not save that. Try again in a moment.", true); return false; } if (okMsg) lkMsg(okMsg); return true; });
   }
   function lkFormReset() {
-    lkEditId = null; $("lk-name").value = ""; $("lk-bought").value = ""; $("lk-cost").value = ""; $("lk-cond").value = "Good"; $("lk-type").value = "Whistle"; $("lk-life").value = LK_LIFE.Whistle || "";
+    lkEditId = null; $("lk-name").value = ""; $("lk-bought").value = ""; $("lk-cost").value = ""; $("lk-cond").value = "Good"; $("lk-type").value = "Whistle"; $("lk-life").value = LK_LIFE.Whistle || ""; $("lk-lifeg").value = LK_GAMES.Whistle || "";
     $("lk-save").textContent = "Add gear"; $("lk-cancel").hidden = true; $("h-lkform").textContent = "Add gear";
   }
   function renderLocker() {
     var list = $("lk-list"); if (!list) return;
-    var need = locker.filter(function (i) { return lkState(i) !== "ok"; }).length, spent = locker.reduce(function (a, i) { return a + i.cost; }, 0);
+    var pl = lkPlayed(), need = locker.filter(function (i) { return lkState(i) !== "ok"; }).length, spent = locker.reduce(function (a, i) { return a + i.cost; }, 0), usedAll = 0, costUsed = 0;
+    locker.forEach(function (i) { var u = lkUsed(i, pl); if (u > 0 && i.cost) { usedAll += u; costUsed += i.cost; } });
     $("lk-count").textContent = locker.length ? locker.length + (locker.length === 1 ? " item" : " items") : "";
-    $("lk-sum").innerHTML = locker.length ? [["🧰 Items", locker.length], ["💵 Total spent", fmt(spent)], ["🔁 Need replacing", need]].map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("") : "";
+    $("lk-sum").innerHTML = locker.length ? [["🧰 Items", locker.length], ["💵 Total gear investment", fmt(spent)], ["🔁 Need replacing", need]].concat(usedAll ? [["🎽 Avg cost per game used", fmt(Math.round(costUsed / usedAll))]] : []).map(function (x) { return "<div><span>" + x[0] + "</span><strong>" + esc(String(x[1])) + "</strong></div>"; }).join("") : "";
     var html = locker.slice().sort(function (a, b) { var o = { now: 0, overdue: 1, soon: 2, ok: 3 }; return o[lkState(a)] - o[lkState(b)] || LK_TYPES.indexOf(a.type) - LK_TYPES.indexOf(b.type); }).map(function (i) {
-      var st = lkState(i), due = lkDue(i), ask = lkConfirm === i.id;
-      var dueTxt = st === "now" ? "Replace now" : !due ? "No reminder set" : st === "overdue" ? "Overdue since " + shortDate(due) : (st === "soon" ? "Replace by " : "Replace around ") + shortDate(due);
+      var st = lkState(i), est = lkEst(i, pl), due = est.date, ask = lkConfirm === i.id, used = est.used;
+      var dueTxt = st === "now" ? "Replace now" : !due ? "No reminder set" : st === "overdue" ? "Overdue since " + shortDate(due) : (st === "soon" ? "Replace by " : "Estimated replacement ") + shortDate(due) + (est.by === "games" ? " (at your pace)" : "");
       return '<li class="lk-item ' + st + '"><div class="lk-top"><strong><span aria-hidden="true">' + LK_ICON[i.type] + "</span> " + esc(i.name) + '</strong><span class="badge ' + (i.cond === "Replace now" || i.cond === "Worn" ? "cancelled" : i.cond === "Fair" ? "pending" : "worked") + '">' + esc(i.cond) + "</span></div>" +
-        '<div class="lk-meta"><span>' + esc(i.type) + "</span>" + (i.bought ? "<span>Bought " + esc(shortDate(i.bought)) + "</span>" : "") + (i.cost ? "<span>" + fmt(i.cost) + "</span>" : "") + '<span class="lk-due-' + st + '">' + esc(dueTxt) + "</span></div>" +
+        '<div class="lk-meta"><span>' + esc(i.type) + "</span>" + (i.bought ? "<span>Bought " + esc(shortDate(i.bought)) + "</span>" : "") + (i.cost ? "<span>" + fmt(i.cost) + "</span>" : "") + (i.bought ? "<span>Games used: " + used + (i.lifeG ? " of " + i.lifeG : "") + "</span>" : "") + (i.cost && used > 0 ? "<span>" + fmt(Math.round(i.cost / used)) + " per game</span>" : "") + '<span class="lk-due-' + st + '">' + esc(dueTxt) + "</span></div>" +
         '<div class="lk-act"><button class="mini" type="button" data-lk-replaced="' + esc(i.id) + '">Replaced it</button><button class="mini" type="button" data-lk-edit="' + esc(i.id) + '">Edit</button>' +
         (ask ? '<button class="mini danger" type="button" data-lk-del="' + esc(i.id) + '">Delete</button><button class="mini" type="button" data-lk-keep="1">Keep</button>' : '<button class="mini" type="button" data-lk-ask="' + esc(i.id) + '">Remove</button>') + "</div></li>";
     }).join("");
     if (!html) html = '<li><p class="empty">No gear yet. Add your whistle, cards, flags, watch, jerseys, shoes and bag below.</p></li>';
     list.innerHTML = html;
   }
-  document.addEventListener("change", function (e) { if (e.target.id === "lk-type" && !lkEditId) $("lk-life").value = LK_LIFE[e.target.value] || ""; });
+  document.addEventListener("change", function (e) { if (e.target.id === "lk-type" && !lkEditId) { $("lk-life").value = LK_LIFE[e.target.value] || ""; $("lk-lifeg").value = LK_GAMES[e.target.value] || ""; } });
   document.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("#lk-save,#lk-cancel,[data-lk-replaced],[data-lk-edit],[data-lk-ask],[data-lk-keep],[data-lk-del]"); if (!b) return;
     var id;
     if (b.id === "lk-cancel") { lkFormReset(); lkMsg(""); return; }
     if (b.id === "lk-save") {
-      var name = $("lk-name").value.trim(), cv = $("lk-cost").value, cost = cv === "" ? 0 : Number(cv), lv = $("lk-life").value, life = lv === "" ? 0 : Math.round(Number(lv)), bought = $("lk-bought").value;
+      var name = $("lk-name").value.trim(), cv = $("lk-cost").value, cost = cv === "" ? 0 : Number(cv), lv = $("lk-life").value, life = lv === "" ? 0 : Math.round(Number(lv)), bought = $("lk-bought").value, gv = $("lk-lifeg").value, lifeG = gv === "" ? 0 : Math.round(Number(gv));
+      if (!isFinite(lifeG) || lifeG < 0 || lifeG > 5000) return lkMsg("Replace after (games) must be 0 to 5000.", true);
       if (!name) return lkMsg("Give the gear a name.", true);
       if (!isFinite(cost) || cost < 0 || cost > 1000000) return lkMsg("Type a cost like 24.99.", true);
       if (!isFinite(life) || life < 0 || life > 120) return lkMsg("Replace after must be 0 to 120 months.", true);
-      var item = { type: $("lk-type").value, name: name, bought: bought, cost: Math.round(cost * 100), cond: $("lk-cond").value, life: life }, next;
+      var item = { type: $("lk-type").value, name: name, bought: bought, cost: Math.round(cost * 100), cond: $("lk-cond").value, life: life, lifeG: lifeG }, next;
       if (lkEditId) next = locker.map(function (x) { return x.id === lkEditId ? Object.assign({}, x, item) : x; });
       else { if (locker.length >= 100) return lkMsg("That is the most gear the locker can hold.", true); next = locker.concat([Object.assign({ id: uid("k") }, item)]); }
       var was = !!lkEditId; lkSave(next, was ? "Gear updated." : "Gear added.").then(function (ok) { if (ok) lkFormReset(); }); return;
@@ -2607,7 +2629,7 @@ html { scroll-padding-top: 96px; }
     if (b.hasAttribute("data-lk-replaced")) { id = b.getAttribute("data-lk-replaced"); lkSave(locker.map(function (x) { return x.id === id ? Object.assign({}, x, { bought: todayStr(), cond: "New" }) : x; }), "Marked as replaced today. The clock starts over."); return; }
     if (b.hasAttribute("data-lk-edit")) {
       id = b.getAttribute("data-lk-edit"); var it = locker.filter(function (x) { return x.id === id; })[0]; if (!it) return; lkEditId = id;
-      $("lk-type").value = it.type; $("lk-name").value = it.name; $("lk-bought").value = it.bought; $("lk-cost").value = it.cost ? (it.cost / 100).toFixed(2) : ""; $("lk-cond").value = it.cond; $("lk-life").value = it.life || "";
+      $("lk-type").value = it.type; $("lk-name").value = it.name; $("lk-bought").value = it.bought; $("lk-cost").value = it.cost ? (it.cost / 100).toFixed(2) : ""; $("lk-cond").value = it.cond; $("lk-life").value = it.life || ""; $("lk-lifeg").value = it.lifeG || "";
       $("lk-save").textContent = "Save changes"; $("lk-cancel").hidden = false; $("h-lkform").textContent = "Edit gear"; $("lk-name").focus(); lkMsg(""); return;
     }
     if (b.hasAttribute("data-lk-ask")) { lkConfirm = b.getAttribute("data-lk-ask"); renderLocker(); return; }
@@ -3714,7 +3736,7 @@ html { scroll-padding-top: 96px; }
     function calc(a, b) {
       var c = { game: 0, equip: 0, spend: 0, give: 0, save: 0, invest: 0 }, games = 0, fees = 0;
       live().forEach(function (g) { if (g.date > t || !inR(g.date, a, b)) return; c.game += toCents(g.expenses); games += gN(g); fees += toCents(g.fee); });
-      locker.forEach(function (it) { if (inR(it.bought, a, b)) c.equip += Math.round((Number(it.cost) || 0) * 100); });
+      locker.forEach(function (it) { if (inR(it.bought, a, b)) c.equip += Math.round(Number(it.cost) || 0); });
       data.spending.forEach(function (x) { if (!inR(x.date, a, b)) return; var k = { donate: "give", save: "save", invest: "invest" }[x.bucket] || "spend"; c[k] += toCents(x.amount); });
       var tot = c.game + c.equip + c.spend + c.give + c.save + c.invest, gear = c.game + c.equip;
       return { c: c, tot: tot, games: games, fees: fees, cpg: games ? Math.round(gear / games) : null };
