@@ -352,6 +352,9 @@ button.badge { cursor: pointer; min-height: 26px; }
 .as-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } .as-grid div { display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--panel-line); } .as-grid span { color: var(--muted); font-size: 11px; } .as-grid b { font-size: 14px; overflow-wrap: anywhere; }
 .as-acc { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; } .as-acc .mini { min-width: 36px; } .as-top { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
 .as-form { display: flex; gap: 8px; margin-top: 10px; } .as-form input { flex: 1; min-width: 0; }
+.ph-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 6px; } .ph-tiles div { display: grid; gap: 2px; padding: 10px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); } .ph-tiles span { color: var(--muted); font-size: 12px; } .ph-tiles b { font: 800 18px/1.2 var(--display); } .ph-tiles em { font-style: normal; font-size: 12px; color: var(--muted); }
+.ph-h { margin: 14px 0 4px; font-size: 14px; } .ph-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; } .ph-bar i { display: block; height: 100%; background: var(--green); } .ph-bar.late i { background: var(--orange); }
+.ph-row { display: grid; grid-template-columns: 64px 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--panel-line); font-size: 13px; } .ph-row small { color: var(--muted); display: block; font-size: 11px; } .ph-row > b:first-child { font-size: 13px; }
 .aw-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin: 6px 0 10px; } .aw-head span { color: var(--muted); font-size: 13px; }
 .aw-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .aw-tile { display: grid; gap: 2px; padding: 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); } .aw-tile > span { font-size: 24px; } .aw-tile small { color: var(--muted); font-size: 12px; } .aw-tile b { font: 800 16px/1.2 var(--display); overflow-wrap: anywhere; } .aw-tile em { font-style: normal; color: var(--muted); font-size: 12px; }
 .aw-rec { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 0; border-top: 1px solid var(--panel-line); font-size: 14px; } .aw-rec small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; } .aw-rec.on b, .aw-rec.on small { color: var(--yellow); }
@@ -1093,6 +1096,8 @@ html { scroll-padding-top: 96px; }
     </section>
     <section class="panel" aria-labelledby="h-owed-by"><h2 id="h-owed-by">By league</h2><div id="owed-by"></div></section>
     <section class="panel" aria-labelledby="h-owed-by2"><h2 id="h-owed-by2">By assignor</h2><div id="owed-by2"></div></section>
+    <section class="panel" id="ph-card" aria-labelledby="h-ph" hidden><div class="panel-head"><h2 id="h-ph">Payment history insights</h2><span class="chip" id="ph-chip"></span></div><div id="ph-body"></div>
+      <p class="note">Days are counted from the day of the game to the day you marked it paid. A payment is late when it takes more than a week.</p></section>
     <section class="panel" aria-labelledby="h-owed-list"><h2 id="h-owed-list">Games</h2><ul class="list tall" id="owed-list"></ul></section>
   </div>
 
@@ -3388,7 +3393,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAssignors, "assignors"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderAvail, "avail"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAssignors, "assignors"); safe(renderPayHist, "payhist"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderAvail, "avail"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3847,6 +3852,46 @@ html { scroll-padding-top: 96px; }
     var pc = Math.round((a - b) / b * 100); if (pc === 0) return ' <span class="note">same as last month</span>';
     var good = lowGood ? pc < 0 : pc > 0;
     return ' <span class="' + (good ? "up" : "down") + '">' + (pc > 0 ? "+" : "") + pc + "% vs last month</span>";
+  }
+  /* Payment history insights: how fast money arrives, who pays fastest, late trends, month by month */
+  function phCalc() {
+    var t = todayStr(), rows = [], by = {};
+    live().forEach(function (g) {
+      if (g.paid === false || !g.paidOn || g.cancelled) return; var end = g.endDate && g.endDate > g.date ? g.endDate : g.date;
+      var d = Math.round((pdate(g.paidOn) - pdate(end)) / 864e5); if (!isFinite(d) || d < 0 || d > 365) return;
+      var c = toCents(g.fee) - 0, r = { d: d, late: d > OVERDUE_DAYS, paidOn: g.paidOn, gm: g.date.slice(0, 7), c: c, who: (g.assignor || g.assoc || "").trim() }; rows.push(r);
+      if (r.who) { var k = r.who.toLowerCase(); (by[k] = by[k] || { name: r.who, d: [], late: 0 }).d.push(d); if (r.late) by[k].late++; }
+    });
+    if (rows.length < 2) return null;
+    var avg = function (a) { return a.length ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : null; };
+    var cut1 = ymd(new Date(Date.now() - 90 * 864e5)), cut2 = ymd(new Date(Date.now() - 180 * 864e5));
+    var recent = rows.filter(function (r) { return r.paidOn >= cut1; }), prior = rows.filter(function (r) { return r.paidOn >= cut2 && r.paidOn < cut1; });
+    var o = { n: rows.length, avg: avg(rows.map(function (r) { return r.d; })), med: ppMed(rows.map(function (r) { return r.d; })), fastest: Math.min.apply(null, rows.map(function (r) { return r.d; })), slowest: Math.max.apply(null, rows.map(function (r) { return r.d; })), lateN: rows.filter(function (r) { return r.late; }).length };
+    o.latePct = Math.round(o.lateN / rows.length * 100);
+    o.recentAvg = recent.length >= 2 ? avg(recent.map(function (r) { return r.d; })) : null; o.priorAvg = prior.length >= 2 ? avg(prior.map(function (r) { return r.d; })) : null;
+    o.recentLate = recent.length >= 2 ? Math.round(recent.filter(function (r) { return r.late; }).length / recent.length * 100) : null; o.priorLate = prior.length >= 2 ? Math.round(prior.filter(function (r) { return r.late; }).length / prior.length * 100) : null;
+    o.payers = Object.keys(by).map(function (k) { var a = by[k]; return { name: a.name, n: a.d.length, avg: avg(a.d), med: ppMed(a.d), late: a.late }; }).filter(function (a) { return a.n >= 2; }).sort(function (a, b) { return a.avg - b.avg; });
+    /* last 6 months by the month the money arrived */
+    var cur = new Date(); cur = new Date(cur.getFullYear(), cur.getMonth(), 1); o.months = [];
+    for (var i = 5; i >= 0; i--) { var dt = new Date(cur.getFullYear(), cur.getMonth() - i, 1), k = ymd(dt).slice(0, 7), m = rows.filter(function (r) { return r.paidOn.slice(0, 7) === k; });
+      o.months.push({ k: k, label: dt.toLocaleDateString("en-US", { month: "short", year: "2-digit" }), n: m.length, got: m.reduce(function (a, r) { return a + r.c; }, 0), avg: avg(m.map(function (r) { return r.d; })), late: m.filter(function (r) { return r.late; }).length }); }
+    var od = owedGames().filter(function (g) { return gStatus(g) === "overdue"; }); o.odN = od.length; o.odC = od.reduce(function (a, g) { return a + gOwedC(g); }, 0);
+    return o;
+  }
+  function renderPayHist() {
+    var card = $("ph-card"); if (!card) return; var P; try { P = phCalc(); } catch (e) { P = null; } card.hidden = !P; if (!P) return;
+    var dy = function (n) { n = Math.round(n * 10) / 10; return n + (n === 1 ? " day" : " days"); };
+    $("ph-chip").textContent = P.n + " paid games";
+    var trend = "", ta = P.recentAvg !== null && P.priorAvg !== null ? P.recentAvg - P.priorAvg : null;
+    if (ta !== null) trend = Math.abs(ta) < 1 ? "About the same as the 3 months before" : (ta < 0 ? "Faster" : "Slower") + " than the 3 months before by " + dy(Math.abs(ta));
+    var lt = P.recentLate !== null && P.priorLate !== null ? P.recentLate - P.priorLate : null;
+    var h = '<div class="ph-tiles"><div><span>⏱ Average wait</span><b>' + dy(P.avg) + "</b><em>Typical (median) " + dy(P.med) + "</em></div><div><span>🐢 Late payments</span><b>" + P.latePct + "%</b><em>" + P.lateN + " of " + P.n + " took over a week</em></div><div><span>⚡ Fastest</span><b>" + dy(P.fastest) + "</b><em>Slowest " + dy(P.slowest) + '</em></div><div><span>📌 Overdue now</span><b>' + (P.odN ? fmt(P.odC) : "None") + "</b><em>" + (P.odN ? P.odN + (P.odN === 1 ? " game" : " games") : "Nothing past a week") + "</em></div></div>";
+    if (trend) h += '<p class="note"><b>' + esc(trend) + ".</b>" + (lt !== null && lt !== 0 ? " Late payments " + (lt > 0 ? "rose " : "fell ") + Math.abs(lt) + " points to " + P.recentLate + "%." : "") + "</p>";
+    if (P.payers.length) { var mx = Math.max.apply(null, P.payers.map(function (a) { return a.avg; }).concat([1]));
+      h += '<h3 class="ph-h">Fastest payers</h3>' + P.payers.slice(0, 5).map(function (a, i) { return '<div class="ph-row"><b>' + (["🥇", "🥈", "🥉"][i] || (i + 1) + ".") + '</b><div><span>' + esc(a.name) + "</span><small>" + a.n + " games" + (a.late ? ", " + a.late + " late" : ", none late") + '</small><div class="ph-bar' + (a.late ? " late" : "") + '"><i style="width:' + Math.max(6, Math.round(a.avg / mx * 100)) + '%"></i></div></div><b>' + dy(a.avg) + "</b></div>"; }).join(""); }
+    var mm = Math.max.apply(null, P.months.map(function (m) { return m.got; }).concat([1]));
+    h += '<h3 class="ph-h">Monthly payment timeline</h3>' + P.months.map(function (m) { return '<div class="ph-row"><b>' + esc(m.label) + '</b><div><span>' + (m.n ? fmt(m.got) + " received" : "No payments") + "</span><small>" + (m.n ? m.n + (m.n === 1 ? " payment" : " payments") + ", average " + dy(m.avg) + (m.late ? ", " + m.late + " late" : "") : "&nbsp;") + '</small><div class="ph-bar' + (m.late > m.n / 2 ? " late" : "") + '"><i style="width:' + Math.round(m.got / mm * 100) + '%"></i></div></div><b>' + (m.n ? Math.round((m.n - m.late) / m.n * 100) + "% on time" : "") + "</b></div>"; }).join("");
+    $("ph-body").innerHTML = h;
   }
   /* Assignor analytics: games, pay, payment speed, profit per hour, accepted vs declined offers */
   function asCalc() {
