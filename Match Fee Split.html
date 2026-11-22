@@ -1712,6 +1712,10 @@ html { scroll-padding-top: 96px; }
         <div class="grid">
           <div class="field"><label for="g-fee">Pay (total for all games)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
           <div class="field"><label for="g-exp">Expenses (total)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
+          <div class="field"><label for="g-miles">Miles driven (round trip)</label><input id="g-miles" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"></div>
+          <div class="field"><label for="g-drive">Drive time, minutes (optional)</label><input id="g-drive" type="number" inputmode="numeric" min="0" step="1" placeholder="Estimated from miles"></div>
+          <div class="field"><label for="g-hrs">Time at the field, hours (optional)</label><input id="g-hrs" type="number" inputmode="decimal" min="0" step="0.25" placeholder="1.5 per game"></div>
+          <div class="field"><label for="g-mrate">Cost per mile ($)</label><input id="g-mrate" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.30"></div>
           <div class="field"><label for="g-status">Status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Not paid yet</option><option value="partial">Partly paid</option><option value="cancelled">Cancelled</option></select></div>
           <div class="field" id="g-rcvd-w" hidden><label for="g-rcvd">Received so far ($)</label><input id="g-rcvd" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
           <div class="field" id="g-paidon-w" hidden><label for="g-paidon">Date paid</label><input id="g-paidon" type="date"></div>
@@ -3418,17 +3422,26 @@ html { scroll-padding-top: 96px; }
     live().forEach(function (g) { var f = toCents(g.fee); if (f <= 0) return; sum += (f - toCents(g.expenses)) / gN(g); n++; });
     return n >= 5 ? sum / n : null;
   }
+  /* Game profit score: pay minus expenses and mileage cost, divided by the hours it took (driving + at the field) */
+  var MR_KEY = "rf-mrate-v1";
+  function mcRate() { try { var v = parseFloat(localStorage.getItem(MR_KEY)); if (isFinite(v) && v >= 0) return v; } catch (e) {} return 0.3; }
+  function mcSet(v) { v = parseFloat(v); if (!isFinite(v) || v < 0) return; try { localStorage.setItem(MR_KEY, String(v)); } catch (e) {} }
+  function gHours(g) {
+    var mi = gMiles(g), drive = g.drive > 0 ? Number(g.drive) : (mi ? Math.round(mi / 30 * 60) : 0), field = g.hrs > 0 ? Number(g.hrs) : 1.5 * gN(g);
+    return { drive: drive, field: field, total: field + drive / 60, est: !(g.hrs > 0) || (!(g.drive > 0) && mi > 0) };
+  }
   function gScore(g, base) {
     if (g.cancelled) return null;
     if (base === undefined) base = gScoreBase();
-    var fee = toCents(g.fee), ex = toCents(g.expenses), net = fee - ex, per = net / gN(g), margin = fee > 0 ? net / fee : 0, vs = base ? (per - base) / base : null, key, why;
+    var fee = toCents(g.fee), ex = toCents(g.expenses), mi = gMiles(g), cost = Math.round(mi * mcRate() * 100), net = fee - ex, net2 = net - cost, per = net / gN(g), margin = fee > 0 ? net2 / fee : 0, vs = base ? (per - base) / base : null, H = gHours(g), hr = H.total > 0 ? net2 / H.total : 0, key, why;
+    var hrTxt = fmt(Math.round(hr)) + " an hour" + (H.est ? " (estimated time)" : "");
     if (fee <= 0) { key = "low"; why = "No pay entered for this game."; }
-    else if (net <= 0) { key = "low"; why = "Expenses took all of the pay."; }
-    else if (margin < 0.6) { key = "low"; why = "Expenses took " + Math.round((1 - margin) * 100) + "% of the pay."; }
-    else if (vs !== null && vs < -0.3) { key = "low"; why = "Pays " + Math.round(-vs * 100) + "% below your average per game."; }
-    else if (margin >= 0.85 && (vs === null || vs >= 0.1)) { key = "great"; why = "You keep " + Math.round(margin * 100) + "% of the pay" + (vs !== null ? ", and it pays " + Math.round(vs * 100) + "% above your average." : "."); }
-    else { key = "good"; why = "You keep " + Math.round(margin * 100) + "% of the pay" + (vs !== null ? (Math.abs(vs) < 0.05 ? ", right around your average." : vs > 0 ? ", " + Math.round(vs * 100) + "% above your average." : ", " + Math.round(-vs * 100) + "% below your average.") : "."); }
-    return { key: key, icon: { great: "⭐", good: "👍", low: "⚠️" }[key], label: { great: "Great game", good: "Good game", low: "Low profit game" }[key], pay: fee, exp: ex, net: net, margin: margin, why: why };
+    else if (net2 <= 0) { key = "low"; why = (cost ? "Expenses and the cost of driving" : "Expenses") + " took all of the pay."; }
+    else if (hr < 1200) { key = "low"; why = "Only " + hrTxt + " after expenses and driving." + (vs !== null && vs < -0.3 ? " Pays " + Math.round(-vs * 100) + "% below your average." : ""); }
+    else if (margin < 0.6) { key = "low"; why = "Expenses and driving took " + Math.round((1 - margin) * 100) + "% of the pay (" + hrTxt + ")."; }
+    else if (hr >= 2500 && margin >= 0.7) { key = "great"; why = fmt(Math.round(hr)) + " an hour after expenses and driving" + (H.est ? " (estimated time)" : "") + ", and you keep " + Math.round(margin * 100) + "% of the pay."; }
+    else { key = "good"; why = hrTxt.charAt(0).toUpperCase() + hrTxt.slice(1) + " after expenses and driving, you keep " + Math.round(margin * 100) + "% of the pay."; }
+    return { key: key, icon: { great: "⭐", good: "👍", low: "⚠️" }[key], label: { great: "Excellent", good: "Good", low: "Low profit" }[key], pay: fee, exp: ex, net: net, margin: margin, why: why, hourly: hr, hours: H, mileCost: cost, net2: net2 };
   }
   function gScoreChip(g, base) { var sc = gScore(g, base); return sc ? ' <span class="score ' + sc.key + '" title="' + esc(sc.why) + '">' + sc.icon + " " + sc.label + "</span>" : ""; }
   var ledgerLimit = 50, ledgerSig = "";
@@ -4843,7 +4856,8 @@ html { scroll-padding-top: 96px; }
     if (g.field) row("Field", '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(g.field + (g.assoc ? " " + g.assoc : "")) + '" target="_blank" rel="noopener">' + esc(g.field) + "</a>", true);
     if (gMiles(g)) row("Distance", fmtMiles(gMiles(g)));
     row("Fee", fmt(toCents(g.fee))); if (toCents(g.expenses)) row("Expenses", fmt(toCents(g.expenses))); row("You keep", fmt(gNet(g)));
-    var sc = gScore(g); if (sc) row("Profit score", '<span class="score ' + sc.key + '">' + sc.icon + " " + sc.label + "</span><br><small>" + esc(sc.why) + "</small>", true);
+    var sc = gScore(g); if (sc) { if (sc.mileCost) row("Driving cost", fmt(sc.mileCost)); row("Drive time", sc.hours.drive ? sc.hours.drive + " min" : "None"); row("Time at the field", (Math.round(sc.hours.field * 100) / 100) + " hr"); row("Hourly earnings", fmt(Math.round(sc.hourly)) + " an hour" + (sc.hours.est ? " (estimated)" : "")); }
+    if (sc) row("Profit score", '<span class="score ' + sc.key + '">' + sc.icon + " " + sc.label + "</span><br><small>" + esc(sc.why) + "</small>", true);
     var pay = g.cancelled ? "Cancelled" : p === "paid" ? "Paid" + (g.paidOn ? " on " + mdDate(g.paidOn) : "") : p === "partial" ? "Partly paid: " + fmt(gRcvd(g)) + " received, " + fmt(gOwedC(g)) + " owed" : g.date >= todayStr() ? "Not paid yet" : (st === "overdue" ? "Overdue: " : "Pending: ") + fmt(gOwedC(g)) + " owed";
     row("Payment", pay); if (g.remindedOn && g.paid === false) row("Reminder", "Sent " + mdDate(g.remindedOn));
     try { var wi = wxHourAt(g.date, g.time); if (wi >= 0) { var h = wxData.hourly; row("Weather", wxInfo(h.weather_code[wi], 1).i + " " + Math.round(h.temperature_2m[wi]) + "°F, rain " + h.precipitation_probability[wi] + "%, wind " + Math.round(h.wind_speed_10m[wi]) + " mph"); } } catch (e) { /* no forecast */ }
@@ -5244,7 +5258,7 @@ html { scroll-padding-top: 96px; }
   }
   function resetGameForm() {
     editGameId = null; avAck = ""; gameFormMode(false); $("g-count").value = "1";
-    ["g-match", "g-field", "g-assignor", "g-tourn", "g-home", "g-away", "g-loc", "g-recap", "g-fee", "g-exp", "g-notes", "g-time"].forEach(function (id) { $(id).value = ""; });
+    ["g-match", "g-field", "g-assignor", "g-tourn", "g-home", "g-away", "g-loc", "g-recap", "g-fee", "g-exp", "g-notes", "g-time", "g-miles", "g-drive", "g-hrs"].forEach(function (id) { $(id).value = ""; }); $("g-mrate").value = mcRate();
     $("g-date").value = todayStr(); $("g-status").value = "paid"; $("g-rcvd").value = ""; $("g-paidon").value = ""; payFieldsSync(); $("g-role").value = "Center";
     formMsg("form-game", "", false);
   }
@@ -5258,7 +5272,7 @@ html { scroll-padding-top: 96px; }
     $("g-date").value = g.date; $("g-time").value = g.time || "";
     $("g-count").value = gN(g);
     $("g-match").value = g.match || ""; $("g-tourn").value = g.tourn || ""; $("g-home").value = g.home || ""; $("g-away").value = g.away || ""; $("g-loc").value = g.loc || ""; $("g-recap").value = g.recap || ""; $("g-field").value = g.field || ""; $("g-assignor").value = g.assignor || "";
-    $("g-fee").value = g.fee; $("g-exp").value = g.expenses ? g.expenses : "";
+    $("g-fee").value = g.fee; $("g-exp").value = g.expenses ? g.expenses : ""; $("g-miles").value = gMiles(g) || ""; $("g-drive").value = g.drive > 0 ? g.drive : ""; $("g-hrs").value = g.hrs > 0 ? g.hrs : "";
     $("g-notes").value = g.notes || ""; $("g-status").value = g.cancelled ? "cancelled" : g.paid === false ? (gRcvd(g) > 0 ? "partial" : "pending") : "paid"; $("g-rcvd").value = g.rcvd ? g.rcvd : ""; $("g-paidon").value = g.paidOn || ""; payFieldsSync();
     editSwap = true; location.hash = "#add-game";
   }
@@ -5275,8 +5289,10 @@ html { scroll-padding-top: 96px; }
       match: $("g-match").value.trim(), tourn: $("g-tourn").value.trim(), home: $("g-home").value.trim(), away: $("g-away").value.trim(), loc: $("g-loc").value.trim(), recap: $("g-recap").value.trim().slice(0, 500), field: $("g-field").value.trim(), assignor: $("g-assignor").value.trim(),
       fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) ? Math.round(ex * 100) / 100 : 0,
       notes: $("g-notes").value.trim().slice(0, 300),
+      miles: Math.max(0, parseFloat($("g-miles").value) || 0), drive: Math.max(0, Math.round(parseFloat($("g-drive").value) || 0)), hrs: Math.max(0, parseFloat($("g-hrs").value) || 0),
       paid: $("g-status").value === "paid", cancelled: $("g-status").value === "cancelled"
     };
+    mcSet($("g-mrate").value);
     var stv = $("g-status").value;
     if (stv !== "cancelled") { var warn = avFormCheck(f, editGameId), key = f.date + "|" + f.time + "|" + f.count; if (warn && avAck !== key) { avAck = key; return formMsg("form-game", warn + " Tap Save again to add it anyway.", true); } }
     f.rcvd = stv === "partial" ? Math.round((Number($("g-rcvd").value) || 0) * 100) / 100 : 0;
@@ -6396,7 +6412,7 @@ html { scroll-padding-top: 96px; }
       if (!e || typeof e !== "object" || Array.isArray(e) || !/^\d{4}-\d{2}-\d{2}$/.test(String(e.date || ""))) { rep.dropped++; return; }
       var c = JSON.parse(JSON.stringify(e)); c.id = typeof c.id === "string" && c.id && c.id.length <= 80 ? c.id : uid("r");
       if (seen[c.id]) c.id = uid("r"); seen[c.id] = 1;
-      ["fee", "expenses", "amount", "miles"].forEach(function (f) { if (f in c && !(typeof c[f] === "number" && isFinite(c[f]))) { var v = parseFloat(c[f]); c[f] = isFinite(v) ? v : 0; } });
+      ["fee", "expenses", "amount", "miles", "drive", "hrs"].forEach(function (f) { if (f in c && !(typeof c[f] === "number" && isFinite(c[f]))) { var v = parseFloat(c[f]); c[f] = isFinite(v) ? v : 0; } });
       out.push(c);
     });
     return out;
