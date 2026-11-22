@@ -348,6 +348,10 @@ button.badge { cursor: pointer; min-height: 26px; }
 .ph-row { display: flex; align-items: center; gap: 14px; padding: 8px 0; } .ph-prev { width: 64px; height: 64px; } .ph-logo { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 1px solid var(--panel-line); }
 .ph-pick { cursor: pointer; display: inline-block; }
 .xi-row { display: grid; gap: 4px; padding: 8px 0; border-top: 1px solid var(--panel-line); } .xi-row > div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; } .xi-row small { color: var(--muted); font-size: 12px; }
+.as-row { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--panel-line); } .as-row h3 { margin: 0; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; } .as-row h3 em { font-style: normal; color: var(--muted); font-size: 12px; font-weight: 600; }
+.as-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } .as-grid div { display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--panel-line); } .as-grid span { color: var(--muted); font-size: 11px; } .as-grid b { font-size: 14px; overflow-wrap: anywhere; }
+.as-acc { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; } .as-acc .mini { min-width: 36px; } .as-top { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+.as-form { display: flex; gap: 8px; margin-top: 10px; } .as-form input { flex: 1; min-width: 0; }
 .aw-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin: 6px 0 10px; } .aw-head span { color: var(--muted); font-size: 13px; }
 .aw-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .aw-tile { display: grid; gap: 2px; padding: 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); } .aw-tile > span { font-size: 24px; } .aw-tile small { color: var(--muted); font-size: 12px; } .aw-tile b { font: 800 16px/1.2 var(--display); overflow-wrap: anywhere; } .aw-tile em { font-style: normal; color: var(--muted); font-size: 12px; }
 .aw-rec { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 0; border-top: 1px solid var(--panel-line); font-size: 14px; } .aw-rec small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; } .aw-rec.on b, .aw-rec.on small { color: var(--yellow); }
@@ -1268,6 +1272,9 @@ html { scroll-padding-top: 96px; }
     <div class="row"><div class="periods" id="periods" role="group" aria-label="Time period"></div></div>
     <section class="panel" id="aw-card" aria-labelledby="h-aw" hidden><div class="panel-head"><h2 id="h-aw">Season awards</h2><span class="chip" id="aw-chip"></span></div>
       <div class="field"><label for="aw-season">Season</label><select id="aw-season"></select></div><div id="aw-body"></div></section>
+    <section class="panel" id="as-card" aria-labelledby="h-as" hidden><div class="panel-head"><h2 id="h-as">Assignor analytics</h2><span class="chip" id="as-chip"></span></div><div id="as-body"></div>
+      <form id="as-form" class="as-form" novalidate><input id="as-name" type="text" maxlength="40" list="assignor-list" placeholder="Assignor name" autocomplete="off" aria-label="Assignor who offered a game you turned down"><button class="mini" type="submit">Log declined offer</button></form><p class="msg" id="as-msg" role="status"></p>
+      <p class="note">Accepted is every game you logged from that assignor. Tap Declined + each time you turn down an offer. Payment speed is days from the game to getting paid. Hourly counts driving time and mileage.</p></section>
     <section class="panel" id="xi-card" aria-labelledby="h-xi" hidden><div class="panel-head"><h2 id="h-xi">Expense insights</h2><span class="chip" id="xi-chip"></span></div><div id="xi-body"></div></section>
     <section class="panel" id="fc-card" aria-labelledby="h-fc" hidden>
       <div class="panel-head"><h2 id="h-fc">Income forecast</h2><span class="chip" id="fc-chip"></span></div>
@@ -3381,7 +3388,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderAvail, "avail"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAssignors, "assignors"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderAvail, "avail"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3841,6 +3848,49 @@ html { scroll-padding-top: 96px; }
     var good = lowGood ? pc < 0 : pc > 0;
     return ' <span class="' + (good ? "up" : "down") + '">' + (pc > 0 ? "+" : "") + pc + "% vs last month</span>";
   }
+  /* Assignor analytics: games, pay, payment speed, profit per hour, accepted vs declined offers */
+  function asCalc() {
+    var by = {}, dec = rp.dec || {}, key = function (n) { return String(n).trim().toLowerCase(); };
+    var get = function (n) { var k = key(n); return by[k] || (by[k] = { name: String(n).trim(), k: k, entries: 0, cx: 0, games: 0, fee: 0, net: 0, hrNet: 0, hrs: 0, days: [], unpaid: 0, owed: 0, paidN: 0, dec: 0 }); };
+    live().forEach(function (g) {
+      var nm = (g.assignor || "").trim(); if (!nm) return; var a = get(nm);
+      if (g.cancelled) { a.cx++; return; }
+      a.entries++; a.games += gN(g); a.fee += toCents(g.fee);
+      var sc = gScore(g, null); if (sc) { a.net += sc.net2; a.hrNet += sc.net2; a.hrs += sc.hours.total; }
+      if (g.paid === false) { var o = gOwedC(g); if (o > 0) { a.unpaid++; a.owed += o; } }
+      else if (g.paidOn) { a.paidN++; var d = Math.round((pdate(g.paidOn) - pdate(g.endDate && g.endDate > g.date ? g.endDate : g.date)) / 864e5); if (isFinite(d) && d >= 0 && d <= 365) a.days.push(d); }
+      else a.paidN++;
+    });
+    Object.keys(dec).forEach(function (n) { get(n).dec += dec[n]; });
+    var list = Object.keys(by).map(function (k) { var a = by[k]; a.avgPay = a.games ? a.fee / a.games : 0; a.hourly = a.hrs > 0 ? a.hrNet / a.hrs : 0; a.speed = a.days.length ? ppMed(a.days) : null; a.offers = a.entries + a.dec; a.rate = a.offers ? Math.round(a.entries / a.offers * 100) : null; return a; });
+    return list;
+  }
+  function renderAssignors() {
+    var card = $("as-card"); if (!card) return; var L = asCalc(); card.hidden = !L.length; if (!L.length) return;
+    $("as-chip").textContent = L.length + (L.length === 1 ? " assignor" : " assignors");
+    var act = L.filter(function (a) { return a.entries > 0; }), top = "";
+    if (act.length) {
+      var byHr = act.slice().sort(function (a, b) { return b.hourly - a.hourly; })[0], byTot = act.slice().sort(function (a, b) { return b.net - a.net; })[0], sp = act.filter(function (a) { return a.speed !== null; }).sort(function (a, b) { return a.speed - b.speed; }), byGames = act.slice().sort(function (a, b) { return b.games - a.games; })[0];
+      var tile = function (ic, lb, nm, sub) { return '<div class="aw-tile"><span aria-hidden="true">' + ic + "</span><small>" + lb + "</small><b>" + esc(nm) + "</b><em>" + sub + "</em></div>"; };
+      top = '<div class="as-top">' + tile("💰", "Most profitable", byHr.name, fmt(Math.round(byHr.hourly)) + " an hour") + tile("🎽", "Most games", byGames.name, byGames.games + (byGames.games === 1 ? " game" : " games")) +
+        (sp.length ? tile("⚡", "Fastest payer", sp[0].name, sp[0].speed + (sp[0].speed === 1 ? " day" : " days")) : "") + (sp.length > 1 ? tile("🐢", "Slowest payer", sp[sp.length - 1].name, sp[sp.length - 1].speed + " days") : tile("💵", "Biggest total", byTot.name, fmt(byTot.net))) + "</div>";
+    }
+    L.sort(function (a, b) { return (b.entries > 0) - (a.entries > 0) || b.hourly - a.hourly || b.dec - a.dec; });
+    $("as-body").innerHTML = top + L.map(function (a, i) {
+      var st = function (lb, v) { return "<div><span>" + lb + "</span><b>" + v + "</b></div>"; };
+      return '<div class="as-row"><h3><span>' + (a.entries && i < 3 ? ["🥇", "🥈", "🥉"][i] + " " : "") + esc(a.name) + "</span><em>" + a.games + (a.games === 1 ? " game" : " games") + (a.cx ? " · " + a.cx + " cancelled" : "") + "</em></h3>" +
+        (a.entries ? '<div class="as-grid">' + st("Avg pay / game", fmt(Math.round(a.avgPay))) + st("Paid in", a.speed === null ? "No data" : a.speed + (a.speed === 1 ? " day" : " days")) + st("Hourly", fmt(Math.round(a.hourly))) + st("Total kept", fmt(a.net)) + st("Unpaid", a.unpaid ? fmt(a.owed) : "None") + st("Accept rate", a.rate === null ? "-" : a.rate + "%") + "</div>" : '<p class="note">No games logged from this assignor yet.</p>') +
+        '<div class="as-acc"><span>Accepted ' + a.entries + " · Declined " + a.dec + '</span><span><button type="button" class="mini" data-as-dec="-1" data-as-name="' + esc(a.name) + '" aria-label="Remove a declined offer from ' + esc(a.name) + '"' + (a.dec ? "" : " disabled") + '>−</button> <button type="button" class="mini" data-as-dec="1" data-as-name="' + esc(a.name) + '">Declined +</button></span></div></div>';
+    }).join("");
+  }
+  function asBump(name, delta) {
+    name = String(name).trim(); if (!name) return; var d = Object.assign({}, rp.dec || {}), k = Object.keys(d).filter(function (x) { return x.toLowerCase() === name.toLowerCase(); })[0] || name;
+    d[k] = Math.max(0, (d[k] || 0) + delta); if (!d[k]) delete d[k];
+    var before = rp; rp = sanitizeRp(Object.assign({}, rp, { dec: d })); render();
+    return persistSplit().then(function (ok) { if (!ok) { rp = before; render(); var m = $("as-msg"); if (m) { m.className = "msg err"; m.textContent = "Could not save that. Try again."; } } });
+  }
+  document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-as-dec]"); if (b) asBump(b.getAttribute("data-as-name"), Number(b.getAttribute("data-as-dec"))); });
+  document.addEventListener("submit", function (e) { if (e.target && e.target.id === "as-form") { e.preventDefault(); var v = $("as-name").value; if (!v.trim()) { var m = $("as-msg"); m.className = "msg err"; m.textContent = "Type the assignor's name first."; return; } $("as-name").value = ""; $("as-msg").textContent = ""; asBump(v, 1); } });
   function renderExpIns() {
     var box = $("xi-body"); if (!box) return;
     var X = xiCalc(), h = "";
@@ -5384,7 +5434,12 @@ html { scroll-padding-top: 96px; }
     o = o && typeof o === "object" ? o : {};
     var since = Math.floor(Number(o.since)), yr = new Date().getFullYear();
     return { name: String(o.name || "").trim().slice(0, 40), cert: String(o.cert || "").trim().slice(0, 60), level: RP_LEVELS.indexOf(o.level) >= 0 ? o.level : "",
-      since: since >= 1970 && since <= yr ? since : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(o.exp || "") ? o.exp : "", favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5), av: sanitizeAv(o.av) };
+      since: since >= 1970 && since <= yr ? since : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(o.exp || "") ? o.exp : "", favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5), av: sanitizeAv(o.av), dec: sanitizeDec(o.dec) };
+  }
+  function sanitizeDec(d) {
+    d = d && typeof d === "object" && !Array.isArray(d) ? d : {}; var out = {};
+    Object.keys(d).slice(0, 80).forEach(function (k) { var n = Math.floor(Number(d[k])), nm = String(k).trim().slice(0, 40); if (nm && n > 0 && nm !== "__proto__") out[nm] = Math.min(999, n); });
+    return out;
   }
   function sanitizeAv(a) {
     a = a && typeof a === "object" ? a : {}; var rx = /^\d{4}-\d{2}-\d{2}$/, cut = ymd(new Date(Date.now() - 60 * 864e5));
@@ -5598,7 +5653,7 @@ html { scroll-padding-top: 96px; }
     var since = $("rp-since").value === "" ? 0 : Number($("rp-since").value);
     if ($("rp-since").value !== "" && (!isFinite(since) || since < 1970 || since > new Date().getFullYear() || Math.floor(since) !== since)) return rpMsg("Type the year you started, like 2022.", true);
     var before = rp;
-    rp = sanitizeRp({ name: $("rp-name").value, cert: $("rp-cert").value, exp: $("rp-exp").value, level: $("rp-level").value, since: since, favs: $("rp-favs").value.split(","), av: rp.av }); render();
+    rp = sanitizeRp({ name: $("rp-name").value, cert: $("rp-cert").value, exp: $("rp-exp").value, level: $("rp-level").value, since: since, favs: $("rp-favs").value.split(","), av: rp.av, dec: rp.dec }); render();
     persistSplit().then(function (ok) { if (!ok) { rp = before; render(); rpMsg("Could not save that. Try again.", true); } else rpMsg("Profile saved."); });
   });
   function rpMsg(t, err) { var m = $("rp-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
