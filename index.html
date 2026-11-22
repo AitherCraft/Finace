@@ -358,6 +358,7 @@ button.badge { cursor: pointer; min-height: 26px; }
 .av-best { margin: 0; padding-left: 20px; display: grid; gap: 8px; } .av-best small { display: block; color: var(--muted); font-size: 12px; }
 .szi { margin-top: 12px; display: grid; gap: 8px; } .szi h3 { margin: 0; }
 .szi-hd { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; } .szi-hd span { color: var(--muted); font-size: 13px; }
+.szi-ai { display: grid; gap: 6px; } .szi-ai p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px 12px; border-radius: var(--r-sm); background: rgba(46, 134, 255, 0.10); font-size: 14px; } .szi-ai p.note { background: none; padding: 0; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
 .szi-det summary { cursor: pointer; font-weight: 700; font-size: 14px; padding: 6px 0; color: var(--muted); } .szi-det[open] .szi-strip { margin-top: 8px; }
 .szi-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; height: 84px; align-items: end; } .szi-strip > div { display: grid; grid-template-rows: 1fr auto; height: 100%; justify-items: center; gap: 2px; font-size: 11px; color: var(--muted); }
@@ -4032,7 +4033,7 @@ html { scroll-padding-top: 96px; }
     }
     return null;
   }
-  function renderSeason() {
+  function renderSeason(noAuto) {
     var card = $("sz-card"); if (!card) return;
     var S = seasonInfo(); card.hidden = !!S.none; if (S.none) return;
     var chip = $("sz-chip"); chip.textContent = S.off ? "Off-season" : "In season"; chip.className = "chip " + (S.off ? "bad" : "ok");
@@ -4053,6 +4054,7 @@ html { scroll-padding-top: 96px; }
     sn.slice(-4).reverse().forEach(function (x) { rows.push([esc(x.name) + (x.cur ? " (now)" : ""), fmt(x.net) + " &middot; " + x.n + (x.n === 1 ? " game" : " games")]); });
     $("sz-body").innerHTML = rows.map(function (r) { return '<div class="sz-row"><span>' + r[0] + "</span><b>" + (r[0] === "Status" || r[0] === "Usually quiet" || r[0].indexOf("estimate") > 0 ? esc(r[1]) : r[1]) + "</b></div>"; }).join("") +
       (S.off ? '<p class="note">Your wish list and savings forecasts count the slower off-season pace.</p>' : "") + szIntelHtml(S);
+    if (!noAuto && sbSession && !card.closest("[hidden]")) szAskAi(false);
   }
   /* Seasonal intelligence: slowdown alert, ahead/behind last season, month pattern, income forecast for quiet stretches */
   function szIntel(S) {
@@ -4103,6 +4105,49 @@ html { scroll-padding-top: 96px; }
     }
     return o;
   }
+  /* Predict next season: weighted average of finished seasons, gentle capped trend, with a range */
+  function szNext(S) {
+    var done = S.seasons.filter(function (x) { return !x.cur && x.n > 0; }); if (!done.length) return null;
+    var last3 = done.slice(-3), w = [1, 2, 3].slice(3 - last3.length), sw = 0, sn = 0, sg = 0;
+    last3.forEach(function (x, i) { sw += w[i]; sn += x.net * w[i]; sg += x.n * w[i]; });
+    var base = sn / sw, games = sg / sw, trend = 0;
+    if (done.length >= 2) { var a = done[done.length - 1].net, b = done[done.length - 2].net; if (b > 0) trend = Math.max(-0.2, Math.min(0.2, (a - b) / b)) / 2; }
+    var est = Math.max(0, base * (1 + trend)), spread = done.length >= 3 ? 0.15 : done.length === 2 ? 0.2 : 0.3;
+    var cnt = {}; done.forEach(function (x) { var m = +x.s.slice(5, 7); cnt[m] = (cnt[m] || 0) + 1; });
+    var sm = +done[done.length - 1].s.slice(5, 7), best = 0; Object.keys(cnt).forEach(function (m) { if (cnt[m] > best) { best = cnt[m]; sm = +m; } });
+    var t = todayStr(), y = +t.slice(0, 4), mo = +t.slice(5, 7), curS = S.seasons.filter(function (x) { return x.cur; })[0], ym = null;
+    for (var i = 0; i < 26; i++) { if (++mo > 12) { mo = 1; y++; } var k = y + "-" + (mo < 10 ? "0" : "") + mo; if (mo === sm && (!curS || k > curS.e)) { ym = k; break; } }
+    var cs = 0; if (curS) { cs = curS.net; }
+    return { est: Math.round(est), lo: Math.round(est * (1 - spread)), hi: Math.round(est * (1 + spread)), games: Math.round(games), name: ym ? seasonName(ym) : "Next season", startMonth: sm, n: done.length, trend: Math.round(trend * 200), basis: last3.map(function (x) { return x.name; }), curNet: cs };
+  }
+  var SZ_KEY = "rf-szai-v1", szAiC = null, szBusy = false, szBackoff = 0, szMsg = "";
+  try { szAiC = JSON.parse(localStorage.getItem(SZ_KEY) || "null"); if (!szAiC || typeof szAiC.text !== "string") szAiC = null; } catch (e) { szAiC = null; }
+  function szFacts(S, I, N) {
+    var d = function (c) { return Math.round(c) / 100; }, o = { inSeasonNow: !S.off, usuallyQuietMonths: S.quietMoy.map(function (m) { return MON[m - 1]; }), slowingDown: I.slow ? { gamesLast4Weeks: I.slow.n, usualForABusyMonth: I.slow.exp } : null };
+    o.quietStretch = I.stretch ? { from: MON[I.stretch.from - 1], to: MON[I.stretch.to - 1], happeningNow: I.stretch.now, expectedIncome: d(I.stretch.total), alreadyScheduled: d(I.stretch.sch), roughGuess: I.stretch.est } : null;
+    o.versusLastSeason = I.cmp ? { status: I.cmp.state, earnedDifference: d(I.cmp.dn), gamesDifference: I.cmp.dg, percent: I.cmp.pc, lastSeason: I.cmp.prevName, onPaceFor: d(I.cmp.proj), lastSeasonTotal: d(I.cmp.prevTotal) } : null;
+    o.nextSeasonPrediction = N ? { season: N.name, likelyEarnings: d(N.est), lowEnd: d(N.lo), highEnd: d(N.hi), games: N.games, startsAround: MON[N.startMonth - 1], basedOnSeasons: N.basis } : null;
+    return o;
+  }
+  function szAskAi(manual) {
+    if (szBusy) return;
+    if (!sbSession) { if (manual) { szMsg = "Sign in to use AI."; renderSeason(true); } return; }
+    if (!manual && (Date.now() < szBackoff || (szAiC && Date.now() - szAiC.t < 12 * 3600 * 1000))) return;
+    var S = seasonInfo(); if (S.none) return; var I, N; try { I = szIntel(S); N = szNext(S); } catch (x) { return; }
+    szBusy = true; if (manual) { szMsg = "Thinking..."; renderSeason(true); }
+    var facts; try { facts = aiFacts(); } catch (x) { facts = {}; }
+    facts.seasonOutlook = szFacts(S, I, N);
+    aiCall({ mode: "chat", facts: facts, messages: [{ role: "user", text: "Using my seasonOutlook numbers, write a short season outlook in 4 sentences: is my season slowing down or off-season, what I should expect to earn in the quiet months, how this season compares to last, and my predicted earnings for next season with the range. Use only the numbers provided and do not invent figures." }] }).then(function (j) {
+      szAiC = { t: Date.now(), text: String(j.reply).slice(0, 1400) }; try { localStorage.setItem(SZ_KEY, JSON.stringify(szAiC)); } catch (x) { /* full */ } szMsg = "";
+    }, function (err) { szBackoff = Date.now() + 30 * 60 * 1000; szMsg = manual ? String(err.message || err) : ""; }).then(function () { szBusy = false; renderSeason(true); });
+  }
+  document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#sz-ai-btn")) szAskAi(true); });
+  function szNextHtml(S) {
+    var N; try { N = szNext(S); } catch (e) { N = null; } if (!N) return "";
+    var h = '<div class="szi-hd"><b>🔮 Next season (' + esc(N.name) + '): about ' + fmt(N.est) + '</b><span>Likely range ' + fmt(N.lo) + " to " + fmt(N.hi) + ", around " + N.games + (N.games === 1 ? " game" : " games") + ", starting about " + MON[N.startMonth - 1] + ". Based on your last " + N.basis.length + (N.basis.length === 1 ? " season" : " seasons") + (N.trend ? ", " + (N.trend > 0 ? "nudged up " : "nudged down ") + Math.abs(N.trend) + "% for your recent trend" : "") + (N.basis.length < 2 ? ". Rough guess, it gets better after another season" : "") + ".</span></div>";
+    h += '<div class="szi-ai">' + (szAiC ? '<p>' + esc(szAiC.text) + '</p><p class="note">Written by AI from your numbers. Double-check anything important.</p>' : "") + (szMsg ? '<p class="note">' + esc(szMsg) + "</p>" : "") + '<button type="button" class="btn ghost" id="sz-ai-btn"' + (szBusy ? " disabled" : "") + ">" + (szAiC ? "Refresh AI outlook" : "✨ Write AI season outlook") + "</button></div>";
+    return h;
+  }
   function szIntelHtml(S) {
     var I; try { I = szIntel(S); } catch (e) { return ""; }
     var h = '<div class="szi"><h3>Seasonal intelligence</h3>';
@@ -4116,6 +4161,7 @@ html { scroll-padding-top: 96px; }
       var st = I.stretch, rng = st.from === st.to ? MON[st.from - 1] : MON[st.from - 1] + " to " + MON[st.to - 1];
       h += '<div class="szi-hd"><b>' + (st.now ? "Expected income this off-season" : "Next quiet stretch: " + rng) + '</b><span>About ' + fmt(st.total) + (st.now ? " through " + MON[st.to - 1] : " across " + st.list.length + (st.list.length === 1 ? " month" : " months")) + (st.sch ? " (" + fmt(st.sch) + " already scheduled)" : "") + (st.nextBusy && st.now ? ". Games usually pick up in " + MON[st.nextBusy - 1] : "") + (st.est ? ". Rough guess until I have a full quiet season of history" : "") + '.</span></div>';
     }
+    h += szNextHtml(S);
     if (I.mx > 0) h += '<details class="szi-det"><summary>Monthly pattern</summary><div class="szi-strip" role="img" aria-label="Average income by month">' + I.strip.map(function (x) { var ht = x.v === null ? 0 : Math.max(6, Math.round(x.v / I.mx * 100)); return '<div class="' + (x.q ? "q " : "") + (x.now ? "now" : "") + '" title="' + MON[x.m - 1] + (x.v === null ? ": no history" : ": about " + fmt(Math.round(x.v)) + (x.q ? ", usually quiet" : "")) + '"><i style="height:' + ht + '%"></i><span>' + MON[x.m - 1].charAt(0) + '</span></div>'; }).join("") + '</div><p class="note">Average income by month. Orange bars are your usual off-season months.</p></details>';
     return h + "</div>";
   }
@@ -4288,7 +4334,7 @@ html { scroll-padding-top: 96px; }
       season: S.none ? null : { inSeason: !S.off, inSeasonWeekly: S.inW === null ? null : d(S.inW), offSeasonWeekly: S.offW === null ? null : d(S.offW), quietMonths: S.quietMoy.map(function (m) { return MON[m - 1]; }), recentSeasons: sn.slice(-4).map(function (x) { return { name: x.name, earned: d(x.net), games: x.n, current: !!x.cur }; }) },
       wishList: wishes.slice(0, 8).map(function (w) { return { item: w.what, price: Number(w.amount) || 0, bucket: w.bucket, affordableNow: wishReadyList.some(function (r) { return r.id === w.id; }) }; }),
       averagePayPerGame: d(aiAvgGame()), howMuchEachBucketGetsFromAnAverageGame: BUCKETS.map(function (b, i) { return { bucket: b.name, dollars: d(aiAvgGame() * (split[b.k] || 0) / 100) }; }),
-      seasonCompare: aiSeasonCmp(), expenseInsights: (function () { try { var X = xiCalc(); return { spentThisMonth: X.cur.tot / 100, spentSamePointLastMonth: X.prev.tot / 100, biggestCategory: X.names[X.top], costPerGameThisMonth: X.cur.cpg === null ? null : X.cur.cpg / 100, costPerGameAllTime: X.all.cpg === null ? null : X.all.cpg / 100, equipmentAlert: !!X.warn }; } catch (e) { return null; } })(), weather: aiWeather(), paymentPrediction: (function () { try { return ppFacts(ppCalc()); } catch (e) { return null; } })(), incomeForecast: (function () { try { return fcFacts(fcCalc()); } catch (e) { return null; } })()
+      seasonCompare: aiSeasonCmp(), expenseInsights: (function () { try { var X = xiCalc(); return { spentThisMonth: X.cur.tot / 100, spentSamePointLastMonth: X.prev.tot / 100, biggestCategory: X.names[X.top], costPerGameThisMonth: X.cur.cpg === null ? null : X.cur.cpg / 100, costPerGameAllTime: X.all.cpg === null ? null : X.all.cpg / 100, equipmentAlert: !!X.warn }; } catch (e) { return null; } })(), weather: aiWeather(), paymentPrediction: (function () { try { return ppFacts(ppCalc()); } catch (e) { return null; } })(), incomeForecast: (function () { try { return fcFacts(fcCalc()); } catch (e) { return null; } })(), nextSeason: (function () { try { var N = szNext(seasonInfo()); return N ? { season: N.name, likelyEarnings: N.est / 100, low: N.lo / 100, high: N.hi / 100 } : null; } catch (e) { return null; } })()
     };
   }
   function aiAvgGame() { var td = todayStr(), n = 0, c = 0; live().forEach(function (g) { if (g.date <= td) { n += gN(g); c += gNet(g); } }); return n ? c / n : 0; }
