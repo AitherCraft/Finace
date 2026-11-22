@@ -729,6 +729,7 @@ button:disabled, .btn:disabled { opacity: 0.55; }
 .more-row .btn { width: 100%; }
 .lockscreen { position: fixed; inset: 0; z-index: 80; background: radial-gradient(120% 60% at 50% -10%, #12306a 0%, rgba(18, 48, 106, 0) 60%), var(--bg); color: var(--fg); display: flex; flex-direction: column; align-items: center; padding: calc(26px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); overflow: auto; }
 .lockscreen[hidden] { display: none; }
+.lk-logo { width: clamp(64px, 14vh, 104px); height: clamp(64px, 14vh, 104px); border-radius: 22%; object-fit: cover; margin: 0 0 14px; flex: 0 0 auto; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); }
 .lk-dots { display: flex; gap: 26px; margin: 6px 0 0; min-height: 30px; }
 .lk-dot { width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid var(--muted); box-sizing: border-box; transition: background-color 0.12s, transform 0.12s, border-color 0.12s, box-shadow 0.12s; }
 .lk-dot.on { background: var(--blue); border-color: var(--blue); transform: scale(1.08); box-shadow: 0 0 14px rgba(47, 140, 255, 0.55); }
@@ -884,6 +885,7 @@ html { scroll-padding-top: 96px; }
 </main>
 <main class="lockscreen" id="lock" hidden aria-labelledby="h-lock">
   <h1 id="h-lock" class="sr">Enter your PIN</h1>
+  <img class="lk-logo" id="lock-logo" alt="" width="96" height="96">
   <div class="lk-dots" id="lock-dots" role="img" aria-label="PIN digits entered"></div>
   <p class="lk-msg" id="lock-msg" role="alert"></p>
   <div class="lk-pad" id="lock-pad">
@@ -4490,7 +4492,8 @@ html { scroll-padding-top: 96px; }
     document.title = u.name;
     $("logo").alt = u.name + " logo";
     if (!window.LOGO_DEF) window.LOGO_DEF = $("logo").getAttribute("src");
-    var lsrc = u.logo || window.LOGO_DEF; if ($("logo").getAttribute("src") !== lsrc) { $("logo").src = lsrc; var fv = document.getElementById("fav-ic"); if (fv) fv.href = lsrc; }
+    var lsrc = u.logo || window.LOGO_DEF; if ($("lock-logo") && $("lock-logo").getAttribute("src") !== lsrc) $("lock-logo").src = lsrc;
+    if ($("logo").getAttribute("src") !== lsrc) { $("logo").src = lsrc; var fv = document.getElementById("fav-ic"); if (fv) fv.href = lsrc; }
     ["rp-avatar", "rp-open"].forEach(function (id) { var el = $(id); if (!el) return; el.classList.toggle("has-photo", !!u.photo); el.style.backgroundImage = u.photo ? 'url("' + u.photo + '")' : ""; });
     if ($("ph-prev")) { $("ph-prev").style.backgroundImage = u.photo ? 'url("' + u.photo + '")' : ""; $("ph-prev").classList.toggle("has-photo", !!u.photo); $("lg-prev").src = lsrc; $("ph-clear").hidden = !u.photo; $("lg-clear").hidden = !u.logo; }
     renderChart();
