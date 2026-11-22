@@ -351,6 +351,11 @@ button.badge { cursor: pointer; min-height: 26px; }
 .aw-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .aw-tile { display: grid; gap: 2px; padding: 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); } .aw-tile > span { font-size: 24px; } .aw-tile small { color: var(--muted); font-size: 12px; } .aw-tile b { font: 800 16px/1.2 var(--display); overflow-wrap: anywhere; } .aw-tile em { font-style: normal; color: var(--muted); font-size: 12px; }
 .aw-rec { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 0; border-top: 1px solid var(--panel-line); font-size: 14px; } .aw-rec small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; } .aw-rec.on b, .aw-rec.on small { color: var(--yellow); }
 .sh-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--panel-line); display: grid; gap: 8px; } .sh-prev { padding: 10px 12px; border-radius: var(--r-sm); border: 1px dashed var(--panel-line); font-size: 14px; } .sh-prev h4 { margin: 8px 0 2px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); } .sh-prev h4:first-child { margin-top: 0; } .sh-prev ul { margin: 0; padding-left: 18px; }
+.cdw.off, .cd.off { background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(255, 120, 120, 0.16) 6px 8px); } .cdw.off .dn::after { content: " 🚫"; font-size: 10px; } .av-flag { color: var(--orange); }
+.av-dows { display: flex; flex-wrap: wrap; gap: 6px; } .av-dow { cursor: pointer; position: relative; display: inline-block; } .av-dow input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; } .av-dow span { display: inline-block; min-width: 46px; text-align: center; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--panel-line); font-size: 14px; font-weight: 700; } .av-dow input:checked + span { background: var(--blue); border-color: var(--blue); color: #fff; } .av-dow input:focus-visible + span { outline: 2px solid var(--fg); outline-offset: 2px; }
+.av-wks { display: grid; gap: 6px; } .av-wk { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; flex-wrap: wrap; } .av-wk.open { border-color: var(--green); } .av-wk em { font-style: normal; color: var(--green); font-size: 12px; font-weight: 700; }
+.av-pill { display: inline-block; margin-right: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--panel-line); } .av-pill.open { color: var(--green); border-color: var(--green); } .av-pill.busy { color: var(--blue); border-color: var(--blue); } .av-pill.off { color: var(--orange); border-color: var(--orange); } .av-pill.past { color: var(--muted); }
+.av-best { margin: 0; padding-left: 20px; display: grid; gap: 8px; } .av-best small { display: block; color: var(--muted); font-size: 12px; }
 .szi { margin-top: 12px; display: grid; gap: 8px; } .szi h3 { margin: 0; }
 .szi-hd { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; } .szi-hd span { color: var(--muted); font-size: 13px; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
@@ -1093,6 +1098,28 @@ html { scroll-padding-top: 96px; }
       <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Paid</span><span><i class="dot" style="background:var(--yellow)"></i>Pending</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--red)"></i>Cancelled</span></div>
     </section>
     <section class="panel" aria-live="polite" aria-label="Games on the selected day"><div id="cal-day"></div></section>
+    <section class="panel" id="av-card" aria-labelledby="h-av">
+      <div class="panel-head"><h2 id="h-av">Availability planner</h2><span class="chip" id="av-chip"></span></div>
+      <p class="note">Tell RefVault when you cannot referee. Those days show striped on the calendar, get flagged if a game lands on them, and show as unavailable when you share your availability.</p>
+      <h3>Days you usually take off</h3>
+      <div class="av-dows" id="av-dows"></div>
+      <h3>Block off dates</h3>
+      <div class="form-grid">
+        <div class="field"><label for="av-from">From</label><input id="av-from" type="date"></div>
+        <div class="field"><label for="av-to">To (optional)</label><input id="av-to" type="date"></div>
+        <div class="field"><label for="av-note">Note (optional)</label><input id="av-note" type="text" maxlength="40" placeholder="Vacation, exams, family"></div>
+      </div>
+      <div class="wish-actions"><button class="btn" type="button" id="av-add">Mark unavailable</button></div>
+      <ul class="list" id="av-list"></ul>
+      <p class="msg" id="av-msg" role="status"></p>
+      <h3>Can I accept this game?</h3>
+      <div class="form-grid"><div class="field"><label for="av-chk-d">Date</label><input id="av-chk-d" type="date"></div><div class="field"><label for="av-chk-t">Time (optional)</label><input id="av-chk-t" type="time"></div></div>
+      <div class="wish-actions"><button class="mini" type="button" id="av-chk">Check</button></div>
+      <div id="av-verdict" aria-live="polite"></div>
+      <h3>Open weekends</h3><div id="av-wk"></div>
+      <h3>Best days to accept games</h3><div id="av-best"></div>
+      <div id="av-conf"></div>
+    </section>
     <section class="panel" aria-labelledby="h-gi">
       <div class="panel-head"><h2 id="h-gi">Import from Google Calendar</h2><span class="chip" id="gi-chip"></span></div>
       <p class="note">Games you put on your Google Calendar (like assignments from your assignor) get added here automatically. RefVault checks when you open the app and every 15 minutes while it is open. Imported games start with no pay, so add the fee when you know it.</p>
@@ -2540,7 +2567,7 @@ html { scroll-padding-top: 96px; }
       var ds = ym + "-" + String(d).padStart(2, "0"), list = by[ds] || [], kinds = {};
       list.forEach(function (g) { kinds[calKind(g)] = 1; });
       var ks = CAL_ORDER.filter(function (k) { return kinds[k]; });
-      var lbl = parseD(ds).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) + (list.length ? ", " + list.length + (list.length === 1 ? " game" : " games") : "");
+      var lbl = parseD(ds).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) + (list.length ? ", " + list.length + (list.length === 1 ? " game" : " games") : "") + (avOff(ds) ? ", unavailable" : "");
       if (big) {
         var sorted = list.slice().sort(byDateTime), chips = sorted.slice(0, 3).map(function (g, i) {
           var k = calKind(g), tt = g.time ? calShortTime(g.time) + " " : "";
@@ -2548,10 +2575,10 @@ html { scroll-padding-top: 96px; }
         }).join("");
         var more = list.length > 3 ? '<span class="more m3">+' + (list.length - 3) + "</span>" : "";
         if (list.length > 2) more += '<span class="more m2">+' + (list.length - 2) + "</span>";
-        h += '<div class="cdw' + (ds === t ? " today" : "") + (ds === calSel ? " sel" : "") + '"><button type="button" class="cd" data-goday="' + ds + '" aria-label="' + esc(lbl) + '"><span class="dn">' + d + "</span></button><div class=\"chips\">" + chips + more + "</div></div>";
+        h += '<div class="cdw' + (ds === t ? " today" : "") + (ds === calSel ? " sel" : "") + (avOff(ds) ? " off" : "") + '"><button type="button" class="cd" data-goday="' + ds + '" aria-label="' + esc(lbl) + '"><span class="dn">' + d + "</span></button><div class=\"chips\">" + chips + more + "</div></div>";
         continue;
       }
-      h += '<button type="button" class="cd' + (ds === t ? " today" : "") + '" data-goday="' + ds + '" aria-label="' + esc(lbl) + '"><span>' + d + "</span>" +
+      h += '<button type="button" class="cd' + (ds === t ? " today" : "") + (avOff(ds) ? " off" : "") + '" data-goday="' + ds + '" aria-label="' + esc(lbl) + '"><span>' + d + "</span>" +
         (ks.length ? '<span class="dots">' + ks.map(function (k) { return '<i style="background:' + CAL_COLORS[k] + '"></i>'; }).join("") + "</span>" : "") + "</button>";
     }
     return { title: cm.toLocaleDateString("en-US", { month: "long", year: "numeric" }), html: h + "</div>", ym: ym };
@@ -2573,7 +2600,7 @@ html { scroll-padding-top: 96px; }
         (g.cancelled ? '<button class="mini" type="button" data-calrestore="' + esc(g.id) + '">Restore</button>' : '<button class="mini" type="button" data-calcancel="' + esc(g.id) + '">Cancel game</button>') + "</div></div>" +
         '<span class="amt' + (g.cancelled ? " is-unpaid" : "") + '">' + fmt(toCents(g.fee)) + "</span></li>";
     }).join("") + "</ul>" : '<p class="note">No games on this day.</p>';
-    h += '<a class="btn small" href="#add-game" data-addday="' + sel + '">Add a game on this day</a>';
+    var off = avOff(sel); h += (off ? '<p class="note av-flag">🚫 ' + esc(off.why) + "</p>" : "") + '<div class="wish-actions"><a class="btn small" href="#add-game" data-addday="' + sel + '">Add a game on this day</a><button class="mini" type="button" data-av-toggle="' + sel + '">' + (off ? "✅ Mark available" : "🚫 Mark unavailable") + "</button></div>";
     $("cal-day").innerHTML = h;
   }
   function setCancelled(id, val) {
@@ -3350,7 +3377,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderAvail, "avail"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3888,6 +3915,7 @@ html { scroll-padding-top: 96px; }
   function shBusy() {
     var t = todayStr(), end = ymd(new Date(pdate(t).getTime() + 27 * 864e5)), by = {};
     upcomingGames().concat(live().filter(function (g) { return g.date < t && g.endDate && g.endDate >= t; })).forEach(function (g) { gDays(g).forEach(function (d) { if (d >= t && d <= end) { var b = by[d] || (by[d] = { n: 0, times: [] }); if (gDays(g).length === 1) b.n += gN(g); if (g.time) b.times.push(g.time); } }); });
+    for (var i = 0; i <= 27; i++) { var dd = ymd(new Date(pdate(t).getTime() + i * 864e5)); if (!by[dd] && avOff(dd)) by[dd] = { n: 0, times: [], off: true }; }
     return { by: by, t: t, end: end };
   }
   function shBuild(c) {
@@ -3907,7 +3935,7 @@ html { scroll-padding-top: 96px; }
     }
     if (c.av) {
       var B = shBusy(), days = Object.keys(B.by).sort(), L2 = [];
-      days.forEach(function (d) { var b = B.by[d], tm = b.times.sort()[0]; L2.push("Busy: " + pdate(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + (tm ? " from " + fmtTime(tm) : "") + (b.n > 1 ? " (" + b.n + " games)" : "")); });
+      days.forEach(function (d) { var b = B.by[d], tm = b.times.sort()[0]; L2.push((b.off ? "Unavailable: " : "Busy: ") + pdate(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + (tm ? " from " + fmtTime(tm) : "") + (b.n > 1 ? " (" + b.n + " games)" : "")); });
       L2.push(days.length ? "Free on all other days through " + mdDate(B.end) + "." : "Free every day through " + mdDate(B.end) + " (nothing scheduled).");
       secs.push({ h: "Availability, " + mdDate(B.t) + " to " + mdDate(B.end), l: L2 });
     }
@@ -4331,6 +4359,121 @@ html { scroll-padding-top: 96px; }
     if (e.target.closest && e.target.closest("#aic-clear")) { aiChat = []; try { localStorage.removeItem(AIC_KEY); } catch (x) { /* ok */ } $("aic-msg").textContent = ""; aicRender(); }
   });
   aicRender();
+  /* Availability planner: days off, open weekends, double-booking checks and best days to accept games */
+  var DOWN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], DOWL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], avAck = "";
+  function avOff(ds) {
+    var a = rp.av; if (!a) return null; if (a.on.indexOf(ds) >= 0) return null;
+    for (var i = 0; i < a.off.length; i++) if (ds >= a.off[i].d && ds <= a.off[i].e) return { why: "You marked this day unavailable" + (a.off[i].n ? " (" + a.off[i].n + ")" : "") + ".", n: a.off[i].n };
+    if (a.dow.indexOf(parseD(ds).getDay()) >= 0) return { why: "You usually take " + DOWL[parseD(ds).getDay()] + "s off.", n: "" };
+    return null;
+  }
+  function avTimeMin(t) { var m = /^(\d{1,2}):(\d{2})/.exec(t || ""); return m ? +m[1] * 60 + +m[2] : null; }
+  function avDur(g) { return 90 + ((Number(g.count) || 1) - 1) * 60; }
+  function avOverlap(a, b) {
+    var da = gDays(a), db = gDays(b); if (!da.some(function (d) { return db.indexOf(d) >= 0; })) return false;
+    if (da.length > 1 || db.length > 1) return true;
+    var sa = avTimeMin(a.time), sb = avTimeMin(b.time); if (sa === null || sb === null) return false;
+    return sa < sb + avDur(b) && sb < sa + avDur(a);
+  }
+  function avSave(next, msg) {
+    var before = rp; rp = sanitizeRp(Object.assign({}, rp, { av: next })); render();
+    return persistSplit().then(function (ok) { if (!ok) { rp = before; render(); avMsg("Could not save that. Try again.", true); } else if (msg) avMsg(msg); });
+  }
+  function avMsg(t, err) { var m = $("av-msg"); if (!m) return; m.className = "msg" + (err ? " err" : ""); m.textContent = t || ""; }
+  function avCopy() { var a = rp.av || { off: [], dow: [], on: [] }; return { off: a.off.map(function (x) { return Object.assign({}, x); }), dow: a.dow.slice(), on: a.on.slice() }; }
+  function avToggle(ds) {
+    var a = avCopy(), hit = avOff(ds);
+    if (hit) {
+      var i = -1; a.off.forEach(function (x, n) { if (ds >= x.d && ds <= x.e) i = n; });
+      if (i >= 0) { var x = a.off[i], prev = ymd(new Date(parseD(ds).getTime() - 864e5)), next = ymd(new Date(parseD(ds).getTime() + 864e5)), parts = []; if (x.d < ds) parts.push({ d: x.d, e: prev, n: x.n }); if (x.e > ds) parts.push({ d: next, e: x.e, n: x.n }); a.off.splice.apply(a.off, [i, 1].concat(parts)); }
+      else a.on.push(ds);
+    } else { a.on = a.on.filter(function (d) { return d !== ds; }); a.off.push({ d: ds, e: ds, n: "" }); }
+    avSave(a, hit ? "Marked available." : "Marked unavailable.");
+  }
+  function avDayState(ds, skip) {
+    var off = avOff(ds), gs = live().filter(function (g) { return (!skip || g.id !== skip) && gDays(g).indexOf(ds) >= 0; });
+    return { off: off, games: gs, s: off ? "off" : gs.length ? "busy" : "open" };
+  }
+  function avFormCheck(f, skipId) {
+    var probe = { date: f.date, time: f.time, count: f.count }, bad = [];
+    var off = avOff(f.date); if (off) bad.push(off.why.replace(/\.$/, ""));
+    live().forEach(function (g) { if (g.id !== skipId && avOverlap(probe, g)) bad.push("It overlaps with " + gTitle(g) + (g.time ? " at " + fmtTime(g.time) : "")); });
+    return bad.length ? bad.join(". ") + "." : "";
+  }
+  function avStats() {
+    var t = todayStr(), dow = [0, 1, 2, 3, 4, 5, 6].map(function () { return { n: 0, net: 0 }; }), wk = {}, from = ymd(new Date(Date.now() - 365 * 864e5));
+    live().forEach(function (g) { if (g.date >= t || g.date < from) return; var d = parseD(g.date).getDay(), n = gN(g); dow[d].n += n; dow[d].net += gNet(g); var w = Math.floor((parseD(g.date).getTime() / 864e5 + 3) / 7); wk[w] = (wk[w] || 0) + n; });
+    var ws = Object.keys(wk).map(function (k) { return wk[k]; }), typ = ws.length ? Math.max(1, Math.round(ws.reduce(function (a, b) { return a + b; }, 0) / ws.length)) : 0;
+    return { dow: dow, typ: typ, hasHist: dow.some(function (x) { return x.n >= 3; }) };
+  }
+  function avWeekLoad(ds) { var w = Math.floor((parseD(ds).getTime() / 864e5 + 3) / 7), n = 0; upcomingGames().forEach(function (g) { if (Math.floor((parseD(g.date).getTime() / 864e5 + 3) / 7) === w) n += gN(g); }); return n; }
+  function avBest() {
+    var St = avStats(), t = todayStr(), out = [], maxN = Math.max.apply(null, St.dow.map(function (x) { return x.n; }).concat([1])), maxAvg = Math.max.apply(null, St.dow.map(function (x) { return x.n >= 3 ? x.net / x.n : 0; }).concat([1]));
+    for (var i = 1; i <= 28; i++) {
+      var ds = ymd(new Date(pdate(t).getTime() + i * 864e5)), st = avDayState(ds); if (st.s !== "open") continue;
+      var d = parseD(ds).getDay(), x = St.dow[d], sc = 0, why = [];
+      if (St.hasHist) { sc += x.n / maxN * 50; if (x.n >= 3) { sc += (x.net / x.n) / maxAvg * 30; } if (x.n >= 3) why.push("you have worked " + x.n + " " + DOWL[d] + " games, averaging " + fmt(Math.round(x.net / x.n)) + " a game"); }
+      else { sc += d === 6 || d === 0 ? 40 : 10; why.push(d === 6 || d === 0 ? "weekends are when most games are played" : "open day"); }
+      var load = avWeekLoad(ds); if (St.typ && load >= St.typ + 1) { sc -= 25; why.push("that week already has " + load + " games"); } else if (load > 0 && St.typ) why.push("that week has " + load + (load === 1 ? " game" : " games") + ", right in your usual range");
+      var pv = avDayState(ymd(new Date(parseD(ds).getTime() - 864e5))), nx = avDayState(ymd(new Date(parseD(ds).getTime() + 864e5)));
+      if (pv.games.length && nx.games.length) { sc -= 10; why.push("it sits between two game days"); }
+      out.push({ ds: ds, sc: sc, why: why });
+    }
+    return out.sort(function (a, b) { return b.sc - a.sc || (a.ds < b.ds ? -1 : 1); }).slice(0, 5);
+  }
+  function avWeekends() {
+    var t = todayStr(), d = pdate(t), out = [], sat = new Date(d.getTime()); sat.setDate(sat.getDate() + ((6 - sat.getDay() + 7) % 7));
+    if (d.getDay() === 0) sat = new Date(d.getTime() - 864e5);
+    for (var i = 0; i < 8; i++) { var s1 = ymd(new Date(sat.getTime() + i * 7 * 864e5)), s2 = ymd(new Date(sat.getTime() + (i * 7 + 1) * 864e5)); out.push({ sat: s1, sun: s2, a: s1 < t ? null : avDayState(s1), b: avDayState(s2) }); }
+    return out;
+  }
+  function avConflicts() {
+    var up = upcomingGames().sort(byDateTime), out = [];
+    for (var i = 0; i < up.length; i++) for (var j = i + 1; j < up.length; j++) if (up[i].date === up[j].date || gDays(up[i]).some(function (d) { return gDays(up[j]).indexOf(d) >= 0; })) { if (avOverlap(up[i], up[j])) out.push({ k: "overlap", a: up[i], b: up[j] }); }
+    up.forEach(function (g) { var o = gDays(g).map(avOff).filter(Boolean)[0]; if (o) out.push({ k: "off", a: g, why: o.why }); });
+    return out;
+  }
+  function avVerdict(ds, tm) {
+    if (!ds) return '<p class="note">Pick a date first.</p>';
+    var f = { date: ds, time: tm || "", count: 1 }, warn = avFormCheck(f, null), st = avDayState(ds), St = avStats(), d = parseD(ds).getDay(), load = avWeekLoad(ds), x = St.dow[d], lab = parseD(ds).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+    var h;
+    if (ds < todayStr()) return '<p class="note">That date has already passed.</p>';
+    if (warn) h = '<div class="szi-hd bad"><b>⚠️ Not a good idea, ' + esc(lab) + "</b><span>" + esc(warn) + "</span></div>";
+    else if (st.games.length) h = '<div class="szi-hd warn"><b>ℹ️ You already have a game that day</b><span>' + esc(lab) + " has " + st.games.length + (st.games.length === 1 ? " game" : " games") + ", but the times do not clash" + (tm ? "" : ". Add a time to double check") + ".</span></div>";
+    else h = '<div class="szi-hd ok"><b>✅ You are free, ' + esc(lab) + "</b><span>Nothing booked and not marked unavailable.</span></div>";
+    var notes = []; if (St.typ && load >= St.typ + 1) notes.push("Heads up: that week already has " + load + " games (you usually do about " + St.typ + ")."); if (x.n >= 3) notes.push("You have worked " + x.n + " " + DOWL[d] + " games, averaging " + fmt(Math.round(x.net / x.n)) + " a game.");
+    return h + (notes.length ? '<p class="note">' + esc(notes.join(" ")) + "</p>" : "");
+  }
+  function renderAvail() {
+    if (!$("av-card")) return; var a = rp.av || { off: [], dow: [], on: [] }, t = todayStr();
+    $("av-dows").innerHTML = DOWN.map(function (n, i) { return '<label class="av-dow"><input type="checkbox" data-av-dow="' + i + '"' + (a.dow.indexOf(i) >= 0 ? " checked" : "") + "><span>" + n + "</span></label>"; }).join("");
+    var upOff = a.off.filter(function (x) { return x.e >= t; });
+    $("av-list").innerHTML = upOff.length ? upOff.map(function (x, i) { return "<li><div><b>" + esc(mdDate(x.d) + (x.e !== x.d ? " to " + mdDate(x.e) : "")) + "</b>" + (x.n ? '<div class="a-sub">' + esc(x.n) + "</div>" : "") + '</div><button class="mini danger" type="button" data-av-del="' + x.d + "|" + x.e + '">Remove</button></li>'; }).join("") : '<li class="note">No blocked dates.</li>';
+    $("av-chip").textContent = upOff.length || a.dow.length ? (upOff.length ? upOff.length + (upOff.length === 1 ? " block" : " blocks") : "") + (upOff.length && a.dow.length ? ", " : "") + (a.dow.length ? a.dow.length + " weekly" : "") : "All days open";
+    $("av-wk").innerHTML = '<div class="av-wks">' + avWeekends().map(function (w) {
+      function chip(st, n) { if (!st) return '<span class="av-pill past">' + n + " past</span>"; return '<span class="av-pill ' + st.s + '">' + n + " " + (st.s === "open" ? "open" : st.s === "off" ? "off" : st.games.length + (st.games.length === 1 ? " game" : " games")) + "</span>"; }
+      var open = w.a && w.a.s === "open" && w.b.s === "open", half = !open && ((w.a && w.a.s === "open") || w.b.s === "open");
+      return '<div class="av-wk' + (open ? " open" : "") + '"><b>' + esc(mdDate(w.sat) + " to " + mdDate(w.sun)) + "</b><span>" + chip(w.a, "Sat") + chip(w.b, "Sun") + (open ? ' <em>Fully open</em>' : half ? " <em>Partly open</em>" : "") + "</span></div>";
+    }).join("") + "</div>";
+    var best = avBest();
+    $("av-best").innerHTML = best.length ? '<ol class="av-best">' + best.map(function (b) { return "<li><b>" + esc(parseD(b.ds).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })) + "</b><small>" + esc(b.why.length ? b.why[0].charAt(0).toUpperCase() + b.why[0].slice(1) + (b.why[1] ? ". " + b.why[1].charAt(0).toUpperCase() + b.why[1].slice(1) : "") + "." : "Open day.") + "</small></li>"; }).join("") + "</ol>" : '<p class="note">No open days in the next 4 weeks.</p>';
+    var cf = avConflicts();
+    $("av-conf").innerHTML = cf.length ? "<h3>Needs your attention</h3>" + cf.map(function (c) { return '<div class="szi-hd bad"><b>⚠️ ' + (c.k === "overlap" ? "Possible double-booking" : "Game on a day you are unavailable") + "</b><span>" + (c.k === "overlap" ? esc(mdDate(c.a.date) + ": " + gTitle(c.a) + (c.a.time ? " at " + fmtTime(c.a.time) : "") + " and " + gTitle(c.b) + (c.b.time ? " at " + fmtTime(c.b.time) : "")) : esc(mdDate(c.a.date) + ": " + gTitle(c.a) + ". " + c.why)) + "</span></div>"; }).join("") : "";
+  }
+  document.addEventListener("change", function (e) {
+    var el = e.target; if (!el.hasAttribute || !el.hasAttribute("data-av-dow")) return;
+    var a = avCopy(), n = +el.getAttribute("data-av-dow"); a.dow = a.dow.filter(function (x) { return x !== n; }); if (el.checked) a.dow.push(n); avSave(a, "");
+  });
+  document.addEventListener("click", function (e) {
+    var tg = e.target.closest && e.target.closest("[data-av-toggle]"); if (tg) return avToggle(tg.getAttribute("data-av-toggle"));
+    var dl = e.target.closest && e.target.closest("[data-av-del]");
+    if (dl) { var pr = dl.getAttribute("data-av-del").split("|"), a = avCopy(); a.off = a.off.filter(function (x) { return !(x.d === pr[0] && x.e === pr[1]); }); return avSave(a, "Removed."); }
+    if (e.target.closest && e.target.closest("#av-add")) {
+      var f = $("av-from").value, to = $("av-to").value || f; if (!f) return avMsg("Pick the first day you are unavailable.", true); if (to < f) return avMsg("The end date is before the start date.", true);
+      var a2 = avCopy(); a2.off.push({ d: f, e: to, n: $("av-note").value }); $("av-from").value = ""; $("av-to").value = ""; $("av-note").value = ""; return avSave(a2, "Marked unavailable.");
+    }
+    if (e.target.closest && e.target.closest("#av-chk")) $("av-verdict").innerHTML = avVerdict($("av-chk-d").value, $("av-chk-t").value);
+  });
   /* Import from Google Calendar: the cal-import function reads your private iCal address; games are added, moved and cancelled to match */
   var GI_KEY = "rf-gcimp-v1", giBusy = false;
   function giGet() { var o = {}; try { o = JSON.parse(localStorage.getItem(GI_KEY) || "{}") || {}; } catch (e) {} return { url: typeof o.url === "string" ? o.url : "", kw: typeof o.kw === "string" ? o.kw : "ref, game, match, tournament, vs", last: o.last || 0, seen: o.seen && typeof o.seen === "object" ? o.seen : {} }; }
@@ -5054,7 +5197,7 @@ html { scroll-padding-top: 96px; }
     $("game-sub").textContent = editing ? "Change anything about this assignment, then save." : "Log an assignment: who, where, what you earn and how far you drove.";
   }
   function resetGameForm() {
-    editGameId = null; gameFormMode(false); $("g-count").value = "1";
+    editGameId = null; avAck = ""; gameFormMode(false); $("g-count").value = "1";
     ["g-match", "g-field", "g-assignor", "g-tourn", "g-home", "g-away", "g-loc", "g-recap", "g-fee", "g-exp", "g-notes", "g-time"].forEach(function (id) { $(id).value = ""; });
     $("g-date").value = todayStr(); $("g-status").value = "paid"; $("g-rcvd").value = ""; $("g-paidon").value = ""; payFieldsSync(); $("g-role").value = "Center";
     formMsg("form-game", "", false);
@@ -5089,6 +5232,7 @@ html { scroll-padding-top: 96px; }
       paid: $("g-status").value === "paid", cancelled: $("g-status").value === "cancelled"
     };
     var stv = $("g-status").value;
+    if (stv !== "cancelled") { var warn = avFormCheck(f, editGameId), key = f.date + "|" + f.time + "|" + f.count; if (warn && avAck !== key) { avAck = key; return formMsg("form-game", warn + " Tap Save again to add it anyway.", true); } }
     f.rcvd = stv === "partial" ? Math.round((Number($("g-rcvd").value) || 0) * 100) / 100 : 0;
     f.paidOn = stv === "paid" || stv === "partial" ? ($("g-paidon").value || (stv === "paid" ? todayStr() : "")) : "";
     if (stv === "partial" && !(f.rcvd > 0 && f.rcvd < f.fee)) return formMsg("form-game", "For a partly paid game, enter an amount received that is more than $0 and less than the fee. Use Paid if you got it all.", true);
@@ -5162,7 +5306,14 @@ html { scroll-padding-top: 96px; }
     o = o && typeof o === "object" ? o : {};
     var since = Math.floor(Number(o.since)), yr = new Date().getFullYear();
     return { name: String(o.name || "").trim().slice(0, 40), cert: String(o.cert || "").trim().slice(0, 60), level: RP_LEVELS.indexOf(o.level) >= 0 ? o.level : "",
-      since: since >= 1970 && since <= yr ? since : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(o.exp || "") ? o.exp : "", favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5) };
+      since: since >= 1970 && since <= yr ? since : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(o.exp || "") ? o.exp : "", favs: (Array.isArray(o.favs) ? o.favs : []).map(function (x) { return String(x).trim().slice(0, 40); }).filter(Boolean).slice(0, 5), av: sanitizeAv(o.av) };
+  }
+  function sanitizeAv(a) {
+    a = a && typeof a === "object" ? a : {}; var rx = /^\d{4}-\d{2}-\d{2}$/, cut = ymd(new Date(Date.now() - 60 * 864e5));
+    var off = (Array.isArray(a.off) ? a.off : []).filter(function (x) { return x && rx.test(x.d || ""); }).map(function (x) { var e = rx.test(x.e || "") && x.e >= x.d ? x.e : x.d; return { d: x.d, e: e, n: String(x.n || "").trim().slice(0, 40) }; }).filter(function (x) { return x.e >= cut; }).sort(function (a, b) { return a.d < b.d ? -1 : 1; }).slice(0, 150);
+    var dow = []; (Array.isArray(a.dow) ? a.dow : []).forEach(function (n) { n = Math.floor(Number(n)); if (n >= 0 && n <= 6 && dow.indexOf(n) < 0) dow.push(n); });
+    var on = (Array.isArray(a.on) ? a.on : []).filter(function (x) { return rx.test(x || "") && x >= cut; }).slice(0, 100);
+    return { off: off, dow: dow.sort(), on: on };
   }
   /* Streaks: weeks in a row with games, months in a row meeting your goal, seasons in a row */
   function stkRun(keys, curKey, cont, graceNow) {
@@ -5369,7 +5520,7 @@ html { scroll-padding-top: 96px; }
     var since = $("rp-since").value === "" ? 0 : Number($("rp-since").value);
     if ($("rp-since").value !== "" && (!isFinite(since) || since < 1970 || since > new Date().getFullYear() || Math.floor(since) !== since)) return rpMsg("Type the year you started, like 2022.", true);
     var before = rp;
-    rp = sanitizeRp({ name: $("rp-name").value, cert: $("rp-cert").value, exp: $("rp-exp").value, level: $("rp-level").value, since: since, favs: $("rp-favs").value.split(",") }); render();
+    rp = sanitizeRp({ name: $("rp-name").value, cert: $("rp-cert").value, exp: $("rp-exp").value, level: $("rp-level").value, since: since, favs: $("rp-favs").value.split(","), av: rp.av }); render();
     persistSplit().then(function (ok) { if (!ok) { rp = before; render(); rpMsg("Could not save that. Try again.", true); } else rpMsg("Profile saved."); });
   });
   function rpMsg(t, err) { var m = $("rp-msg"); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
