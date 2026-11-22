@@ -1093,6 +1093,16 @@ html { scroll-padding-top: 96px; }
       <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Paid</span><span><i class="dot" style="background:var(--yellow)"></i>Pending</span><span><i class="dot" style="background:var(--blue)"></i>Upcoming</span><span><i class="dot" style="background:var(--red)"></i>Cancelled</span></div>
     </section>
     <section class="panel" aria-live="polite" aria-label="Games on the selected day"><div id="cal-day"></div></section>
+    <section class="panel" aria-labelledby="h-gi">
+      <div class="panel-head"><h2 id="h-gi">Import from Google Calendar</h2><span class="chip" id="gi-chip"></span></div>
+      <p class="note">Games you put on your Google Calendar (like assignments from your assignor) get added here automatically. RefVault checks when you open the app and every 15 minutes while it is open. Imported games start with no pay, so add the fee when you know it.</p>
+      <ol class="note gi-steps"><li>In Google Calendar on a computer, open Settings and pick your calendar.</li><li>Scroll to <b>Secret address in iCal format</b> and copy it.</li><li>Paste it below.</li></ol>
+      <div class="field"><label for="gi-url">Secret address in iCal format</label><input id="gi-url" type="password" autocomplete="off" spellcheck="false" placeholder="https://calendar.google.com/calendar/ical/..."></div>
+      <div class="field"><label for="gi-kw">Only import events containing these words</label><input id="gi-kw" type="text" maxlength="120" autocomplete="off" placeholder="ref, game, match, tournament, vs"><small class="note">Separate words with commas. Leave it blank to import every event on that calendar.</small></div>
+      <div class="wish-actions"><button class="btn" type="button" id="gi-go">Connect and sync</button><button class="mini" type="button" id="gi-sync" hidden>Sync now</button><button class="mini danger" type="button" id="gi-off" hidden>Disconnect</button></div>
+      <p class="msg" id="gi-msg" role="status"></p>
+      <p class="note">That address lets anyone who has it read your whole calendar, so keep it private. It is saved only on this device, and you can reset it in Google Calendar at any time. Recurring events are skipped. Changes and cancellations in Google carry over to games you have not been paid for.</p>
+    </section>
     <section class="panel" aria-labelledby="h-gcal">
       <h2 id="h-gcal">Sync with Google Calendar</h2>
       <p class="note">Your assignments show up in Google Calendar (and Apple Calendar) and update by themselves when you add, move or cancel a game. Google refreshes subscribed calendars every few hours, so changes are not instant. It flows one way, from RefVault to your calendar.</p>
@@ -2065,7 +2075,7 @@ html { scroll-padding-top: 96px; }
     return h || a || g.match || g.assoc || "Game";
   }
   var OVERDUE_DAYS = 7;
-  function gStatus(g) { return g.cancelled ? "cancelled" : g.paid !== false ? "paid" : dayDiff(g.date) < -OVERDUE_DAYS ? "overdue" : "pending"; }
+  function gStatus(g) { return g.cancelled ? "cancelled" : g.paid !== false ? "paid" : dayDiff(g.date) < -OVERDUE_DAYS && !(g.imp && !toCents(g.fee)) ? "overdue" : "pending"; }
   function gDays(g) {
     var out = [g.date]; if (!g.endDate || g.endDate <= g.date) return out;
     var d = parseD(g.date); for (var i = 1; i < 31; i++) { d.setDate(d.getDate() + 1); var y = ymd(d); out.push(y); if (y >= g.endDate) break; }
@@ -2076,7 +2086,7 @@ html { scroll-padding-top: 96px; }
   function gMiles(g) { var m = parseFloat(g.miles); return isFinite(m) && m > 0 ? m : 0; }
   function fmtMiles(m) { return (Math.round(m * 10) / 10).toLocaleString("en-US") + " mi"; }
   function upcomingGames() { var t = todayStr(); return live().filter(function (g) { return g.date >= t; }).sort(byDateTime); }
-  function owedGames() { var t = todayStr(); return live().filter(function (g) { return g.paid === false && g.date < t; }).sort(byDateTime); }
+  function owedGames() { var t = todayStr(); return live().filter(function (g) { return g.paid === false && g.date < t && !(g.imp && !toCents(g.fee)); }).sort(byDateTime); }
   var LEAGUE_COLORS = ["var(--blue)", "var(--green)", "var(--yellow)", "var(--purple)", "var(--orange)", "var(--red)"];
 
   function renderHome(A) {
@@ -4321,6 +4331,91 @@ html { scroll-padding-top: 96px; }
     if (e.target.closest && e.target.closest("#aic-clear")) { aiChat = []; try { localStorage.removeItem(AIC_KEY); } catch (x) { /* ok */ } $("aic-msg").textContent = ""; aicRender(); }
   });
   aicRender();
+  /* Import from Google Calendar: the cal-import function reads your private iCal address; games are added, moved and cancelled to match */
+  var GI_KEY = "rf-gcimp-v1", giBusy = false;
+  function giGet() { var o = {}; try { o = JSON.parse(localStorage.getItem(GI_KEY) || "{}") || {}; } catch (e) {} return { url: typeof o.url === "string" ? o.url : "", kw: typeof o.kw === "string" ? o.kw : "ref, game, match, tournament, vs", last: o.last || 0, seen: o.seen && typeof o.seen === "object" ? o.seen : {} }; }
+  function giSet(o) { try { localStorage.setItem(GI_KEY, JSON.stringify(o)); } catch (e) {} }
+  function giMsg(t, err) { var m = $("gi-msg"); if (!m) return; m.className = "msg" + (err ? " err" : ""); m.textContent = t || ""; }
+  function giLocal(ev) {
+    var out = { date: "", time: "", endDate: "" };
+    function hm(d) { return (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes(); }
+    if (ev.allDay) { out.date = ev.start; if (ev.end > ev.start) { var e = ymd(new Date(pdate(ev.end).getTime() - 864e5)); if (e > ev.start) out.endDate = e; } return out; }
+    if (ev.start.charAt(0) === "F") { out.date = ev.start.slice(1, 11); out.time = ev.start.slice(12, 17); return out; }
+    var a = new Date(ev.start), b = new Date(ev.end || ev.start); if (isNaN(a.getTime())) return out;
+    out.date = ymd(a); out.time = hm(a); var ed = isNaN(b.getTime()) ? out.date : ymd(b); if (ed > out.date && !(hm(b) === "00:00" && ymd(new Date(b.getTime() - 60000)) === out.date)) out.endDate = ed;
+    return out;
+  }
+  function giRole(t) { var x = " " + t.toLowerCase() + " "; return /\bar ?1\b/.test(x) ? "AR1" : /\bar ?2\b/.test(x) ? "AR2" : /\b(4th|fourth)\b/.test(x) ? "4th Official" : /\b(center|centre|referee|ref)\b/.test(x) ? "Center" : "Center"; }
+  function giApply(res, cfg) {
+    var t = todayStr(), words = cfg.kw.split(",").map(function (w) { return w.trim().toLowerCase(); }).filter(Boolean), added = 0, moved = 0, cancelled = 0, skipped = 0, puts = [], present = {};
+    res.events.forEach(function (ev) {
+      var hay = (ev.title + " " + ev.desc + " " + ev.loc).toLowerCase(), ok = !words.length || words.some(function (w) { return hay.indexOf(w) >= 0; });
+      var g = data.games.filter(function (x) { return x.gcal === ev.uid; })[0], L = giLocal(ev); if (!L.date) return;
+      present[ev.uid] = 1;
+      if (g) {
+        var before = Object.assign({}, g), ch = false;
+        if (g.date !== L.date || (g.time || "") !== L.time || (g.endDate || "") !== L.endDate) { g.date = L.date; g.time = L.time; g.endDate = L.endDate; ch = true; moved++; }
+        if (ev.loc && g.field !== ev.loc && g.field === (g.gcalLoc || "")) { g.field = ev.loc; g.gcalLoc = ev.loc; ch = true; }
+        if (g.match === g.gcalTitle && ev.title && ev.title !== g.match) { g.match = ev.title; g.gcalTitle = ev.title; ch = true; }
+        if (ev.cancelled && !g.cancelled && (g.paid === false)) { g.cancelled = true; g.gcalCx = true; ch = true; cancelled++; }
+        else if (!ev.cancelled && g.cancelled && g.gcalCx) { g.cancelled = false; g.gcalCx = false; ch = true; }
+        if (ch) puts.push({ g: g, before: before });
+        return;
+      }
+      if (!ok || ev.cancelled) { if (!ok) skipped++; return; }
+      if (cfg.seen[ev.uid]) return;
+      if ((L.endDate || L.date) < t) return;
+      var ng = { id: uid("g"), created: Date.now(), count: 1, date: L.date, endDate: L.endDate, time: L.time, role: giRole(ev.title + " " + ev.desc), assoc: "", assignor: "", match: ev.title || "Game", field: ev.loc, fee: 0, expenses: 0, notes: ev.desc.slice(0, 300), paid: false, cancelled: false, rcvd: 0, paidOn: "", imp: true, gcal: ev.uid, gcalTitle: ev.title || "Game", gcalLoc: ev.loc };
+      cfg.seen[ev.uid] = 1; added++; puts.push({ g: ng, isNew: true });
+    });
+    if (res.total > 0) data.games.forEach(function (g) {
+      if (g.gcal && !present[g.gcal] && !g.cancelled && g.paid === false && !toCents(g.fee) && (g.endDate || g.date) >= t) { var before = Object.assign({}, g); g.cancelled = true; g.gcalCx = true; cancelled++; puts.push({ g: g, before: before }); }
+    });
+    var jobs = puts.map(function (x) {
+      if (x.isNew) return addEntry("games", x.g, "imported");
+      histLog("edited", "games", x.g, x.before);
+      if (store) { var c = Object.assign({}, x.g); delete c.id; return store.games.doc(x.g.id).set(c).then(function () { return true; }, function () { return false; }); }
+      return Promise.resolve(true);
+    });
+    if (!store && puts.length) { saveLocal(); render(); }
+    return Promise.all(jobs).then(function () { return { added: added, moved: moved, cancelled: cancelled, skipped: skipped, total: res.events.length, recurring: res.recurring || 0 }; });
+  }
+  function giSync(manual) {
+    var cfg = giGet(); if (!cfg.url || giBusy) return;
+    if (!sbSession || !sbSession.access_token) { if (manual) giMsg("Sign in first. Calendar import needs your account.", true); return; }
+    giBusy = true; if (manual) giMsg("Checking your Google Calendar...");
+    function call(retried) {
+      return fetch(SB_URL + "/functions/v1/cal-import", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + sbSession.access_token, "Content-Type": "application/json" }, body: JSON.stringify({ url: cfg.url }) }).then(function (r) {
+        if (r.status === 401 && !retried) return sbRefresh().then(function () { return call(true); });
+        return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (x) { /* not json */ } if (!r.ok || !j || !j.ok) { var e = new Error(j && j.error ? j.error : "Could not reach the calendar service."); e.code = j && j.code; throw e; } return j; });
+      });
+    }
+    call(false).then(function (res) { return giApply(res, cfg); }).then(function (r) {
+      cfg.last = Date.now(); giSet(cfg); giBusy = false; giRender();
+      var bits = []; if (r.added) bits.push(r.added + (r.added === 1 ? " game added" : " games added")); if (r.moved) bits.push(r.moved + " moved"); if (r.cancelled) bits.push(r.cancelled + " cancelled");
+      if (manual || bits.length) giMsg((bits.length ? bits.join(", ") + ". " : "Up to date. ") + (r.skipped ? r.skipped + " events did not match your words. " : "") + (r.recurring ? r.recurring + " recurring events skipped." : ""));
+    }, function (e) { giBusy = false; giMsg(e.message || "Could not sync.", true); if (e.code === "bad_url") { cfg.url = ""; giSet(cfg); giRender(); } });
+  }
+  function giRender() {
+    if (!$("gi-go")) return; var cfg = giGet(), on = !!cfg.url;
+    $("gi-sync").hidden = !on; $("gi-off").hidden = !on; $("gi-go").textContent = on ? "Save and sync" : "Connect and sync";
+    $("gi-chip").textContent = on ? (cfg.last ? "Synced " + new Date(cfg.last).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "Connected") : "Not connected";
+    if (document.activeElement !== $("gi-url")) $("gi-url").value = on ? cfg.url : ""; if (document.activeElement !== $("gi-kw")) $("gi-kw").value = cfg.kw;
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#gi-go,#gi-sync,#gi-off"); if (!b) return;
+    var cfg = giGet();
+    if (b.id === "gi-off") { cfg.url = ""; cfg.last = 0; giSet(cfg); giRender(); return giMsg("Disconnected. Games already imported stay in your calendar."); }
+    if (b.id === "gi-go") {
+      var u = $("gi-url").value.trim().replace(/^webcal:/i, "https:");
+      if (!/^https:\/\/calendar\.google\.com\/calendar\/ical\/.+\.ics$/i.test(u)) return giMsg("Paste the Secret address in iCal format from your Google Calendar settings. It starts with https://calendar.google.com/calendar/ical/", true);
+      cfg.url = u; cfg.kw = $("gi-kw").value.trim().slice(0, 120); giSet(cfg); giRender();
+    }
+    giSync(true);
+  });
+  setInterval(function () { var c = giGet(); if (c.url && !document.hidden && Date.now() - c.last > 15 * 60000) giSync(false); }, 60000);
+  document.addEventListener("visibilitychange", function () { var c = giGet(); if (!document.hidden && c.url && Date.now() - c.last > 5 * 60000) giSync(false); });
+  setTimeout(function () { var c = giGet(); if (c.url) giSync(false); giRender(); }, 4000);
   /* Google Calendar: a private subscribe link (served by the cal-feed function) and a plain .ics download */
   var gcToken = "";
   function gcMsg(t, err) { var m = $("gc-msg"); m.textContent = t; m.className = "msg" + (err ? " err" : ""); }
