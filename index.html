@@ -354,9 +354,11 @@ button.badge { cursor: pointer; min-height: 26px; }
 .szi { margin-top: 12px; display: grid; gap: 8px; } .szi h3 { margin: 0; }
 .szi-hd { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; } .szi-hd span { color: var(--muted); font-size: 13px; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
+.szi-det summary { cursor: pointer; font-weight: 700; font-size: 14px; padding: 6px 0; color: var(--muted); } .szi-det[open] .szi-strip { margin-top: 8px; }
 .szi-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; height: 84px; align-items: end; } .szi-strip > div { display: grid; grid-template-rows: 1fr auto; height: 100%; justify-items: center; gap: 2px; font-size: 11px; color: var(--muted); }
 .szi-strip i { align-self: end; width: 100%; border-radius: 4px 4px 0 0; background: var(--blue); } .szi-strip .q i { background: var(--orange); } .szi-strip .now span { color: var(--fg); font-weight: 800; }
 .stk-card { margin: 0 0 14px; display: grid; gap: 6px; } .stk-card h3 { margin: 0; } .stk-row { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--panel-line); } .stk-ico { font-size: 26px; line-height: 1; } .stk-row b { display: block; font: 800 17px/1.2 var(--display); } .stk-row small { display: block; color: var(--muted); font-size: 12px; } .stk-row.rec b { color: var(--yellow); }
+.stk-chips { display: flex; flex-wrap: wrap; gap: 6px; } .stk-chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--panel-line); color: var(--muted); } .stk-chip b { color: var(--fg); font-weight: 700; }
 .stk-mini { display: grid; gap: 0; margin-top: 8px; } .stk-mini .stk-row { padding: 6px 0; } .stk-mini .stk-ico { font-size: 20px; } .stk-mini .stk-row b { font-size: 15px; }
 .lv-card { margin: 10px 0 14px; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--blue); display: grid; gap: 8px; } .lv-home { display: grid; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--panel-line); }
 .lv-top { display: flex; gap: 12px; align-items: center; } .lv-ico { font-size: 34px; line-height: 1; } .lv-top b { font: 800 20px/1.1 var(--display); display: block; } .lv-top small { color: var(--muted); font-size: 13px; }
@@ -477,6 +479,7 @@ h1 span { display: inline; }
 .hcol { display: contents; }
 .hc { grid-column: 1 / -1; min-width: 0; }
 .hc.half { grid-column: auto; padding: 14px; }
+@media (max-width: 700px) { .hc.half { grid-column: 1 / -1; } }
 .o1 { order: 1; } .o4s { order: 4; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; } .o8 { order: 8; } .o9 { order: 9; }
 .hc h2 { font-size: 17px; }
 .more { color: var(--blue); font-weight: 600; font-size: 14px; text-decoration: none; }
@@ -642,7 +645,7 @@ button.cd { background: none; border: 0; color: inherit; font: inherit; cursor: 
 .fc-ai { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px 12px; border-radius: var(--r-sm); background: rgba(46, 134, 255, 0.10); } .fc-ai:empty { display: none; }
 .fc-up { color: var(--green); } .fc-down { color: var(--red); }
 .game-note.recap { border-left: 3px solid var(--blue); padding-left: 10px; }
-.sb-top { margin-bottom: 8px; } .sb-sw { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; cursor: pointer; }
+.sb-top { margin-bottom: 8px; } .sb-sw input { width: 20px; height: 20px; min-height: 0; padding: 0; flex: none; margin: 0; } .sb-sw { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; cursor: pointer; }
 .sb-ok b { color: var(--green); } .sb-warn b { color: var(--orange); } .sb-bad b { color: var(--red, #ff6b6b); }
 .sb-goal { display: grid; gap: 4px; padding: 8px 0; border-top: 1px solid var(--panel-line); } .sb-goal > div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; } .sb-goal small, .sb-sug small { color: var(--muted); font-size: 12px; }
 .sb-sug { display: grid; gap: 6px; justify-items: start; margin-top: 10px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--blue); font-size: 14px; }
@@ -1374,6 +1377,8 @@ html { scroll-padding-top: 96px; }
     <section class="panel" data-page="app-settings" hidden aria-labelledby="h-layout">
       <div class="panel-head"><h2 id="h-layout">Customize Home</h2><button class="mini" type="button" id="lay-reset">Reset order</button></div>
       <p class="note">Drag a card by the ☰ handle to move it, or use the arrows. Tap the eye to show or hide a card. Then tap Save settings. The summary tiles stay at the top.</p>
+      <div class="wish-actions"><button class="mini" type="button" id="lay-simple">Simple Home</button><button class="mini" type="button" id="lay-all">Show all cards</button></div>
+      <p class="msg" id="lay-msg" role="status"></p>
       <ul class="list" id="lay-list"></ul>
     </section>
 
@@ -2675,9 +2680,9 @@ html { scroll-padding-top: 96px; }
     var h = '<div class="wal-big"><span>Available balance</span><b>' + fmt(W.avail) + '</b><span>Referee money and personal money, minus what you have spent</span></div>';
     h += '<div class="wal-grid"><div><span>🟡 Unpaid games</span><b>' + fmt(W.owedC) + '</b><small>' + plural(gamesN(W.owed), "game") + (W.od.length ? ", " + W.od.length + " overdue" : "") + '</small></div>' +
       '<div><span>📥 Upcoming payments</span><b>' + fmt(W.P ? W.P.sum.week : 0) + '</b><small>expected this week' + (W.P && W.P.sum.later ? ", " + fmt(W.P.sum.later) + " later" : "") + '</small></div>' +
-      '<div><span>🗓️ Scheduled games</span><b>' + fmt(W.upcC) + '</b><small>' + plural(gamesN(W.upc), "game") + ' not yet worked</small></div>' +
-      '<div><span>🧾 Pending expenses</span><b>' + fmt(W.pendExp) + '</b><small>on unpaid and upcoming games</small></div></div>';
-    h += '<div class="wal-split"><div><span>⚽ Referee income received</span><b>' + fmt(W.ref) + '</b></div><div><span>👤 Personal and other income</span><b>' + fmt(W.pers) + '</b></div>' + (W.start ? '<div><span>Starting balance</span><b>' + fmt(W.start) + '</b></div>' : "") + '<div><span>Spent so far</span><b>−' + fmt(W.spent) + '</b></div><div class="t"><span>Available</span><b>' + fmt(W.avail) + '</b></div></div>';
+      (full ? '<div><span>🗓️ Scheduled games</span><b>' + fmt(W.upcC) + '</b><small>' + plural(gamesN(W.upc), "game") + ' not yet worked</small></div>' +
+      '<div><span>🧾 Pending expenses</span><b>' + fmt(W.pendExp) + '</b><small>on unpaid and upcoming games</small></div>' : "") + '</div>';
+    if (full) h += '<div class="wal-split"><div><span>⚽ Referee income received</span><b>' + fmt(W.ref) + '</b></div><div><span>👤 Personal and other income</span><b>' + fmt(W.pers) + '</b></div>' + (W.start ? '<div><span>Starting balance</span><b>' + fmt(W.start) + '</b></div>' : "") + '<div><span>Spent so far</span><b>−' + fmt(W.spent) + '</b></div><div class="t"><span>Available</span><b>' + fmt(W.avail) + '</b></div></div>';
     h += '<div class="wal-rem">' + (W.owed.length ? '<button class="btn" type="button" data-wal-remind>Send payment reminders</button><span class="note">' + (W.stale.length ? plural(W.stale.length, "game") + " not reminded in 7 days" : "All reminded this week") + (W.last ? ". Last sent " + esc(mdDate(W.last)) : "") + '</span>' : '<span class="note">Nothing is owed to you. No reminders needed.</span>') + '</div>';
     if (full && W.owed.length) h += '<h3>Unpaid games</h3>' + W.owed.slice(0, 8).map(function (g) { return '<div class="fc-row"><b>' + esc(mdDate(g.date)) + '</b><div><span>' + esc(gTitle(g)) + '</span><small>' + esc([g.assoc, g.assignor ? "Assignor " + g.assignor : "", gStatus(g) === "overdue" ? "Overdue" : "Pending"].filter(Boolean).join(" · ")) + '</small></div><strong>' + fmt(gOwedC(g)) + "</strong></div>"; }).join("");
     if (full && W.upc.length) h += '<h3>Upcoming games</h3>' + W.upc.slice(0, 6).map(function (g) { return '<div class="fc-row"><b>' + esc(mdDate(g.date)) + '</b><div><span>' + esc(gTitle(g)) + '</span><small>' + esc([g.assoc, g.time ? fmtTime(g.time) : ""].filter(Boolean).join(" · ")) + '</small></div><strong>' + fmt(Math.max(0, gNet(g))) + "</strong></div>"; }).join("");
@@ -2726,6 +2731,10 @@ html { scroll-padding-top: 96px; }
     return { monthly: monthly, spendPct: spendPct, spendLeft: spendLeft, pend: W.pendExp, reserve: reserve, safe: safe, limitM: limitM, limitW: Math.round(limitM / 4.33), limitD: Math.round(limitM / 30.4), mtd: mtd, goals: goals, sug: sug };
   }
   function bmHtml(C, full) {
+    if (!full && bmIsOn()) {
+      var tn = C.safe <= 0 ? "bad" : C.safe < C.spendLeft * 0.25 ? "warn" : "ok";
+      return '<div class="wal-big sb-' + tn + '"><span>Safe to spend</span><b>' + fmt(C.safe) + '</b><span>' + (C.monthly > 0 ? "Suggested limit " + fmt(C.limitW) + " a week, " + fmt(C.limitM) + " a month" : "Spend money left, after upcoming expenses") + '</span></div>' + (C.sug ? '<p class="note">Your goals suggest a new split. <a href="#money">Review</a></p>' : "");
+    }
     var h = '<div class="sb-top"><label class="sb-sw"><input type="checkbox" data-bm-toggle' + (bmIsOn() ? " checked" : "") + '> Smart Budget Mode ' + (bmIsOn() ? "on" : "off") + '</label></div>';
     if (!bmIsOn()) return h + '<p class="note">Turn Smart Budget Mode on to see your safe to spend amount, spending limits and goal-based suggestions.</p>';
     var tone = C.safe <= 0 ? "bad" : C.safe < C.spendLeft * 0.25 ? "warn" : "ok";
@@ -4069,7 +4078,7 @@ html { scroll-padding-top: 96px; }
       var st = I.stretch, rng = st.from === st.to ? MON[st.from - 1] : MON[st.from - 1] + " to " + MON[st.to - 1];
       h += '<div class="szi-hd"><b>' + (st.now ? "Expected income this off-season" : "Next quiet stretch: " + rng) + '</b><span>About ' + fmt(st.total) + (st.now ? " through " + MON[st.to - 1] : " across " + st.list.length + (st.list.length === 1 ? " month" : " months")) + (st.sch ? " (" + fmt(st.sch) + " already scheduled)" : "") + (st.nextBusy && st.now ? ". Games usually pick up in " + MON[st.nextBusy - 1] : "") + (st.est ? ". Rough guess until I have a full quiet season of history" : "") + '.</span></div>';
     }
-    if (I.mx > 0) h += '<div class="szi-strip" role="img" aria-label="Average income by month">' + I.strip.map(function (x) { var ht = x.v === null ? 0 : Math.max(6, Math.round(x.v / I.mx * 100)); return '<div class="' + (x.q ? "q " : "") + (x.now ? "now" : "") + '" title="' + MON[x.m - 1] + (x.v === null ? ": no history" : ": about " + fmt(Math.round(x.v)) + (x.q ? ", usually quiet" : "")) + '"><i style="height:' + ht + '%"></i><span>' + MON[x.m - 1].charAt(0) + '</span></div>'; }).join("") + '</div><p class="note">Average income by month. Orange bars are your usual off-season months.</p>';
+    if (I.mx > 0) h += '<details class="szi-det"><summary>Monthly pattern</summary><div class="szi-strip" role="img" aria-label="Average income by month">' + I.strip.map(function (x) { var ht = x.v === null ? 0 : Math.max(6, Math.round(x.v / I.mx * 100)); return '<div class="' + (x.q ? "q " : "") + (x.now ? "now" : "") + '" title="' + MON[x.m - 1] + (x.v === null ? ": no history" : ": about " + fmt(Math.round(x.v)) + (x.q ? ", usually quiet" : "")) + '"><i style="height:' + ht + '%"></i><span>' + MON[x.m - 1].charAt(0) + '</span></div>'; }).join("") + '</div><p class="note">Average income by month. Orange bars are your usual off-season months.</p></details>';
     return h + "</div>";
   }
   /* Notifications: reminders kept on this device, shown in the app and as system alerts when allowed */
@@ -4712,6 +4721,14 @@ html { scroll-padding-top: 96px; }
     draftUi = sanitizeUi(Object.assign(clone(draftUi), { order: ord })); applyUi(draftUi); renderLayout(); updateUiState();
   }
   document.addEventListener("click", function (e) {
+    var pr = e.target.closest && e.target.closest("#lay-simple,#lay-all");
+    if (pr) {
+      var keep = { tiles: 1, next: 1, weather: 1, goal: 1, wallet: 1, recent: 1, owed: 1, budget: 1 };
+      var sh = {}; SECTIONS.forEach(function (x) { sh[x.k] = pr.id === "lay-all" ? true : !!keep[x.k]; });
+      draftUi = sanitizeUi(Object.assign(clone(draftUi), { show: sh })); applyUi(draftUi); fillUiInputs();
+      var m = $("lay-msg"); if (m) m.textContent = (pr.id === "lay-all" ? "Showing every card." : "Home now shows only the essentials.") + " Click Save settings to keep it.";
+      return;
+    }
     var eye = e.target.closest && e.target.closest("[data-lay-eye]");
     if (eye) { var ek = eye.getAttribute("data-lay-eye"), cb = $("show-" + ek); if (cb) { cb.checked = !cb.checked; onUiInput(); renderLayout(); } return; }
   });
@@ -5087,6 +5104,7 @@ html { scroll-padding-top: 96px; }
     }
     return { w: W, m: M, s: SS };
   }
+  function stkChips(k) { return [["🔥", k.w.cur, "wk"], ["🎯", k.m.cur, "mo on goal"], ["🏅", k.s.cur, k.s.cur === 1 ? "season" : "seasons"]].map(function (x) { return '<span class="stk-chip" title="Current streak"><b>' + x[0] + " " + x[1] + "</b> " + x[2] + "</span>"; }).join(""); }
   function stkHtml(k, full) {
     var w = k.w, m = k.m, s = k.s;
     var rows = [
@@ -5218,7 +5236,7 @@ html { scroll-padding-top: 96px; }
     todo.sort(function (a, b) { return b.v(st) / b.t - a.v(st) / a.t; });
     var lvH = rpLevelHtml(st, false), nx = todo[0], recent = got.slice().sort(function (a, b) { return (dates[b.n] || "") < (dates[a.n] || "") ? -1 : 1; }).slice(0, 5), pct = Math.round(got.length / RP_BADGES.length * 100);
     $("ach-count").textContent = got.length + " of " + RP_BADGES.length;
-    var h = '<div class="lv-home">' + lvH + '<div class="stk-mini">' + stkHtml(st.stk, false) + "</div></div>" + '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Badges earned"><span style="width:' + pct + '%;background:var(--blue)"></span></div>';
+    var h = '<div class="lv-home">' + lvH + '<div class="stk-chips">' + stkChips(st.stk) + "</div></div>" + '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Badges earned"><span style="width:' + pct + '%;background:var(--blue)"></span></div>';
     if (recent.length) h += '<div class="ach-row">' + recent.map(function (b) { return '<span class="ach-b" title="' + esc(b.n) + '">' + b.i + "</span>"; }).join("") + "</div>";
     if (nx) { var v = nx.v(st), p = Math.min(100, Math.round(v / nx.t * 100)); h += '<div class="ach-next"><div class="wish-top"><span>Next up: <b>' + esc(nx.n) + "</b></span><span>" + (nx.m ? fmt(Math.round(v * 100)) + " / " + fmt(nx.t * 100) : Math.floor(v) + " / " + nx.t) + '</span></div><div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="' + esc(nx.n) + '"><span style="width:' + p + '%;background:var(--green)"></span></div><p class="note">' + esc(nx.d) + "</p></div>"; }
     else h += '<p class="note">Every badge earned. Legend!</p>';
