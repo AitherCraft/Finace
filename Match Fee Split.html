@@ -3393,6 +3393,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
+    homeBalanceLater();
     safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAssignors, "assignors"); safe(renderPayHist, "payhist"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderAvail, "avail"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
@@ -3893,6 +3894,20 @@ html { scroll-padding-top: 96px; }
     h += '<h3 class="ph-h">Monthly payment timeline</h3>' + P.months.map(function (m) { return '<div class="ph-row"><b>' + esc(m.label) + '</b><div><span>' + (m.n ? fmt(m.got) + " received" : "No payments") + "</span><small>" + (m.n ? m.n + (m.n === 1 ? " payment" : " payments") + ", average " + dy(m.avg) + (m.late ? ", " + m.late + " late" : "") : "&nbsp;") + '</small><div class="ph-bar' + (m.late > m.n / 2 ? " late" : "") + '"><i style="width:' + Math.round(m.got / mm * 100) + '%"></i></div></div><b>' + (m.n ? Math.round((m.n - m.late) / m.n * 100) + "% on time" : "") + "</b></div>"; }).join("");
     $("ph-body").innerHTML = h;
   }
+  /* Desktop Home: spread the cards over the 3 columns so they come out about the same height */
+  var HB_ORDER = ["next", "earnings", "calendar", "mywid", "insights", "weather", "owed", "season", "recent", "upcoming", "wallet", "budget", "goal", "goals", "career", "league", "reminders", "records", "wish", "ach", "bag", "tips", "quick"], hbT = null;
+  function homeBalance() {
+    var box = document.querySelector(".hcols"); if (!box || !window.matchMedia("(min-width: 960px)").matches || box.offsetParent === null) return;
+    var cols = [].slice.call(box.querySelectorAll(":scope > .hcol")); if (cols.length < 2) return;
+    var cards = []; HB_ORDER.forEach(function (k) { var el = box.querySelector('.hc[data-card="' + k + '"]'); if (el) cards.push(el); });
+    [].slice.call(box.querySelectorAll(".hc")).forEach(function (el) { if (cards.indexOf(el) < 0) cards.push(el); });
+    var gap = 16, hs = cards.map(function (el) { return el.hidden || el.offsetHeight === 0 ? 0 : el.offsetHeight + gap; }), tot = cols.map(function () { return 0; }), want = [];
+    cards.forEach(function (el, i) { if (!hs[i]) { want.push(cols.indexOf(el.parentNode)); return; } var m = 0; for (var c = 1; c < cols.length; c++) if (tot[c] < tot[m]) m = c; tot[m] += hs[i]; want.push(m); });
+    var changed = false; cards.forEach(function (el, i) { if (want[i] >= 0 && el.parentNode !== cols[want[i]]) changed = true; }); if (!changed) return;
+    cards.forEach(function (el, i) { if (want[i] >= 0) cols[want[i]].appendChild(el); });
+  }
+  function homeBalanceLater() { clearTimeout(hbT); hbT = setTimeout(function () { try { homeBalance(); } catch (e) { /* layout only */ } }, 120); }
+  window.addEventListener("resize", homeBalanceLater); window.addEventListener("hashchange", homeBalanceLater); window.addEventListener("load", function () { setTimeout(homeBalanceLater, 600); setTimeout(homeBalanceLater, 2500); });
   /* Assignor analytics: games, pay, payment speed, profit per hour, accepted vs declined offers */
   function asCalc() {
     var by = {}, dec = rp.dec || {}, key = function (n) { return String(n).trim().toLowerCase(); };
