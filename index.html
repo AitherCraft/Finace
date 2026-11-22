@@ -350,6 +350,7 @@ button.badge { cursor: pointer; min-height: 26px; }
 .aw-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin: 6px 0 10px; } .aw-head span { color: var(--muted); font-size: 13px; }
 .aw-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .aw-tile { display: grid; gap: 2px; padding: 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); } .aw-tile > span { font-size: 24px; } .aw-tile small { color: var(--muted); font-size: 12px; } .aw-tile b { font: 800 16px/1.2 var(--display); overflow-wrap: anywhere; } .aw-tile em { font-style: normal; color: var(--muted); font-size: 12px; }
 .aw-rec { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 0; border-top: 1px solid var(--panel-line); font-size: 14px; } .aw-rec small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; } .aw-rec.on b, .aw-rec.on small { color: var(--yellow); }
+.sh-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--panel-line); display: grid; gap: 8px; } .sh-prev { padding: 10px 12px; border-radius: var(--r-sm); border: 1px dashed var(--panel-line); font-size: 14px; } .sh-prev h4 { margin: 8px 0 2px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); } .sh-prev h4:first-child { margin-top: 0; } .sh-prev ul { margin: 0; padding-left: 18px; }
 .szi { margin-top: 12px; display: grid; gap: 8px; } .szi h3 { margin: 0; }
 .szi-hd { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; } .szi-hd span { color: var(--muted); font-size: 13px; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
@@ -1344,6 +1345,17 @@ html { scroll-padding-top: 96px; }
       <ul class="list" id="rp-leagues"></ul>
       <div class="panel-head"><h3>Badges</h3><span class="chip" id="rp-badge-count"></span></div>
       <div class="rp-badges" id="rp-badges"></div>
+      <div class="sh-box" id="sh-box">
+        <div class="panel-head"><h3>Share with family or coach</h3></div>
+        <p class="note">Share only what you choose. Nothing is sent anywhere until you tap a button, and your email, locations, teams and pay rates are never included.</p>
+        <label class="check" for="sh-hide"><input id="sh-hide" type="checkbox" data-sh checked>Hide all money (recommended)</label>
+        <label class="check" for="sh-sum"><input id="sh-sum" type="checkbox" data-sh checked>Season summary</label>
+        <label class="check" for="sh-av"><input id="sh-av" type="checkbox" data-sh checked>Availability for the next 4 weeks</label>
+        <label class="check" for="sh-res"><input id="sh-res" type="checkbox" data-sh checked>Referee resume</label>
+        <div class="sh-prev" id="sh-prev" aria-live="polite"></div>
+        <div class="wish-actions"><button class="btn" type="button" id="sh-share">Share</button><button class="mini" type="button" id="sh-copy">Copy text</button><button class="mini" type="button" id="sh-html">Download page</button><button class="mini" type="button" id="sh-ics">Availability calendar</button></div>
+        <p class="msg" id="sh-msg" role="status"></p>
+      </div>
     </section>
 
     <section class="panel savebar" data-page="app-settings" hidden aria-labelledby="h-settings">
@@ -3316,7 +3328,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAwards, "awards"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAwards, "awards"); safe(renderShare, "share"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3847,6 +3859,79 @@ html { scroll-padding-top: 96px; }
     $("aw-chip").textContent = A.x.cur ? "In progress" : doneL.length && doneL[doneL.length - 1] === A ? "Latest season" : "Season recap";
   }
   document.addEventListener("change", function (e) { if (e.target.id === "aw-season") { awSel = e.target.value; renderAwards(); } });
+
+  /* Family and coach sharing: builds a summary from your data, shared only when you tap a button */
+  var SH_KEY = "rf-share-v1";
+  function shCfg() { var o = {}; try { o = JSON.parse(localStorage.getItem(SH_KEY) || "{}") || {}; } catch (e) {} return { hide: o.hide !== false, sum: o.sum !== false, av: o.av !== false, res: o.res !== false }; }
+  function shBusy() {
+    var t = todayStr(), end = ymd(new Date(pdate(t).getTime() + 27 * 864e5)), by = {};
+    upcomingGames().concat(live().filter(function (g) { return g.date < t && g.endDate && g.endDate >= t; })).forEach(function (g) { gDays(g).forEach(function (d) { if (d >= t && d <= end) { var b = by[d] || (by[d] = { n: 0, times: [] }); if (gDays(g).length === 1) b.n += gN(g); if (g.time) b.times.push(g.time); } }); });
+    return { by: by, t: t, end: end };
+  }
+  function shBuild(c) {
+    var st = rpStats(), name = rp.name || "Referee", secs = [], S = seasonInfo();
+    if (c.sum) {
+      var L = [];
+      if (S.none || !S.seasons.length) L.push("No games logged yet.");
+      else {
+        var x = S.seasons[S.seasons.length - 1], A = awStats(S, x);
+        L.push(x.name + (x.cur ? " (so far)" : ""), "Games worked: " + A.n);
+        if (A.topN) L.push("Busiest month: " + awMon(A.topN.k) + " (" + A.topN.v + " games)");
+        if (A.tourn) L.push("Biggest tournament: " + A.tourn.name + " (" + A.tourn.n + (A.tourn.n === 1 ? " game)" : " games)"));
+        if (A.miles) L.push("Miles traveled: " + fmtMiles(A.miles));
+        if (!c.hide) { L.push("Earned: " + fmt(A.net)); if (A.topNet) L.push("Best month: " + awMon(A.topNet.k) + " (" + fmt(A.topNet.v) + ")"); if (A.n) L.push("Average per game: " + fmt(Math.round(A.net / A.n))); }
+      }
+      secs.push({ h: "Season summary", l: L });
+    }
+    if (c.av) {
+      var B = shBusy(), days = Object.keys(B.by).sort(), L2 = [];
+      days.forEach(function (d) { var b = B.by[d], tm = b.times.sort()[0]; L2.push("Busy: " + pdate(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + (tm ? " from " + fmtTime(tm) : "") + (b.n > 1 ? " (" + b.n + " games)" : "")); });
+      L2.push(days.length ? "Free on all other days through " + mdDate(B.end) + "." : "Free every day through " + mdDate(B.end) + " (nothing scheduled).");
+      secs.push({ h: "Availability, " + mdDate(B.t) + " to " + mdDate(B.end), l: L2 });
+    }
+    if (c.res) {
+      var yrs = rp.since ? new Date().getFullYear() - rp.since : (st.first ? new Date().getFullYear() - Number(st.first.slice(0, 4)) : null), L3 = [];
+      if (rp.cert) L3.push("Certification: " + rp.cert + (rp.exp ? " (valid through " + mdDate(rp.exp) + ")" : ""));
+      if (rp.level) L3.push("Level: " + rp.level);
+      L3.push("Experience tier: " + rpLevel(st).lvl.i + " " + rpLevel(st).lvl.n);
+      if (yrs !== null) L3.push("Officiating: " + (yrs < 1 ? "first year" : yrs + (yrs === 1 ? " year" : " years")) + (rp.since ? " (since " + rp.since + ")" : ""));
+      L3.push("Games worked: " + st.played, "Seasons completed: " + st.seasonsDone);
+      if (st.tourn) L3.push("Tournaments: " + st.tourn);
+      var tl = Object.keys(st.leagues).sort(function (a, b) { return st.leagues[b] - st.leagues[a]; }).slice(0, 5); if (tl.length) L3.push("Leagues: " + tl.join(", "));
+      var rl = Object.keys(st.roles); if (rl.length) L3.push("Positions: " + rl.join(", "));
+      var bd = RP_BADGES.filter(function (b) { return b.v(st) >= b.t && (!c.hide || (!b.m && !/\$|earn|paid|income/i.test(b.n))); }); if (bd.length) L3.push("Badges: " + bd.slice(0, 8).map(function (b) { return b.i + " " + b.n; }).join(", "));
+      if (!c.hide) L3.push("Career earnings: " + fmt(st.earned));
+      secs.push({ h: "Referee resume", l: L3 });
+    }
+    return { name: name, secs: secs };
+  }
+  function shText(D) { return D.name + " · RefVault\n\n" + D.secs.map(function (x) { return x.h.toUpperCase() + "\n" + x.l.map(function (l) { return "• " + l; }).join("\n"); }).join("\n\n"); }
+  function shPage(D) {
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(D.name) + ' · Referee summary</title><style>body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:24px auto;padding:0 16px;color:#111}h1{margin:0 0 4px}h2{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:#1a56c8;border-bottom:1px solid #ccd;padding-bottom:4px;margin-top:26px}ul{padding-left:20px}p{color:#666;font-size:13px}</style></head><body><h1>' + esc(D.name) + '</h1><p>Referee summary from RefVault, ' + esc(mdDate(todayStr())) + '</p>' + D.secs.map(function (x) { return "<h2>" + esc(x.h) + "</h2><ul>" + x.l.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>"; }).join("") + "</body></html>";
+  }
+  function shIcs() {
+    var B = shBusy(), L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//RefVault//Availability//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + icsEsc((rp.name || "Referee") + " availability")], st = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    Object.keys(B.by).sort().forEach(function (d) { var p = d.split("-").map(Number), nx = new Date(Date.UTC(p[0], p[1] - 1, p[2]) + 864e5), z = function (v) { return (v < 10 ? "0" : "") + v; };
+      L.push("BEGIN:VEVENT", "UID:busy-" + d + "@refvault", "DTSTAMP:" + st, "DTSTART;VALUE=DATE:" + d.replace(/-/g, ""), "DTEND;VALUE=DATE:" + nx.getUTCFullYear() + z(nx.getUTCMonth() + 1) + z(nx.getUTCDate()), "SUMMARY:Busy (refereeing)", "TRANSP:OPAQUE", "END:VEVENT"); });
+    L.push("END:VCALENDAR"); return L.map(icsFold).join("\r\n") + "\r\n";
+  }
+  function shMsg(t, err) { var m = $("sh-msg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t || ""; }
+  function renderShare() {
+    if (!$("sh-box")) return; var c = shCfg();
+    ["hide", "sum", "av", "res"].forEach(function (k) { if ($("sh-" + k).checked !== c[k]) $("sh-" + k).checked = c[k]; });
+    var D = shBuild(c); $("sh-prev").innerHTML = D.secs.length ? D.secs.map(function (x) { return "<h4>" + esc(x.h) + "</h4><ul>" + x.l.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>"; }).join("") : '<p class="note">Pick at least one thing to share.</p>';
+    $("sh-ics").hidden = !c.av; $("sh-share").hidden = !navigator.share;
+  }
+  document.addEventListener("change", function (e) { if (!e.target.hasAttribute || !e.target.hasAttribute("data-sh")) return; var o = {}; ["hide", "sum", "av", "res"].forEach(function (k) { o[k] = $("sh-" + k).checked; }); try { localStorage.setItem(SH_KEY, JSON.stringify(o)); } catch (x) {} shMsg(""); renderShare(); });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#sh-share,#sh-copy,#sh-html,#sh-ics"); if (!b) return;
+    var c = shCfg(), D = shBuild(c); if (!D.secs.length && b.id !== "sh-ics") return shMsg("Pick at least one thing to share.", true);
+    if (b.id === "sh-ics") { saveBlob(new Blob([shIcs()], { type: "text/calendar" }), "refvault-availability.ics"); return shMsg("Saved a calendar file that only says Busy on your game days."); }
+    if (b.id === "sh-html") { saveBlob(new Blob([shPage(D)], { type: "text/html" }), "referee-summary.html"); return shMsg("Saved a page you can send or print."); }
+    var txt = shText(D);
+    if (b.id === "sh-share") { navigator.share({ title: D.name + " · referee summary", text: txt }).then(function () { shMsg("Shared."); }, function (er) { if (er && er.name !== "AbortError") shMsg("Could not open sharing. Try Copy text.", true); }); return; }
+    (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { shMsg("Copied. Paste it into a message."); }, function () { var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand("copy"); } catch (x) {} ta.remove(); shMsg(ok ? "Copied. Paste it into a message." : "Could not copy. Use Download page instead.", !ok); });
+  });
   /* Seasonal mode: detect the off-season, estimate reduced income, compare seasons */
   var curSeasonMode = "auto", MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function seasonName(ym) { var p = ym.split("-"), m = +p[1]; return (m >= 8 && m <= 11 ? "Fall" : m === 12 || m <= 2 ? "Winter" : m <= 6 ? "Spring" : "Summer") + " " + (m <= 2 ? +p[0] - 1 : p[0]); }
@@ -4986,23 +5071,23 @@ html { scroll-padding-top: 96px; }
     return { seasonsDone: seasonsDone, played: played, earned: earned, maxDay: maxDay, streak: best, leagues: leagues, nLeagues: Object.keys(leagues).length, roles: roles, paidN: paidN, unpaidN: unpaidN, first: first, tourn: tourn, gstreak: bestG };
   }
   /* Referee levels: Rookie, Experienced, Advanced, Elite. A level is reached when you meet 2 of its 3 goals (games, income, seasons). */
-  var RP_LEVELS = [
+  var RP_TIERS = [
     { n: "Rookie", i: "🌱", g: 0, e: 0, s: 0 }, { n: "Experienced", i: "⚽", g: 25, e: 1000, s: 1 },
     { n: "Advanced", i: "🎯", g: 100, e: 5000, s: 3 }, { n: "Elite", i: "👑", g: 300, e: 15000, s: 6 }
   ];
   function rpReqs(L, st) { return [{ k: "Games", cur: st.played, t: L.g, f: function (v) { return String(Math.floor(v)); } }, { k: "Income", cur: st.earned / 100, t: L.e, f: function (v) { return fmt(Math.round(v * 100)); } }, { k: "Seasons", cur: st.seasonsDone, t: L.s, f: function (v) { return String(Math.floor(v)); } }].map(function (r) { r.met = r.cur >= r.t; r.p = r.t ? Math.min(1, r.cur / r.t) : 1; return r; }); }
   function rpLevel(st) {
     var idx = 0;
-    RP_LEVELS.forEach(function (L, i) { if (i && rpReqs(L, st).filter(function (r) { return r.met; }).length >= 2) idx = i; });
-    var nx = RP_LEVELS[idx + 1] || null, reqs = nx ? rpReqs(nx, st) : null, pct = nx ? Math.round(reqs.reduce(function (a, r) { return a + r.p; }, 0) / 3 * 100) : 100;
-    return { idx: idx, lvl: RP_LEVELS[idx], next: nx, reqs: reqs, pct: pct, need: reqs ? 2 - reqs.filter(function (r) { return r.met; }).length : 0 };
+    RP_TIERS.forEach(function (L, i) { if (i && rpReqs(L, st).filter(function (r) { return r.met; }).length >= 2) idx = i; });
+    var nx = RP_TIERS[idx + 1] || null, reqs = nx ? rpReqs(nx, st) : null, pct = nx ? Math.round(reqs.reduce(function (a, r) { return a + r.p; }, 0) / 3 * 100) : 100;
+    return { idx: idx, lvl: RP_TIERS[idx], next: nx, reqs: reqs, pct: pct, need: reqs ? 2 - reqs.filter(function (r) { return r.met; }).length : 0 };
   }
   function rpLevelHtml(st, full) {
     var L = rpLevel(st), h = '<div class="lv-top"><span class="lv-ico" aria-hidden="true">' + L.lvl.i + '</span><div><b>' + L.lvl.n + ' referee</b><small>' + (L.next ? L.pct + "% of the way to " + L.next.n : "Top level reached. Legend!") + '</small></div></div>';
     h += '<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + L.pct + '" aria-label="Progress to next level"><span style="width:' + L.pct + '%;background:var(--blue)"></span></div>';
     if (L.next && full) {
       h += '<p class="note">To reach ' + L.next.i + " " + L.next.n + ", meet any 2 of these 3:</p>" + L.reqs.map(function (r) { return '<div class="lv-req' + (r.met ? " on" : "") + '"><span>' + (r.met ? "✅" : "⬜") + " " + r.k + "</span><span>" + r.f(Math.min(r.cur, r.t)) + " / " + r.f(r.t) + "</span></div>"; }).join("");
-      h += '<div class="lv-steps">' + RP_LEVELS.map(function (x, i) { return '<span class="' + (i <= L.idx ? "on" : "") + '" title="' + x.n + (i ? ": " + x.g + " games, $" + x.e + ", " + x.s + (x.s === 1 ? " season" : " seasons") : "") + '">' + x.i + " " + x.n + "</span>"; }).join("") + "</div>";
+      h += '<div class="lv-steps">' + RP_TIERS.map(function (x, i) { return '<span class="' + (i <= L.idx ? "on" : "") + '" title="' + x.n + (i ? ": " + x.g + " games, $" + x.e + ", " + x.s + (x.s === 1 ? " season" : " seasons") : "") + '">' + x.i + " " + x.n + "</span>"; }).join("") + "</div>";
     } else if (L.next) h += '<small class="note">Next: ' + L.next.i + " " + L.next.n + " (need " + L.need + " more of 3 goals)</small>";
     return h;
   }
