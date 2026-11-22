@@ -1529,12 +1529,7 @@ html { scroll-padding-top: 96px; }
       <label class="check" for="set-glow"><input id="set-glow" type="checkbox" data-ui>Stadium light glow at the top</label>
     </section>
 
-    <section class="panel" data-page="app-settings" hidden aria-labelledby="h-dash">
-      <h2 id="h-dash">App name</h2>
-      <div class="grid">
-        <div class="field"><label for="set-name">App name</label><input id="set-name" type="text" maxlength="40" data-ui autocomplete="off"></div>
-        <div class="field"><label for="set-tagline">Tagline</label><input id="set-tagline" type="text" maxlength="60" data-ui autocomplete="off"></div>
-      </div>
+    <section class="panel" data-page="app-settings" hidden style="display:none" aria-hidden="true">
       <div class="checks" hidden>
         <label class="check" for="show-tiles"><input id="show-tiles" type="checkbox" data-ui>Summary tiles</label>
         <label class="check" for="show-next"><input id="show-next" type="checkbox" data-ui>Next game</label>
@@ -5015,7 +5010,6 @@ html { scroll-padding-top: 96px; }
     if (["c", "k"].indexOf(raw.density) >= 0) u.density = raw.density;
     if (typeof raw.glow === "boolean") u.glow = raw.glow;
     if (raw.show && typeof raw.show === "object") SECTIONS.forEach(function (s) { if (typeof raw.show[s.k] === "boolean") u.show[s.k] = raw.show[s.k]; });
-    if (typeof raw.name === "string" && raw.name.trim()) u.name = /^(referee\s+finance|refledger)$/i.test(raw.name.trim()) ? "RefVault" : raw.name.trim().slice(0, 40);
     if (["auto", "in", "off"].indexOf(raw.season) >= 0) u.season = raw.season;
     if (Array.isArray(raw.widgets)) {
       var wseen = {};
@@ -5024,7 +5018,6 @@ html { scroll-padding-top: 96px; }
       });
     }
     ["photo"].forEach(function (k) { if (typeof raw[k] === "string" && raw[k].length < 150000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(raw[k])) u[k] = raw[k]; });
-    if (typeof raw.tagline === "string") u.tagline = raw.tagline.slice(0, 60);
     if (Array.isArray(raw.order) && raw.order.length) {
       var seen = {}, ord = raw.order.filter(function (k) { if (CARD_KEYS.indexOf(k) < 0 || seen[k]) return false; seen[k] = 1; return true; });
       defaultOrder().forEach(function (k) { if (!seen[k]) ord.push(k); });
@@ -5105,8 +5098,6 @@ html { scroll-padding-top: 96px; }
     $("set-glow").checked = draftUi.glow;
     SECTIONS.forEach(function (s) { $("show-" + s.k).checked = draftUi.show[s.k]; });
     $("set-season").value = draftUi.season || "auto";
-    $("set-name").value = draftUi.name;
-    $("set-tagline").value = draftUi.tagline;
     renderLayout(); renderMwList();
     syncPresetButtons();
     updateUiState();
@@ -5122,8 +5113,6 @@ html { scroll-padding-top: 96px; }
     SECTIONS.forEach(function (s) { raw.show[s.k] = $("show-" + s.k).checked; });
     raw.widgets = draftUi.widgets || [];
     raw.season = $("set-season").value;
-    raw.name = $("set-name").value;
-    raw.tagline = $("set-tagline").value;
     return sanitizeUi(raw);
   }
   function renderLayout() {
