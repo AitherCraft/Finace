@@ -347,6 +347,9 @@ button.badge { cursor: pointer; min-height: 26px; }
 .ph-row { display: flex; align-items: center; gap: 14px; padding: 8px 0; } .ph-prev { width: 64px; height: 64px; } .ph-logo { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 1px solid var(--panel-line); }
 .ph-pick { cursor: pointer; display: inline-block; }
 .xi-row { display: grid; gap: 4px; padding: 8px 0; border-top: 1px solid var(--panel-line); } .xi-row > div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; } .xi-row small { color: var(--muted); font-size: 12px; }
+.aw-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin: 6px 0 10px; } .aw-head span { color: var(--muted); font-size: 13px; }
+.aw-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .aw-tile { display: grid; gap: 2px; padding: 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); } .aw-tile > span { font-size: 24px; } .aw-tile small { color: var(--muted); font-size: 12px; } .aw-tile b { font: 800 16px/1.2 var(--display); overflow-wrap: anywhere; } .aw-tile em { font-style: normal; color: var(--muted); font-size: 12px; }
+.aw-rec { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 0; border-top: 1px solid var(--panel-line); font-size: 14px; } .aw-rec small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; } .aw-rec.on b, .aw-rec.on small { color: var(--yellow); }
 .szi { margin-top: 12px; display: grid; gap: 8px; } .szi h3 { margin: 0; }
 .szi-hd { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); font-size: 14px; } .szi-hd span { color: var(--muted); font-size: 13px; }
 .szi-hd.ok { border-color: var(--green); } .szi-hd.bad { border-color: var(--red, #ff6b6b); } .szi-hd.warn { border-color: var(--orange); }
@@ -1219,6 +1222,8 @@ html { scroll-padding-top: 96px; }
 
   <div class="view" data-view="reports" hidden>
     <div class="row"><div class="periods" id="periods" role="group" aria-label="Time period"></div></div>
+    <section class="panel" id="aw-card" aria-labelledby="h-aw" hidden><div class="panel-head"><h2 id="h-aw">Season awards</h2><span class="chip" id="aw-chip"></span></div>
+      <div class="field"><label for="aw-season">Season</label><select id="aw-season"></select></div><div id="aw-body"></div></section>
     <section class="panel" id="xi-card" aria-labelledby="h-xi" hidden><div class="panel-head"><h2 id="h-xi">Expense insights</h2><span class="chip" id="xi-chip"></span></div><div id="xi-body"></div></section>
     <section class="panel" id="fc-card" aria-labelledby="h-fc" hidden>
       <div class="panel-head"><h2 id="h-fc">Income forecast</h2><span class="chip" id="fc-chip"></span></div>
@@ -3311,7 +3316,7 @@ html { scroll-padding-top: 96px; }
     if (!A) return;
     safe(renderTiles, "tiles"); safe(renderChart, "chart"); safe(function () { renderPlan(A); }, "plan"); safe(function () { renderAfford(A); }, "afford");
     safe(renderProfile, "profile"); safe(renderHistory, "history"); safe(renderWishes, "wish list"); safe(function () { renderHome(A); }, "home"); safe(renderMyWidgets, "widgets"); safe(renderSeason, "season"); safe(renderInsights, "insights"); safe(renderWeather, "weather"); safe(renderNotifs, "notifications"); safe(renderAssocFilter, "filters"); safe(renderOwed, "owed");
-    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
+    safe(renderExport, "export"); safe(renderRecords, "records"); safe(renderBag, "bag"); safe(renderForecast, "forecast"); safe(renderPayPred, "paypred"); safe(renderWallet, "wallet"); safe(renderBudget, "budget"); safe(renderExpIns, "expins"); safe(renderAwards, "awards"); safe(renderLocker, "locker"); safe(renderCalendar, "calendar"); safe(renderCareer, "career");
     safe(renderCharts, "charts"); safe(renderSGoals, "goals"); safe(function () { renderLedger(A); }, "game log"); safe(fillGoalInput, "goal");
   }
 
@@ -3785,6 +3790,63 @@ html { scroll-padding-top: 96px; }
     $("xi-chip").textContent = X.warn ? "Gear alert" : fmt(X.cur.tot) + " this month";
     $("xi-chip").className = "chip " + (X.warn ? "bad" : "ok");
   }
+
+  /* Season Awards: highlights and personal records for each season */
+  var awSel = "";
+  function awMon(k) { return MON[+k.slice(5, 7) - 1] + " " + k.slice(0, 4); }
+  function awStats(S, x) {
+    var gs = S.gs.filter(function (g) { var k = g.date.slice(0, 7); return k >= x.s && k <= x.e; }), mon = {}, day = {}, tn = {}, miles = 0, trip = null, best = null;
+    gs.forEach(function (g) {
+      var k = g.date.slice(0, 7), m = mon[k] || (mon[k] = { n: 0, net: 0 }); m.n += gN(g); m.net += gNet(g); day[g.date] = (day[g.date] || 0) + gN(g);
+      if (g.tourn) { var t = tn[g.tourn] || (tn[g.tourn] = { name: g.tourn, n: 0, net: 0 }); t.n += gN(g); t.net += gNet(g); }
+      var mi = gMiles(g); miles += mi; if (mi && (!trip || mi > trip.mi)) trip = { mi: mi, g: g };
+      if (!best || gNet(g) > best.net) best = { net: gNet(g), g: g };
+    });
+    var mk = Object.keys(mon), topNet = mk.sort(function (a, b) { return mon[b].net - mon[a].net; })[0], topN = Object.keys(mon).sort(function (a, b) { return mon[b].n - mon[a].n || mon[b].net - mon[a].net; })[0];
+    var tl = Object.keys(tn).map(function (k) { return tn[k]; }).sort(function (a, b) { return b.net - a.net || b.n - a.n; });
+    var dk = Object.keys(day).sort(function (a, b) { return day[b] - day[a]; })[0];
+    return { x: x, n: gs.reduce(function (a, g) { return a + gN(g); }, 0), net: gs.reduce(function (a, g) { return a + gNet(g); }, 0), mon: mon, topNet: topNet ? { k: topNet, v: mon[topNet].net, n: mon[topNet].n } : null, topN: topN ? { k: topN, v: mon[topN].n } : null,
+      tourn: tl[0] || null, miles: miles, trip: trip, best: best, dayK: dk || "", dayN: dk ? day[dk] : 0 };
+  }
+  function awRecords(all, cur) {
+    var defs = [
+      { k: "Best season income", e: "💰", f: function (a) { return a.net; }, fm: fmt, lab: function (a) { return a.x.name; } },
+      { k: "Most games in a season", e: "🎮", f: function (a) { return a.n; }, fm: function (v) { return v + " games"; }, lab: function (a) { return a.x.name; } },
+      { k: "Best single month", e: "📅", f: function (a) { return a.topNet ? a.topNet.v : 0; }, fm: fmt, lab: function (a) { return a.topNet ? awMon(a.topNet.k) : ""; } },
+      { k: "Highest-paying game", e: "⭐", f: function (a) { return a.best ? a.best.net : 0; }, fm: fmt, lab: function (a) { return a.best ? mdDate(a.best.g.date) : ""; } },
+      { k: "Most games in one day", e: "⚡", f: function (a) { return a.dayN; }, fm: function (v) { return v + (v === 1 ? " game" : " games"); }, lab: function (a) { return a.dayK ? mdDate(a.dayK) : ""; } },
+      { k: "Longest trip", e: "🚗", f: function (a) { return a.trip ? a.trip.mi : 0; }, fm: fmtMiles, lab: function (a) { return a.trip ? mdDate(a.trip.g.date) : ""; } }
+    ];
+    return defs.map(function (d) {
+      var top = all.slice().sort(function (a, b) { return d.f(b) - d.f(a); })[0], v = d.f(cur), isRec = v > 0 && v >= d.f(top);
+      return { d: d, v: v, rec: isRec, top: top, topV: d.f(top), multi: all.length > 1 };
+    }).filter(function (r) { return r.topV > 0; });
+  }
+  function renderAwards() {
+    var card = $("aw-card"); if (!card) return;
+    var S = seasonInfo(); if (S.none || !S.seasons.length) { card.hidden = true; return; }
+    card.hidden = false;
+    var all = S.seasons.map(function (x) { return awStats(S, x); }), sel = $("aw-season");
+    var opts = all.slice().reverse().map(function (a) { return '<option value="' + a.x.s + '">' + esc(a.x.name) + (a.x.cur ? " (so far)" : "") + "</option>"; }).join("");
+    if (sel.getAttribute("data-sig") !== opts) { sel.innerHTML = opts; sel.setAttribute("data-sig", opts); }
+    var doneL = all.filter(function (a) { return !a.x.cur; }), pick = all.filter(function (a) { return a.x.s === awSel; })[0] || doneL[doneL.length - 1] || all[all.length - 1];
+    sel.value = pick.x.s;
+    var A = pick, tiles = [];
+    tiles.push(["💰", "Highest earning month", A.topNet ? awMon(A.topNet.k) : "—", A.topNet ? fmt(A.topNet.v) + " from " + A.topNet.n + (A.topNet.n === 1 ? " game" : " games") : ""]);
+    tiles.push(["🎮", "Most games completed", A.n + (A.n === 1 ? " game" : " games"), A.topN ? "Busiest month: " + awMon(A.topN.k) + ", " + A.topN.v : ""]);
+    tiles.push(["🏆", "Biggest tournament", A.tourn ? A.tourn.name : "None logged", A.tourn ? A.tourn.n + (A.tourn.n === 1 ? " game, " : " games, ") + fmt(A.tourn.net) + " earned" : "Add a tournament name to a game to track these"]);
+    tiles.push(["🚗", "Most miles traveled", A.miles ? fmtMiles(A.miles) : "None logged", A.trip ? "Longest trip: " + fmtMiles(A.trip.mi) + " on " + mdDate(A.trip.g.date) : "Add miles to your games to track them"]);
+    var h = '<div class="aw-head"><b>' + esc(A.x.name) + "</b><span>" + fmt(A.net) + " earned" + (A.x.cur ? ", season still going" : "") + "</span></div>" +
+      '<div class="aw-grid">' + tiles.map(function (t) { return '<div class="aw-tile"><span aria-hidden="true">' + t[0] + "</span><small>" + t[1] + "</small><b>" + esc(t[2]) + "</b><em>" + esc(t[3]) + "</em></div>"; }).join("") + "</div>";
+    var recs = awRecords(all, A);
+    if (recs.length) h += "<h3>Personal records</h3>" + recs.map(function (r) {
+      var line = r.rec ? (r.multi ? "New personal record" : "Your first benchmark") : "Record: " + r.d.fm(r.topV) + " in " + esc(r.d.lab(r.top));
+      return '<div class="aw-rec' + (r.rec ? " on" : "") + '"><span>' + r.d.e + " " + r.d.k + "</span><b>" + r.d.fm(r.v) + "</b><small>" + (r.rec ? "🏅 " : "") + line + (r.rec && r.d.lab(A) ? " · " + esc(r.d.lab(A)) : "") + "</small></div>";
+    }).join("");
+    $("aw-body").innerHTML = h;
+    $("aw-chip").textContent = A.x.cur ? "In progress" : doneL.length && doneL[doneL.length - 1] === A ? "Latest season" : "Season recap";
+  }
+  document.addEventListener("change", function (e) { if (e.target.id === "aw-season") { awSel = e.target.value; renderAwards(); } });
   /* Seasonal mode: detect the off-season, estimate reduced income, compare seasons */
   var curSeasonMode = "auto", MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function seasonName(ym) { var p = ym.split("-"), m = +p[1]; return (m >= 8 && m <= 11 ? "Fall" : m === 12 || m <= 2 ? "Winter" : m <= 6 ? "Spring" : "Summer") + " " + (m <= 2 ? +p[0] - 1 : p[0]); }
@@ -3909,6 +3971,7 @@ html { scroll-padding-top: 96px; }
   function szIntelHtml(S) {
     var I; try { I = szIntel(S); } catch (e) { return ""; }
     var h = '<div class="szi"><h3>Seasonal intelligence</h3>';
+    var lastS = S.seasons[S.seasons.length - 1]; if (S.off && lastS && !lastS.cur) h += '<a class="szi-hd ok" href="#reports"><b>🏆 ' + esc(lastS.name) + ' awards are ready</b><span>See your best month, biggest tournament, miles and personal records.</span></a>';
     if (I.cmp) {
       var c = I.cmp, gl = (c.dg === 0 ? "the same number of games" : Math.abs(c.dg) + (Math.abs(c.dg) === 1 ? " game " : " games ") + (c.dg > 0 ? "more" : "fewer"));
       h += '<div class="szi-hd ' + (c.state === "behind" ? "bad" : "ok") + '"><b>' + (c.state === "even" ? "You are right on pace with last season" : c.state === "ahead" ? "You are ahead of last season" : "You are behind last season") + '</b><span>' + (c.state === "even" ? "" : fmt(Math.abs(c.dn)) + (c.dn >= 0 ? " ahead" : " behind") + (c.pc ? " (" + (c.pc > 0 ? "+" : "") + c.pc + "%)" : "") + ", ") + gl + ' than ' + esc(c.prevName) + ' at this point.' + (c.proj ? " On pace for about " + fmt(c.proj) + " this season (last season: " + fmt(c.prevTotal) + ")." : "") + '</span></div>';
