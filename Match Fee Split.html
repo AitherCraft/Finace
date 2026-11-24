@@ -1029,11 +1029,18 @@ nav a[data-nav], .side a { border-radius: 14px; }
 .ai-topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; } .ai-topics button { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 16px; border: 1.5px solid rgba(47, 140, 255, 0.6); background: rgba(5, 12, 28, 0.7); color: var(--fg); font: 600 14px/1.2 var(--body); text-align: left; cursor: pointer; } .ai-topics b { font: 700 20px/1 var(--display); color: var(--blue); width: 26px; text-align: center; }
 .ai-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; } .ai-bar .note { font-size: 13px; }
 .ai-log { max-height: none; min-height: 120px; gap: 14px; } .ai-row { display: flex; align-items: flex-end; gap: 10px; } .ai-row.u { justify-content: flex-end; } .ai-av { width: 38px; height: 38px; border-radius: 50%; flex: none; display: grid; place-items: center; border: 1.5px solid rgba(47, 140, 255, 0.6); background: #0a1f4d; color: var(--fg); overflow: hidden; } .ai-av svg { width: 28px; height: 28px; } .ai-av.u svg { width: 20px; height: 20px; }
-.ai-m { max-width: min(86%, 560px); border-radius: 20px; padding: 12px 16px; } .ai-m.u { background: var(--blue); border-bottom-right-radius: 6px; } .ai-m.a { background: linear-gradient(160deg, rgba(47, 140, 255, 0.14), rgba(255, 255, 255, 0.04)); border: 1px solid rgba(47, 140, 255, 0.4); border-bottom-left-radius: 6px; } .ai-m.typing::after { content: ""; display: inline-block; width: 8px; height: 16px; margin-left: 3px; vertical-align: -2px; background: var(--blue); border-radius: 2px; animation: aiBlink 0.8s steps(2) infinite; }
+.ai-m { max-width: min(86%, 560px); border-radius: 20px; padding: 12px 16px; } .ai-m.u { background: var(--blue); border-bottom-right-radius: 6px; } .ai-m.a { background: linear-gradient(160deg, rgba(47, 140, 255, 0.14), rgba(255, 255, 255, 0.04)); border: 1px solid rgba(47, 140, 255, 0.4); border-bottom-left-radius: 6px; } .ai-t.typing::after { content: ""; display: inline-block; width: 8px; height: 16px; margin-left: 3px; vertical-align: -2px; background: var(--blue); border-radius: 2px; animation: aiBlink 0.8s steps(2) infinite; }
 @keyframes aiBlink { 50% { opacity: 0; } } .ai-dots { display: inline-flex; gap: 5px; padding: 4px 0; } .ai-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); animation: aiDot 1s infinite ease-in-out; } .ai-dots i:nth-child(2) { animation-delay: 0.15s; } .ai-dots i:nth-child(3) { animation-delay: 0.3s; } @keyframes aiDot { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-4px); } }
 .ai-follow { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 48px; } .ai-follow button { border: 1.5px solid rgba(47, 140, 255, 0.55); background: rgba(5, 12, 28, 0.6); color: var(--fg); border-radius: 14px; padding: 10px 14px; font: 600 13px/1.2 var(--body); cursor: pointer; }
 .ai-form { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 999px; border: 1.5px solid rgba(47, 140, 255, 0.7); background: rgba(5, 12, 28, 0.7); box-shadow: 0 0 18px rgba(47, 140, 255, 0.2); } .ai-sp { color: var(--blue); font-size: 22px; } .ai-form textarea { border: 0; background: none; min-height: 40px; padding: 10px 0; flex: 1; } .ai-form textarea:focus { outline: none; box-shadow: none; } .ai-go { width: 46px; height: 46px; flex: none; border: 0; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 0 16px rgba(47, 140, 255, 0.6); }
 @media (max-width: 560px) { .ai-bot { width: 64px; height: 64px; } .ai-on { position: absolute; right: 18px; top: 18px; } .ai-hero { position: relative; } .ai-topics { grid-template-columns: 1fr 1fr; } }
+
+.ai-m.a { max-width: min(92%, 600px); } .ai-card { display: grid; gap: 12px; margin-top: 12px; }
+.ai-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .ai-tile { display: grid; justify-items: center; align-content: center; gap: 4px; text-align: center; padding: 12px 6px; border-radius: 16px; border: 1.5px solid rgba(47, 140, 255, 0.45); background: rgba(5, 12, 28, 0.55); } .ai-tile b { font: 700 clamp(17px, 5vw, 24px)/1.1 var(--display); } .ai-tile span { color: var(--muted); font-size: 12px; line-height: 1.25; } .ai-ring { width: 66px; height: 66px; color: var(--fg); } .ai-ring circle:nth-child(2) { animation: aiRing 0.9s ease-out; } @keyframes aiRing { from { stroke-dasharray: 0 400; } }
+.ai-note { margin: 0; color: var(--muted); font-size: 13px; }
+.ai-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; } .ai-acts button { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; border: 1.5px solid rgba(47, 140, 255, 0.6); background: rgba(5, 12, 28, 0.6); color: var(--fg); font: 600 13px/1.2 var(--body); text-align: left; cursor: pointer; } .ai-acts button svg { flex: none; color: var(--blue); }
+.ai-graph { display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: rgba(5, 12, 28, 0.55); border: 1px solid var(--panel-line); } .ai-graph[hidden] { display: none; } .ai-graph h4 { margin: 0; font-size: 14px; } .ai-bar { display: grid; grid-template-columns: 56px 1fr; gap: 2px 10px; align-items: center; font-size: 13px; } .ai-bar > div { height: 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); overflow: hidden; } .ai-bar i { display: block; height: 100%; border-radius: 6px; } .ai-bar em { grid-column: 2; font-style: normal; color: var(--muted); font-size: 12px; }
+.ai-tiles { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); } .ai-tile b { font-size: clamp(15px, 4.4vw, 22px); white-space: nowrap; } .ai-acts { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -4714,15 +4721,65 @@ nav a[data-nav], .side a { border-radius: 14px; }
   var AI_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>';
   var AI_FOLLOW = ["Can I afford my wish list?", "How much should I save from each game?", "How was my season?"];
   var aicStr = null; /* streaming state for the newest reply */
+  /* Rich answer cards: figures and graphs drawn from the app's own numbers, chosen from the question topic. */
+  function aicKind(k) {
+    var m = aiChat[k]; if (!m || m.role === "user") return "";
+    var q = ""; for (var x = k - 1; x >= 0; x--) if (aiChat[x].role === "user") { q = aiChat[x].text; break; }
+    q = (q + " " + m.text).toLowerCase();
+    if (/wish|afford|buy|cheaper|purchase/.test(q)) return "wish";
+    if (/budget|spend|save|saving|safe/.test(q)) return "budget";
+    if (/equipment|gear|bag|restock|flag|whistle|jersey/.test(q)) return "gear";
+    if (/season|earn|income|pace|paid|owed/.test(q)) return "earn";
+    return "";
+  }
+  function aicRing(pct, label) { var r = 38, c = 2 * Math.PI * r; return '<svg class="ai-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="' + r + '" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + (pct > 100 ? "var(--red)" : pct > 85 ? "var(--yellow)" : "var(--green)") + '" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + (c * Math.min(100, pct) / 100).toFixed(1) + " " + c.toFixed(1) + '" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" fill="currentColor" font-size="22" font-weight="700">' + pct + "%</text></svg>"; }
+  function aicTile(top, big, sub) { return '<div class="ai-tile">' + top + "<b>" + esc(big) + "</b><span>" + esc(sub) + "</span></div>"; }
+  var AI_IC = { ok: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>', no: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--yellow)" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l10 18H2zM12 10v5M12 18v.1"/></svg>', wal: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12h5v4h-5a2 2 0 010-4z"/></svg>' };
+  function aicBtn(act, ic, label, arg) { return '<button type="button" data-aia="' + act + '"' + (arg ? ' data-arg="' + esc(arg) + '"' : "") + ">" + ic + "<span>" + label + "</span></button>"; }
+  var AI_BTN_IC = { graph: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>', save: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11a7 6 0 0114 0c0 3-2 4-2 6H8c0-2-3-3-3-6zM9 17v3M15 17v3M9 9h.1"/></svg>', find: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>', go: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>' };
+  function aicCard(k) {
+    var kind = aicKind(k); if (!kind) return "";
+    var h = "", acts = "";
+    try {
+      var C = bmCalc(), pct = C.limitM > 0 ? Math.round(C.mtd / C.limitM * 100) : 0, ring = '<div class="ai-tile ring">' + aicRing(pct) + "<span>of your " + fmt(C.limitM) + " spend budget used</span></div>";
+      if (kind === "wish") {
+        var ws = wishes.slice(0, 2).map(function (w) { var ok = wishReadyList.some(function (r) { return r.id === w.id; }); return aicTile(ok ? AI_IC.ok : AI_IC.no, fmt(toCents(w.amount)), w.what + (ok ? " (can afford)" : " (not yet)")); });
+        if (!ws.length) ws = [aicTile(AI_IC.wal, fmt(C.safe), "Safe to spend now")];
+        h = '<div class="ai-tiles">' + ws.join("") + ring + "</div>";
+        acts = aicBtn("graph", AI_BTN_IC.graph, "Show budget graph") + aicBtn("goals", AI_BTN_IC.save, "Save for it") + aicBtn("ask", AI_BTN_IC.find, "Find cheaper options", wishes.length ? "Find cheaper options for " + wishes[0].what + ". Keep it short." : "How can I spend less on gear?");
+      } else if (kind === "budget") {
+        h = '<div class="ai-tiles">' + aicTile(AI_IC.ok, fmt(C.safe), "Safe to spend") + aicTile(AI_IC.wal, fmt(C.mtd), "Spent this month") + ring + "</div>";
+        acts = aicBtn("graph", AI_BTN_IC.graph, "Show budget graph") + aicBtn("goals", AI_BTN_IC.save, "Save for it") + aicBtn("ask", AI_BTN_IC.find, "Ways to spend less", "Give me three specific ways to spend less this month based on my numbers.");
+      } else if (kind === "gear") {
+        var bs = bagStats();
+        h = '<div class="ai-tiles">' + aicTile(AI_IC.wal, String(bs.total), "Items in your bag") + aicTile(bs.low.length ? AI_IC.no : AI_IC.ok, String(bs.low.length), "Running low") + aicTile(bs.missing.length ? AI_IC.no : AI_IC.ok, String(bs.missing.length), "Missing") + "</div>" + (bs.low.length ? '<p class="ai-note">Low: ' + bs.low.map(function (b) { return esc(b.name) + " (" + b.qty + ")"; }).join(", ") + "</p>" : "");
+        acts = aicBtn("go:inventory", AI_BTN_IC.go, "Open inventory") + aicBtn("ask", AI_BTN_IC.find, "Restock tips", "What gear should I restock first and about how much will it cost?");
+      } else {
+        var info = allTimeInfo(), mr = periodRange("month"), d = function (c) { return fmt(Math.round(c)); };
+        h = '<div class="ai-tiles">' + aicTile(AI_IC.ok, d(Math.max(0, totalsFor(mr).net)), "Earned this month") + aicTile(AI_IC.wal, d(owedGames().reduce(function (a, g) { return a + gOwedC(g); }, 0)), "Owed to you") + aicTile(AI_IC.ok, d(info.perWeek) + "/wk", "Your pace") + "</div>";
+        acts = aicBtn("go:reports", AI_BTN_IC.graph, "Open reports") + aicBtn("go:owed", AI_BTN_IC.go, "Payment Center") + aicBtn("ask", AI_BTN_IC.find, "Season recap", "Give me a short recap of my season so far.");
+      }
+    } catch (e) { return ""; }
+    return '<div class="ai-card">' + h + '<div class="ai-graph" hidden></div><div class="ai-acts">' + acts + "</div></div>";
+  }
+  function aicGraph(box) {
+    var info = allTimeInfo(), rows = BUCKETS.map(function (b, i) { var tot = Math.max(1, info.a.out[i]), used = Math.max(0, info.used[b.k]), pc = Math.round(used / tot * 100); return '<div class="ai-bar"><span>' + esc(b.name) + '</span><div><i style="width:' + Math.min(100, pc) + "%;background:" + (pc > 100 ? "var(--red)" : "var(--c-" + b.k + ")") + '"></i></div><em>' + fmt(used) + " of " + fmt(info.a.out[i]) + "</em></div>"; }).join("");
+    box.innerHTML = '<h4>Where your money went</h4>' + rows; box.hidden = !box.hidden;
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-aia]"); if (!b) return; var a = b.getAttribute("data-aia");
+    if (a === "graph") { var box = b.closest(".ai-card").querySelector(".ai-graph"); if (box.hidden || !box.innerHTML) { box.hidden = true; aicGraph(box); } else box.hidden = true; }
+    else if (a === "goals") location.hash = "#goals"; else if (a === "ask") aicSend(b.getAttribute("data-arg") || ""); else if (a.indexOf("go:") === 0) location.hash = "#" + a.slice(3);
+  });
   function aicRender() {
     var log = $("aic-log"); if (!log) return;
     var last = aiChat.length - 1;
     log.innerHTML = aiChat.map(function (m, k) {
       if (m.role === "user") return '<div class="ai-row u"><div class="ai-m u">' + esc(m.text) + '</div><span class="ai-av u">' + AI_USER + "</span></div>";
       var streaming = aicStr && k === last, t = streaming ? aicStr.full.slice(0, aicStr.n) : m.text;
-      return '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a' + (streaming ? " typing" : "") + '" id="' + (streaming ? "ai-stream" : "") + '">' + esc(t) + "</div></div>";
+      return '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a"><div class="ai-t' + (streaming ? " typing" : "") + '"' + (streaming ? ' id="ai-stream"' : "") + ">" + esc(t) + "</div>" + (streaming ? "" : aicCard(k)) + "</div></div>";
     }).join("") + (aicBusy ? '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a"><span class="ai-dots"><i></i><i></i><i></i></span></div></div>' : "") +
-      (aiChat.length && !aicBusy && !aicStr && aiChat[last].role !== "user" ? '<div class="ai-follow">' + AI_FOLLOW.map(function (q) { return '<button type="button" data-aiq="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") + "</div>" : "");
+      (aiChat.length && !aicBusy && !aicStr && aiChat[last].role !== "user" && !aicKind(last) ? '<div class="ai-follow">' + AI_FOLLOW.map(function (q) { return '<button type="button" data-aiq="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") + "</div>" : "");
     $("aic-chips").innerHTML = aiChat.length ? "" : AIC_Q.map(function (q) { return '<button type="button" data-aiq="' + esc(q) + '">' + esc(q) + "</button>"; }).join("");
     $("ai-sync").textContent = sbSession ? "✓ Synced" + (acctEmail() ? " for " + acctEmail() : "") + ". Last chat " + new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "✓ Saved on this device. Sign in to chat.";
     $("ai-on").className = "ai-on" + (sbSession ? "" : " off"); $("ai-on").lastChild.textContent = sbSession ? "Online" : "Sign in";
