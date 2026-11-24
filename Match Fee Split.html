@@ -1021,6 +1021,19 @@ nav a[data-nav], .side a { border-radius: 14px; }
 @media (max-width: 560px) { .bag-th { display: none; } .bag-row { grid-template-columns: minmax(0, 1fr) auto; } .bag-act { grid-column: 1 / -1; justify-content: flex-start; } .bag-meta { justify-self: end; } .inv-pills b { font-size: 14px; } .inv-pills > div svg { width: 22px; height: 22px; } }
 .inv-hero > div:first-child { position: relative; z-index: 1; } .inv-pills { position: relative; z-index: 1; }
 @media (max-width: 560px) { .inv-whistle { width: 84px; top: -6px; right: -8px; opacity: 0.45; } .inv-hero h2 { font-size: 26px; } .inv-pills > div { flex-direction: column; gap: 4px; padding: 10px 4px; } .inv-pills b { font-size: 13px; } }
+
+/* RefVault AI */
+.ai-hero { display: grid; gap: 14px; padding: 18px; border-radius: 22px; border: 1px solid rgba(47, 140, 255, 0.55); background: radial-gradient(120% 140% at 0 0, rgba(47, 140, 255, 0.28), transparent 55%), linear-gradient(160deg, #0a1a3d, var(--panel)); }
+.ai-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; } .ai-bot { width: 84px; height: 84px; flex: none; filter: drop-shadow(0 0 18px rgba(76, 195, 255, 0.55)); } .ai-ht { flex: 1 1 200px; min-width: 0; } .ai-ht h2 { font: 800 clamp(26px, 7vw, 36px)/1.1 var(--display); font-style: italic; } .ai-ht h2 em { color: var(--blue); } .ai-ht p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+.ai-on { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1.5px solid rgba(34, 197, 94, 0.6); color: var(--green); font: 700 14px/1 var(--body); background: rgba(34, 197, 94, 0.1); } .ai-on i { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); } .ai-on.off { color: var(--muted); border-color: var(--panel-line); background: none; } .ai-on.off i { background: var(--muted); box-shadow: none; }
+.ai-topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; } .ai-topics button { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 16px; border: 1.5px solid rgba(47, 140, 255, 0.6); background: rgba(5, 12, 28, 0.7); color: var(--fg); font: 600 14px/1.2 var(--body); text-align: left; cursor: pointer; } .ai-topics b { font: 700 20px/1 var(--display); color: var(--blue); width: 26px; text-align: center; }
+.ai-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; } .ai-bar .note { font-size: 13px; }
+.ai-log { max-height: none; min-height: 120px; gap: 14px; } .ai-row { display: flex; align-items: flex-end; gap: 10px; } .ai-row.u { justify-content: flex-end; } .ai-av { width: 38px; height: 38px; border-radius: 50%; flex: none; display: grid; place-items: center; border: 1.5px solid rgba(47, 140, 255, 0.6); background: #0a1f4d; color: var(--fg); overflow: hidden; } .ai-av svg { width: 28px; height: 28px; } .ai-av.u svg { width: 20px; height: 20px; }
+.ai-m { max-width: min(86%, 560px); border-radius: 20px; padding: 12px 16px; } .ai-m.u { background: var(--blue); border-bottom-right-radius: 6px; } .ai-m.a { background: linear-gradient(160deg, rgba(47, 140, 255, 0.14), rgba(255, 255, 255, 0.04)); border: 1px solid rgba(47, 140, 255, 0.4); border-bottom-left-radius: 6px; } .ai-m.typing::after { content: ""; display: inline-block; width: 8px; height: 16px; margin-left: 3px; vertical-align: -2px; background: var(--blue); border-radius: 2px; animation: aiBlink 0.8s steps(2) infinite; }
+@keyframes aiBlink { 50% { opacity: 0; } } .ai-dots { display: inline-flex; gap: 5px; padding: 4px 0; } .ai-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); animation: aiDot 1s infinite ease-in-out; } .ai-dots i:nth-child(2) { animation-delay: 0.15s; } .ai-dots i:nth-child(3) { animation-delay: 0.3s; } @keyframes aiDot { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-4px); } }
+.ai-follow { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 48px; } .ai-follow button { border: 1.5px solid rgba(47, 140, 255, 0.55); background: rgba(5, 12, 28, 0.6); color: var(--fg); border-radius: 14px; padding: 10px 14px; font: 600 13px/1.2 var(--body); cursor: pointer; }
+.ai-form { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 999px; border: 1.5px solid rgba(47, 140, 255, 0.7); background: rgba(5, 12, 28, 0.7); box-shadow: 0 0 18px rgba(47, 140, 255, 0.2); } .ai-sp { color: var(--blue); font-size: 22px; } .ai-form textarea { border: 0; background: none; min-height: 40px; padding: 10px 0; flex: 1; } .ai-form textarea:focus { outline: none; box-shadow: none; } .ai-go { width: 46px; height: 46px; flex: none; border: 0; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 0 16px rgba(47, 140, 255, 0.6); }
+@media (max-width: 560px) { .ai-bot { width: 64px; height: 64px; } .ai-on { position: absolute; right: 18px; top: 18px; } .ai-hero { position: relative; } .ai-topics { grid-template-columns: 1fr 1fr; } }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -1352,13 +1365,17 @@ nav a[data-nav], .side a { border-radius: 14px; }
   </div>
 
   <div class="view" data-view="ai" hidden>
+    <section class="ai-hero">
+      <div class="ai-top"><svg class="ai-bot" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="abg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe6ff"/><stop offset="1" stop-color="#5a9bff"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="#0a1f4d"/><rect x="14" y="16" width="36" height="30" rx="14" fill="url(#abg)"/><rect x="19" y="24" width="26" height="14" rx="7" fill="#07142e"/><circle cx="26" cy="31" r="3.4" fill="#4cc3ff"/><circle cx="38" cy="31" r="3.4" fill="#4cc3ff"/><rect x="8" y="26" width="6" height="12" rx="3" fill="#7fb4ff"/><rect x="50" y="26" width="6" height="12" rx="3" fill="#7fb4ff"/><path d="M24 52c2-6 14-6 16 0" stroke="#7fb4ff" stroke-width="5" stroke-linecap="round" fill="none"/></svg><div class="ai-ht"><h2 id="h-ai">RefVault <em>AI</em></h2><p>Your personal referee assistant. Ask about your money, gear, schedules and more.</p></div><span class="ai-on" id="ai-on"><i></i>Online</span></div>
+      <div class="ai-topics"><button type="button" data-aiq="Help me with my budget. How much can I safely spend?"><b>$</b>Budget Help</button><button type="button" data-aiq="Is any of my referee equipment running low or due for replacement?"><b>⚽</b>Equipment Advice</button><button type="button" data-aiq="Give me scheduling tips based on my games and availability."><b>📅</b>Schedule Tips</button><button type="button" data-aiq="What should I know about being a referee that I should be asking?"><b>?</b>General Questions</button></div>
+    </section>
     <section class="panel ai-panel" aria-labelledby="h-ai">
-      <div class="panel-head"><h2 id="h-ai">Ask RefVault AI</h2><button class="mini" type="button" id="aic-clear">New chat</button></div>
-      <p class="note">Ask about your money, saving, budgeting or taxes as a referee. It can see your totals and goals, not your email. AI can be wrong, so double-check anything important.</p>
+      <div class="ai-bar"><span class="note">It can see your totals and goals, not your email. AI can be wrong, so double-check anything important.</span><button class="mini" type="button" id="aic-clear">New chat</button></div>
       <div class="ai-chips" id="aic-chips"></div>
       <div class="ai-log" id="aic-log" aria-live="polite"></div>
-      <form class="ai-form" id="aic-form" novalidate><textarea id="aic-in" rows="1" maxlength="1000" placeholder="Ask a money question..." aria-label="Your question"></textarea><button class="btn" type="submit" id="aic-send">Send</button></form>
+      <form class="ai-form" id="aic-form" novalidate><span class="ai-sp" aria-hidden="true">✦</span><textarea id="aic-in" rows="1" maxlength="1000" placeholder="Ask a question..." aria-label="Your question"></textarea><button class="ai-go" type="submit" id="aic-send" aria-label="Send"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M3 11.5L21 3l-7 18-2.5-7.5z"/></svg></button></form>
       <p class="msg" id="aic-msg" role="status"></p>
+      <p class="inv-foot"><span id="ai-sync">✓ Saved on this device</span><em>Only you can see it.</em></p>
     </section>
   </div>
 
@@ -4693,20 +4710,50 @@ nav a[data-nav], .side a { border-radius: 14px; }
   document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#ai-ask")) aiRefresh(true); });
   /* chat tab */
   var AIC_Q = ["Can I afford new flags?", "How was my season?", "What will the weather be like?", "Can I afford my wish list?", "How much should I save from each game?", "Do I need to pay taxes on referee income?"];
+  var AI_BOT = '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="14" y="16" width="36" height="30" rx="14" fill="#9cc7ff"/><rect x="19" y="24" width="26" height="14" rx="7" fill="#07142e"/><circle cx="26" cy="31" r="3.4" fill="#4cc3ff"/><circle cx="38" cy="31" r="3.4" fill="#4cc3ff"/><rect x="8" y="26" width="6" height="12" rx="3" fill="#7fb4ff"/><rect x="50" y="26" width="6" height="12" rx="3" fill="#7fb4ff"/></svg>';
+  var AI_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>';
+  var AI_FOLLOW = ["Can I afford my wish list?", "How much should I save from each game?", "How was my season?"];
+  var aicStr = null; /* streaming state for the newest reply */
   function aicRender() {
     var log = $("aic-log"); if (!log) return;
-    log.innerHTML = aiChat.map(function (m) { return '<div class="ai-m ' + (m.role === "user" ? "u" : "a") + '">' + esc(m.text) + "</div>"; }).join("") + (aicBusy ? '<div class="ai-m a">Thinking...</div>' : "");
+    var last = aiChat.length - 1;
+    log.innerHTML = aiChat.map(function (m, k) {
+      if (m.role === "user") return '<div class="ai-row u"><div class="ai-m u">' + esc(m.text) + '</div><span class="ai-av u">' + AI_USER + "</span></div>";
+      var streaming = aicStr && k === last, t = streaming ? aicStr.full.slice(0, aicStr.n) : m.text;
+      return '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a' + (streaming ? " typing" : "") + '" id="' + (streaming ? "ai-stream" : "") + '">' + esc(t) + "</div></div>";
+    }).join("") + (aicBusy ? '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a"><span class="ai-dots"><i></i><i></i><i></i></span></div></div>' : "") +
+      (aiChat.length && !aicBusy && !aicStr && aiChat[last].role !== "user" ? '<div class="ai-follow">' + AI_FOLLOW.map(function (q) { return '<button type="button" data-aiq="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") + "</div>" : "");
     $("aic-chips").innerHTML = aiChat.length ? "" : AIC_Q.map(function (q) { return '<button type="button" data-aiq="' + esc(q) + '">' + esc(q) + "</button>"; }).join("");
+    $("ai-sync").textContent = sbSession ? "✓ Synced" + (acctEmail() ? " for " + acctEmail() : "") + ". Last chat " + new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "✓ Saved on this device. Sign in to chat.";
+    $("ai-on").className = "ai-on" + (sbSession ? "" : " off"); $("ai-on").lastChild.textContent = sbSession ? "Online" : "Sign in";
     log.scrollTop = log.scrollHeight;
   }
+  /* ChatGPT-style reveal: types the reply in a few characters at a time; tap the bubble to skip. */
+  function aicStream(full) {
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !full) { aicStr = null; aicRender(); return; }
+    aicStr = { full: full, n: 0, timer: null };
+    aicRender();
+    var st = aicStr, step = Math.max(2, Math.round(full.length / 180));
+    st.timer = setInterval(function () {
+      if (aicStr !== st) { clearInterval(st.timer); return; }
+      st.n = Math.min(full.length, st.n + step);
+      var el = $("ai-stream"), log = $("aic-log");
+      if (el) { el.textContent = full.slice(0, st.n); if (log) log.scrollTop = log.scrollHeight; }
+      if (st.n >= full.length) { clearInterval(st.timer); aicStr = null; aicRender(); }
+    }, 22);
+  }
+  document.addEventListener("click", function (e) { if (aicStr && e.target.closest && e.target.closest("#ai-stream")) { clearInterval(aicStr.timer); aicStr = null; aicRender(); } });
   function aicSend(text) {
     text = (text || "").trim(); if (!text || aicBusy) return;
     var msg = $("aic-msg"); msg.className = "msg"; msg.textContent = "";
     if (!sbSession) { msg.textContent = "Sign in to chat with the AI."; msg.className = "msg err"; return; }
-    aiChat.push({ role: "user", text: text.slice(0, 1000) }); aiChat = aiChat.slice(-30); aicBusy = true; $("aic-in").value = ""; aicRender();
+    if (aicStr) { clearInterval(aicStr.timer); aicStr = null; }
+    aiChat.push({ role: "user", text: text.slice(0, 1000) }); aiChat = aiChat.slice(-30); aicBusy = true; $("aic-in").value = ""; $("aic-in").style.height = "auto"; aicRender();
     var facts; try { facts = aiFacts(); } catch (x) { facts = {}; }
-    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { aiChat.push({ role: "model", text: j.reply }); try { hist.unshift({ id: uid("h"), t: Date.now(), a: "asked", k: "ai", e: { id: uid("q"), q: text.slice(0, 300), a: String(j.reply).slice(0, 1000) }, prev: null }); hist = hist.slice(0, 300); histSave(); renderHistory(); } catch (x) { /* history is best effort */ } }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
-      aicBusy = false; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* full */ } aicRender();
+    var reply = "";
+    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { reply = String(j.reply || ""); aiChat.push({ role: "model", text: reply }); try { hist.unshift({ id: uid("h"), t: Date.now(), a: "asked", k: "ai", e: { id: uid("q"), q: text.slice(0, 300), a: String(j.reply).slice(0, 1000) }, prev: null }); hist = hist.slice(0, 300); histSave(); renderHistory(); } catch (x) { /* history is best effort */ } }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
+      aicBusy = false; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* full */ } if (reply) aicStream(reply); else aicRender();
     });
   }
   document.addEventListener("submit", function (e) { if (e.target.id === "aic-form") { e.preventDefault(); aicSend($("aic-in").value); } });
