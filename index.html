@@ -994,6 +994,15 @@ input, select, textarea { min-height: 48px; border-radius: 14px; } textarea { mi
 .list > li { padding-block: 4px; }
 nav a[data-nav], .side a { border-radius: 14px; }
 @media (max-width: 959px) { .hero-right .log-game-btn { min-height: 38px; height: 38px; } }
+
+/* Payment Center */
+.pc-hero { display: grid; gap: 4px; padding: 20px; border-radius: 22px; background: linear-gradient(135deg, rgba(47, 140, 255, 0.16), transparent 70%), var(--field); border: 1px solid var(--panel-line); border-top: 3px solid var(--blue); } .pc-hero.late { border-top-color: var(--red); } .pc-hero small, .pc-tile small { font: 700 12px/1 var(--body); letter-spacing: 0.14em; color: var(--muted); } .pc-hero b { font: 700 clamp(40px, 11vw, 54px)/1.05 var(--display); } .pc-hero span { color: var(--muted); font-size: 15px; }
+.pc-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .pc-tile { display: grid; gap: 4px; align-content: start; padding: 16px; border-radius: 20px; background: var(--field); border: 1px solid var(--panel-line); position: relative; } .pc-tile i { position: absolute; right: 14px; top: 14px; width: 12px; height: 12px; border-radius: 50%; } .pc-tile.y i { background: var(--yellow); } .pc-tile.g i { background: var(--green); } .pc-tile b { font: 700 20px/1.2 var(--display); } .pc-tile span { color: var(--muted); font-size: 13px; }
+[data-view="owed"] .wish-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } [data-view="owed"] .wish-actions .btn { width: 100%; padding: 14px 8px; font-size: 14px; } #pc-markall { background: var(--green); color: #04210f; }
+[data-view="owed"] .periods.sm { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 5px; border-radius: 18px; background: var(--field); border: 1px solid var(--panel-line); } [data-view="owed"] .periods.sm button { border: 0; background: none; min-height: 44px; padding: 12px 8px; font: 700 15px/1 var(--body); letter-spacing: 0; text-transform: none; border-radius: 14px; color: var(--muted); } [data-view="owed"] .periods.sm button[aria-selected="true"] { background: var(--blue); color: #fff; }
+[data-view="owed"] .filters { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; } [data-view="owed"] .filters::-webkit-scrollbar { display: none; } [data-view="owed"] .filters select { flex: none; width: auto; min-width: 150px; border-radius: 999px; min-height: 44px; padding: 10px 16px; background-color: var(--field); }
+.owed-row { padding: 14px 0; border-top: 1px solid var(--panel-line); } .owed-row:first-child { border-top: 0; } .owed-row strong { font-size: 17px; font-weight: 600; }
+#pc-sum { display: grid; gap: 12px; }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -3211,9 +3220,9 @@ nav a[data-nav], .side a { border-radius: 14px; }
     var total = list.reduce(function (a, g) { return a + gOwedC(g); }, 0), part = list.filter(function (g) { return gPay(g) === "partial"; }), od = list.filter(function (g) { return gStatus(g) === "overdue"; }), odC = od.reduce(function (a, g) { return a + gOwedC(g); }, 0);
     var paidC = paidL.reduce(function (a, g) { return a + gNet(g); }, 0);
     $("owed-count").textContent = fmt(total) + " owed";
-    $("pc-sum").innerHTML = '<div class="pc-big"><b>' + fmt(total) + '</b><span>Owed to you</span></div>' +
-      '<div class="pc-line">🟡 <b>' + plural(gamesN(list), "game") + ' pending</b><small>' + (list.length ? [part.length ? part.length + " partly paid" : "", od.length ? od.length + " overdue (" + fmt(odC) + ")" : ""].filter(Boolean).join(", ") : "Nothing waiting on pay") + "</small></div>" +
-      '<div class="pc-line">🟢 <b>' + plural(gamesN(paidL), "game") + ' paid</b><small>' + fmt(paidC) + " received</small></div>";
+    var pend = list.length ? [part.length ? part.length + " partly paid" : "", od.length ? od.length + " overdue (" + fmt(odC) + ")" : ""].filter(Boolean).join(", ") || "Waiting on pay" : "Nothing waiting";
+    $("pc-sum").innerHTML = '<div class="pc-hero' + (od.length ? " late" : "") + '"><small>OWED TO YOU</small><b>' + fmt(total) + '</b><span>' + (list.length ? plural(gamesN(list), "game") + " waiting on pay" : "You are all paid up") + "</span></div>" +
+      '<div class="pc-tiles"><div class="pc-tile y"><i></i><small>PENDING</small><b>' + plural(gamesN(list), "game") + "</b><span>" + esc(pend) + '</span></div><div class="pc-tile g"><i></i><small>PAID</small><b>' + plural(gamesN(paidL), "game") + "</b><span>" + fmt(paidC) + " received</span></div></div>";
     $("pc-markall").disabled = !list.length; $("pc-remind").disabled = !list.length;
     var tb = document.querySelectorAll("[data-pctab]"); Array.prototype.forEach.call(tb, function (b) { var on = b.getAttribute("data-pctab") === pcTab ? "true" : "false"; b.setAttribute("aria-selected", on); b.setAttribute("aria-pressed", on); });
     $("o-status").style.display = pcTab === "owed" ? "" : "none";
