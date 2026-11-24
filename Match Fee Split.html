@@ -966,6 +966,21 @@ html { scroll-padding-top: 96px; }
 .gl-more { grid-column: 1 / -1; display: none; padding: 6px 0 2px 80px; } .gl-row.open .gl-more { display: block; }
 .gl-cta { position: sticky; bottom: 12px; margin-top: 12px; z-index: 4; } .gl-cta .btn { width: 100%; justify-content: center; padding: 16px; font-size: 17px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
 @media (max-width: 520px) { .gl-more { padding-left: 0; } .gl-row { grid-template-columns: 58px minmax(0, 1fr) auto; gap: 4px 10px; } .gl-tile { height: 58px; } }
+
+/* Settings hub */
+.st-hub { display: grid; gap: 14px; } .st-hub[hidden] { display: none; }
+.st-prof { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 22px; background: var(--panel); border: 1px solid var(--panel-line); color: var(--fg); text-decoration: none; } .st-prof > svg { margin-left: auto; color: var(--muted); flex: none; }
+.st-av { width: 64px; height: 64px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--orange) center / cover; color: #1a1205; font: 800 24px/1 var(--display); } .st-pt { display: grid; gap: 3px; min-width: 0; } .st-pt b { font: 700 22px/1.2 var(--display); } .st-pt small { color: var(--muted); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-stat { display: grid; grid-template-columns: 1fr 28px 1fr 28px 1fr; align-items: start; padding: 18px 10px; border-radius: 22px; background: var(--panel); border: 1px solid var(--panel-line); } .st-stat > div { display: grid; justify-items: center; gap: 4px; text-align: center; } .st-stat i { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--field); color: var(--muted); position: relative; } .st-stat i.ok { color: var(--blue); } .st-stat i.ok::after { content: "✓"; position: absolute; right: -3px; bottom: -3px; width: 20px; height: 20px; border-radius: 50%; background: var(--green); color: #04210f; font: 800 12px/20px var(--body); } .st-stat b { font-size: 15px; } .st-stat small { color: var(--muted); font-size: 13px; }
+.st-stat .ln { height: 3px; margin-top: 25px; border-radius: 2px; background: var(--panel-line); } .st-stat .ln.on { background: var(--green); }
+.st-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .st-tiles > * { display: grid; gap: 6px; align-content: end; min-height: 120px; padding: 16px; border-radius: 22px; background: var(--panel); border: 1px solid var(--panel-line); color: var(--fg); text-align: left; text-decoration: none; cursor: pointer; font: inherit; } .st-tiles svg { color: var(--blue); margin-bottom: auto; } .st-tiles b { font: 700 18px/1.2 var(--display); } .st-tiles small { color: var(--muted); font-size: 14px; }
+.st-list { border-radius: 22px; background: var(--panel); border: 1px solid var(--panel-line); overflow: hidden; } .st-list button { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; border: 0; border-top: 1px solid var(--panel-line); background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; } .st-list button:first-child { border-top: 0; } .st-list .ic { color: var(--muted); display: grid; } .st-list b { font: 600 17px/1.2 var(--body); flex: 1; } .st-list > button > svg:last-child { color: var(--muted); }
+@media (max-width: 959px) {
+  .st-sec:not(.st-open) > *:not(.st-head):not(.panel-head) { display: none; } .st-sec .st-head { cursor: pointer; } .st-sec:not(.st-open) .st-head h2, .st-sec.st-open .st-head h2 { margin: 0; }
+  .st-sec .st-head::after { content: "›"; float: right; font-size: 22px; color: var(--muted); transform: rotate(90deg); } .st-sec.st-open .st-head::after { transform: rotate(-90deg); }
+  .st-sec .panel-head.st-head { display: flex; align-items: center; } .st-sec .panel-head.st-head::after { margin-left: 10px; float: none; }
+}
+@media (min-width: 960px) { .st-hub { column-span: all; grid-template-columns: repeat(3, 1fr); align-items: start; } .st-hub .st-prof { grid-column: 1 / 2; } .st-hub .st-stat { grid-column: 2 / 4; } .st-hub .st-tiles { grid-column: 1 / 3; } .st-hub .st-list { grid-column: 3 / 4; } .st-sec .st-head::after { display: none; } }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -1549,6 +1564,7 @@ html { scroll-padding-top: 96px; }
       </div>
     </section>
 
+    <section class="st-hub" data-page="app-settings" hidden id="st-hub" aria-label="Settings overview"></section>
     <section class="panel savebar" data-page="app-settings" hidden aria-labelledby="h-settings">
       <div class="panel-head"><h2 id="h-settings">Settings</h2><span class="chip ok" id="ui-state">Saved</span></div>
       <div class="row">
@@ -5506,6 +5522,42 @@ html { scroll-padding-top: 96px; }
     $("game-sub").textContent = editing ? "Change anything about this assignment, then save." : "Log an assignment: who, where, what you earn and how far you drove.";
   }
 
+
+  /* Settings hub (More-style overview) */
+  var ST_ROWS = [["h-layout", "Customize Home", "grid"], ["h-nf", "Notifications", "bell"], ["h-colors", "Colors", "palette"], ["h-look", "Look and feel", "eye"], ["h-pct", "Your percentages", "pie"], ["h-start", "Starting amount", "coin"], ["h-assoc", "Associations and seasons", "flag"], ["h-pay", "Pay scale and typical weekend", "cash"], ["h-wx", "Weather", "cloud"], ["h-sz", "Seasonal mode", "cal"], ["h-mw", "My widgets", "widget"], ["h-sec", "Extra security", "lock"]];
+  var ST_IC = {
+    mail: '<path d="M3 6h18v12H3zM3 7l9 7 9-7"/>', box: '<path d="M3 4h18v4H3zM5 8v12h14V8M10 12h4"/>', up: '<path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6"/>', bell: '<path d="M6 17V11a6 6 0 0112 0v6l2 2H4zM10 21h4"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+    grid: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>', palette: '<path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2s0-2 1.5-2h2a3 3 0 003-3c0-6-4-11-8-11z"/>', eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', pie: '<path d="M12 3v9h9a9 9 0 11-9-9z"/>', coin: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1.2-1.5 2.5-1.5s2.5.5 2.5 1.7-1.2 1.4-2.5 1.8-2.5.6-2.5 1.8 1.2 1.7 2.5 1.7 2.5-.6 2.5-1.5"/>',
+    flag: '<path d="M5 21V4h12l-2 4 2 4H5"/>', cash: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>', cloud: '<path d="M7 18a4 4 0 010-8 5 5 0 019.5 1A3.5 3.5 0 0116.5 18z"/>', cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', widget: '<rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>', chev: '<path d="M9 6l6 6-6 6"/>'
+  };
+  function stI(k, sz) { return '<svg viewBox="0 0 24 24" width="' + (sz || 22) + '" height="' + (sz || 22) + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ST_IC[k] + "</svg>"; }
+  function stOpenSec(id) {
+    var h = $(id); if (!h) return; var sec = h.closest("section"); if (sec) { sec.classList.add("st-open"); setTimeout(function () { sec.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30); }
+  }
+  function stHub() {
+    var el = $("st-hub"); if (!el || el.hidden) return;
+    var em = acctEmail(), nm = (rp && rp.name) || em || "Your profile", ph = ui.photo, ini = String(nm).trim().charAt(0).toUpperCase() || "R";
+    var lvl = (rp && rp.level) || "Referee", sub = ["Referee", lvl !== "Referee" ? lvl : ""].filter(Boolean).join(" · ");
+    var t = ""; try { t = localStorage.getItem("rf-last-backup") || ""; } catch (e) {}
+    var bk = t ? new Date(+t).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Never";
+    var nOn = false; try { nOn = !!(document.querySelector("#nf-panel input:checked")); } catch (e) {}
+    var signed = !!sbSession;
+    var h = '<a class="st-prof" href="#profile"><span class="st-av"' + (ph ? ' style="background-image:url(\'' + ph + '\')"' : "") + ">" + (ph ? "" : esc(ini)) + '</span><span class="st-pt"><b>' + esc(nm) + "</b><small>" + esc(sub) + "</small></span>" + stI("chev", 20) + "</a>" +
+      '<div class="st-stat"><div><i class="ok">' + stI("up", 22) + '</i><b>This device</b><small>Saved here</small></div><span class="ln ' + (signed ? "on" : "") + '"></span><div><i class="' + (signed ? "ok" : "") + '">' + stI("user", 22) + "</i><b>Account</b><small>" + (signed ? "Signed in" : "Signed out") + '</small></div><span class="ln ' + (t ? "on" : "") + '"></span><div><i class="' + (t ? "ok" : "") + '">' + stI("box", 22) + "</i><b>Backup</b><small>" + bk + "</small></div></div>" +
+      '<div class="st-tiles"><button type="button" data-st="backup">' + stI("box", 26) + "<b>Back up</b><small>Every game in one file</small></button><a href=\"#export\">" + stI("up", 26) + "<b>Export</b><small>Reports and tax files</small></a><button type=\"button\" data-st=\"nf\">" + stI("bell", 26) + "<b>Notifications</b><small>" + (nOn ? "On" : "Off") + "</small></button><button type=\"button\" data-st=\"acct\">" + stI("user", 26) + "<b>Account</b><small>Password and devices</small></button></div>" +
+      '<div class="st-list">' + ST_ROWS.map(function (r) { return '<button type="button" data-stsec="' + r[0] + '"><span class="ic">' + stI(r[2], 22) + "</span><b>" + r[1] + "</b>" + stI("chev", 18) + "</button>"; }).join("") + "</div>";
+    if (el.getAttribute("data-sig") !== h) { el.setAttribute("data-sig", h); el.innerHTML = h; }
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-st],[data-stsec]"); if (!b) return;
+    var k = b.getAttribute("data-st"), sec = b.getAttribute("data-stsec");
+    if (sec) stOpenSec(sec); else if (k === "backup") stOpenSec("h-backup"); else if (k === "nf") stOpenSec("h-nf"); else if (k === "acct") { if (typeof amOpen === "function") amOpen("profile"); }
+  });
+  (function () {
+    var heads = ["h-layout", "h-nf", "h-wx", "h-sz", "h-mw", "h-colors", "h-look", "h-pct", "h-start", "h-assoc", "h-pay", "h-acct", "h-backup", "h-sec"];
+    heads.forEach(function (id) { var h = $(id), sec = h && h.closest("section"); if (!sec) return; sec.classList.add("st-sec"); var head = h.closest(".panel-head") || h; head.classList.add("st-head"); head.addEventListener("click", function (e) { if (e.target.closest("button,a,input,select")) return; sec.classList.toggle("st-open"); }); });
+  })();
+  window.addEventListener("hashchange", function () { setTimeout(stHub, 0); }); setInterval(stHub, 1500); setTimeout(stHub, 300);
   /* Add game: card layout helpers */
   function gmWhen() { var d = $("g-date").value, t = $("g-time").value, el = $("gm-when"); if (!d) { el.textContent = ""; return; } var x = new Date(d + "T" + (t || "12:00")); if (isNaN(x)) { el.textContent = ""; return; } el.textContent = x.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) + (t ? " at " + x.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""); }
   ["g-date", "g-time"].forEach(function (id) { $(id).addEventListener("input", gmWhen); $(id).addEventListener("change", gmWhen); });
