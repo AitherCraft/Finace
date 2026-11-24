@@ -521,7 +521,7 @@ html[data-hide~="weather"] [data-card="weather"] { display: none; }
 .am-dev { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; padding: 4px 0 12px; } .am-dev .ic { width: 34px; height: 26px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); display: grid; place-items: center; color: var(--muted); } .am-dev div { font-size: 13px; display: grid; gap: 3px; overflow-wrap: anywhere; } .am-dev small { color: var(--muted); font-size: 12px; }
 .am-mini { position: relative; } .am-form { display: grid; gap: 8px; } .am-form .row { display: flex; gap: 8px; flex-wrap: wrap; } .am-note { color: var(--muted); font-size: 12px; margin: 0; }
 .pw-wrap { position: relative; } .pw-wrap input { width: 100%; padding-right: 44px; } .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 8px; } .pw-eye:hover { color: var(--fg); }
-.pw-msg { display: flex; align-items: flex-start; gap: 7px; min-height: 20px; margin-top: 8px; font-size: 13px; color: var(--muted); transition: opacity 0.16s ease, transform 0.16s ease, color 0.2s; } .pw-msg.swap { opacity: 0; transform: translateY(-5px); } .pw-msg.bad { color: #ff5d5d; } .pw-msg.good { color: var(--green, #4ade80); } .pw-msg.wait { color: var(--muted); } .pw-msg svg { flex: none; margin-top: 2px; }
+.pw-msg { display: flex; align-items: flex-start; gap: 7px; min-height: 20px; margin-top: 8px; font-size: 13px; color: var(--muted); transition: opacity 0.16s ease, transform 0.16s ease, color 0.2s; } .pw-msg.swap { opacity: 0; transform: translateY(-5px); } .pw-msg.bad { color: #ff5d5d; } .pw-msg.good { color: var(--green, #4ade80); } .pw-msg.wait { color: var(--muted); } .pw-msg svg { flex: none; margin-top: 2px; } input[data-pw="bad"] { border-color: #f0525b !important; } input[data-pw="good"] { border-color: #4ade80 !important; }
 .pw-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; } .pw-bar i { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: background 0.25s; } .pw-bar.l1 i:nth-child(-n+1) { background: #ff5d5d; } .pw-bar.l2 i:nth-child(-n+2) { background: #fbbf24; } .pw-bar.l3 i:nth-child(-n+3) { background: #a3e635; } .pw-bar.l4 i { background: #4ade80; }
 @media (max-width: 700px) { .am-card { grid-template-columns: 1fr; max-height: calc(100vh - 20px); } .am-side { border-right: 0; border-bottom: 1px solid var(--panel-line); padding: 18px 16px 12px; } .am-tabs { grid-auto-flow: column; } .am-main { padding: 18px 16px; } .am-row { grid-template-columns: 1fr; } .log-game-btn { display: none; } }
 .hero-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
@@ -6555,7 +6555,7 @@ html { scroll-padding-top: 96px; }
   function pwAttach(input, msgEl, barEl, emailFn) {
     var st = { res: pwLocal("", ""), leak: undefined, seq: 0, timer: null, key: "" };
     function show(k, t) {
-      var sig = k + "|" + t; if (msgEl.getAttribute("data-sig") === sig) return; msgEl.setAttribute("data-sig", sig);
+      var sig = k + "|" + t; if (msgEl.getAttribute("data-sig") === sig) return; msgEl.setAttribute("data-sig", sig); input.setAttribute("data-pw", k === "bad" || k === "good" ? k : "");
       msgEl.classList.add("swap");
       setTimeout(function () { msgEl.className = "pw-msg " + (k === "idle" ? "" : k); msgEl.innerHTML = (PW_ICON[k] || "") + "<span></span>"; msgEl.lastChild.textContent = t; }, msgEl.textContent ? 150 : 0);
     }
