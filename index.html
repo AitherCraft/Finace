@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Layout: a night-match scoreboard. Hero with logo, four summary tiles, then paired panels (chart and game log, money plan and quick actions, entry forms and settings). One column on phones, two on computers. Single dark look on purpose. */
 :root {
@@ -463,9 +463,67 @@ html[data-hide~="weather"] [data-card="weather"] { display: none; }
   html[data-hide~="quick"] .grid2:has(.p-quick) { grid-template-columns: minmax(0, 1fr); }
 }
 .q-blue { color: var(--on-accent); }
-.gate { max-width: 520px; }
+/* Signed-out start page and sign-in screens */
+.rvg { --g-bg: #090d12; --g-card: #10171e; --g-in: #18212a; --g-line: rgba(255, 255, 255, 0.09); --g-green: #5ecb91; --g-text: #f1f5f9; --g-mute: #94a3b0; position: fixed; inset: 0; z-index: 40; overflow: auto; background: var(--g-bg); color: var(--g-text); font-family: "Inter", var(--body); }
+.rvg[hidden], .rvg [hidden] { display: none !important; }
+.rvg::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 100vh; pointer-events: none; background: radial-gradient(900px 520px at 0% 0%, rgba(94, 203, 145, 0.16), transparent 65%), linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 44px 44px, linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 44px 44px; -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 60%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 60%, transparent 100%); }
+.rvg > div { position: relative; }
+.rvg-land { max-width: 1200px; margin: 0 auto; padding: 0 24px 56px; }
+.rvg-top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0 0; }
+.rvg-brand { display: inline-flex; align-items: center; gap: 12px; background: none; border: 0; color: var(--g-text); font: 700 17px/1 "Inter", var(--body); padding: 0; cursor: pointer; } .rvg-mark { width: 32px; height: 32px; border-radius: 9px; object-fit: cover; background: var(--g-green); }
+.rvg-nav { display: flex; align-items: center; gap: 18px; } .rvg-link, .rvg-text { background: none; border: 0; color: var(--g-text); font: 600 13px/1.2 "Inter", var(--body); cursor: pointer; padding: 6px 0; } .rvg-text { color: var(--g-green); } .rvg-link:hover, .rvg-text:hover { text-decoration: underline; }
+.rvg-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--g-green); background: var(--g-green); color: #062014; border-radius: 9px; padding: 13px 24px; font: 600 14px/1 "Inter", var(--body); cursor: pointer; transition: filter 0.15s, transform 0.15s; min-height: 44px; } .rvg-btn:hover { filter: brightness(1.08); } .rvg-btn:active { transform: translateY(1px); } .rvg-btn:disabled { opacity: 0.6; cursor: wait; }
+.rvg-btn.sm { padding: 8px 14px; min-height: 0; font-size: 13px; border-radius: 8px; } .rvg-btn.ghost { background: rgba(255, 255, 255, 0.03); border-color: var(--g-line); color: var(--g-text); } .rvg-btn.full { width: 100%; }
+.rvg-hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items: start; padding: 96px 0 88px; }
+.rvg-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--g-line); background: rgba(255, 255, 255, 0.025); font-size: 12px; color: var(--g-mute); } .rvg-pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--g-green); }
+.rvg-copy h1 { margin: 22px 0 22px; font: 800 clamp(40px, 5.4vw, 64px)/1.02 "Inter", var(--body); letter-spacing: -0.035em; color: var(--g-text); } .rvg-copy h1 em { font-style: normal; color: var(--g-green); }
+.rvg-copy p { margin: 0 0 34px; max-width: 470px; font-size: 17px; line-height: 1.65; color: var(--g-mute); } .rvg-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.rvg-card { position: relative; background: var(--g-card); border: 1px solid var(--g-line); border-radius: 20px; padding: 18px; display: grid; gap: 14px; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7); margin-top: 8px; }
+.rvg-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } .rvg-stat { display: grid; gap: 10px; padding: 16px; border-radius: 14px; border: 1px solid var(--g-line); background: rgba(255, 255, 255, 0.02); } .rvg-stat span { font-size: 11px; letter-spacing: 0.08em; color: var(--g-mute); } .rvg-stat b { font: 700 26px/1 "Inter", var(--body); letter-spacing: -0.02em; } .rvg-stat b.g { color: var(--g-green); } .rvg-stat.red { border-color: rgba(239, 91, 91, 0.55); }
+.rvg-list { border: 1px solid var(--g-line); border-radius: 14px; overflow: hidden; } .rvg-list > div { display: grid; grid-template-columns: 1fr auto 82px; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--g-line); } .rvg-list > div:first-child { border-top: 0; } .rvg-list b { font-size: 13px; display: block; } .rvg-list small { color: var(--g-mute); font-size: 11px; } .rvg-list strong { font-size: 14px; }
+.rvg-tag { justify-self: end; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid; } .rvg-tag::before { content: "\25CF "; font-size: 7px; vertical-align: 1px; } .rvg-tag.paid { color: var(--g-green); border-color: rgba(94, 203, 145, 0.4); background: rgba(94, 203, 145, 0.1); } .rvg-tag.pend { color: #fbbf24; border-color: rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.1); } .rvg-tag.over { color: #f0525b; border-color: rgba(240, 82, 91, 0.45); background: rgba(240, 82, 91, 0.1); }
+.rvg-ytd { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 1px solid var(--g-line); border-radius: 12px; font-size: 13px; color: var(--g-mute); } .rvg-ytd b { color: var(--g-text); font-size: 14px; } .rvg-eg { position: absolute; right: 22px; bottom: -22px; color: var(--g-mute); font-size: 11px; }
+.rvg-feats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; } .rvg-feats article { background: var(--g-card); border: 1px solid var(--g-line); border-radius: 14px; padding: 20px; display: grid; gap: 8px; align-content: start; } .rvg-feats article:nth-child(even) { margin-top: 24px; } .rvg-feats svg { color: var(--g-green); } .rvg-feats h3 { margin: 10px 0 0; font: 700 15px/1.3 "Inter", var(--body); } .rvg-feats p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--g-mute); }
+.rvg-auth { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+.rvg-side { border-right: 1px solid var(--g-line); padding: 36px 40px; display: flex; flex-direction: column; justify-content: space-between; min-height: 100vh; background: radial-gradient(700px 420px at 0% 100%, rgba(94, 203, 145, 0.18), transparent 70%); }
+.rvg-tag2 h2 { margin: 0 0 14px; font: 700 clamp(26px, 2.4vw, 34px)/1.15 "Inter", var(--body); letter-spacing: -0.02em; } .rvg-tag2 p { margin: 0; max-width: 380px; color: var(--g-mute); font-size: 15px; line-height: 1.55; }
+.rvg-main { display: grid; place-items: center; padding: 32px 20px; } .rvg-brand-m { display: none; margin-bottom: 20px; }
+.rvg-form { width: min(400px, 100%); background: var(--g-card); border: 1px solid var(--g-line); border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7); }
+.rvg-formbody { padding: 34px 32px 26px; display: grid; gap: 16px; } .rvg-formbody h2 { margin: 0; text-align: center; font: 700 20px/1.2 "Inter", var(--body); } .rvg-sub { margin: -8px 0 4px; text-align: center; color: var(--g-mute); font-size: 13px; line-height: 1.5; }
+.rvg .field label { font: 600 13px/1.2 "Inter", var(--body); color: var(--g-text); text-transform: none; letter-spacing: 0; margin-bottom: 8px; display: block; } .rvg .field input { background: var(--g-in); border: 1px solid var(--g-line); color: var(--g-text); border-radius: 9px; padding: 11px 12px; font: 400 14px/1.2 "Inter", var(--body); min-height: 42px; width: 100%; } .rvg .field input:focus { outline: none; border-color: var(--g-green); box-shadow: 0 0 0 3px rgba(94, 203, 145, 0.18); }
+.rvg .fs { display: grid; gap: 18px; border: 0; padding: 0; margin: 0; } .rvg .pw-eye { color: var(--g-mute); } .rvg .pw-msg { color: var(--g-mute); font-size: 12.5px; } .rvg .pw-msg.bad { color: #f0525b; } .rvg .pw-msg.good { color: var(--g-green); }
+.rvg-foot { padding: 16px; text-align: center; font-size: 13px; color: var(--g-mute); background: rgba(255, 255, 255, 0.025); border-top: 1px solid var(--g-line); } #gate-forgot { justify-self: center; font-size: 12.5px; color: var(--g-mute); } #gate-msg { margin: 0; text-align: center; font-size: 13px; color: var(--g-mute); } #gate-msg.err { color: #f0525b; } #gate-msg:empty { display: none; }
+.rvg-otp { display: flex; justify-content: center; gap: 8px; } .rvg-otp input { width: 42px; height: 46px; text-align: center; font: 600 18px/1 "Inter", var(--body); background: var(--g-in); border: 1px solid var(--g-line); border-radius: 10px; color: var(--g-text); padding: 0; } .rvg-otp input:focus { outline: none; border-color: var(--g-green); box-shadow: 0 0 0 3px rgba(94, 203, 145, 0.18); } .rvg-resend { margin: -6px 0 0; text-align: center; font-size: 12.5px; color: var(--g-mute); } .rvg-resend .rvg-text { font-size: 12.5px; } .rvg-resend .rvg-text:disabled { opacity: 0.6; text-decoration: none; cursor: default; }
+@media (max-width: 960px) { .rvg-hero { grid-template-columns: 1fr; gap: 44px; padding: 56px 0 64px; } .rvg-feats { grid-template-columns: 1fr 1fr; } .rvg-feats article:nth-child(even) { margin-top: 0; } .rvg-eg { position: static; justify-self: end; } }
+@media (max-width: 760px) { .rvg-auth { grid-template-columns: 1fr; } .rvg-side { display: none; } .rvg-brand-m { display: inline-flex; } .rvg-main { align-content: start; padding-top: 28px; } .rvg-formbody { padding: 26px 20px 20px; } }
+@media (max-width: 560px) { .rvg-land { padding: 0 16px 40px; } .rvg-feats { grid-template-columns: 1fr; } .rvg-two { grid-template-columns: 1fr; } .rvg-list > div { grid-template-columns: 1fr auto; } .rvg-list .rvg-tag { grid-column: 1 / -1; justify-self: start; } .rvg-cta .rvg-btn { flex: 1 1 100%; } .rvg-otp input { width: 38px; } }
 .btn.lock { background: #c0392b; border-color: #c0392b; color: #fff; }
-.gate-card { gap: 14px; }
+/* Account menu and account center */
+.log-game-btn { min-height: 40px; padding: 0 16px; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
+.acct-wrap { position: relative; flex: none; } .acct-wrap .rp-btn { margin: 0; cursor: pointer; }
+.acct-menu { position: absolute; right: 0; top: calc(100% + 10px); width: min(300px, calc(100vw - 24px)); z-index: 60; background: var(--panel); border: 1px solid var(--panel-line); border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); overflow: hidden; animation: amPop 0.14s ease-out; }
+@keyframes amPop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+.acct-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--panel-line); }
+.acct-id { display: grid; min-width: 0; } .acct-id b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct-id small { color: var(--muted); font-size: 12px; }
+.acct-menu > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 16px; background: none; border: 0; border-top: 1px solid var(--panel-line); color: var(--fg); font: 600 14px/1.2 var(--body); text-align: left; cursor: pointer; }
+.acct-menu > button svg { color: var(--muted); flex: none; } .acct-menu > button:hover, .acct-menu > button:focus-visible { background: rgba(255, 255, 255, 0.06); outline: none; }
+.am-av { width: 40px; height: 40px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #3b82f6) center / cover; color: #fff; font: 700 15px/1 var(--display); }
+.am-scrim { position: fixed; inset: 0; z-index: 90; background: rgba(0, 0, 0, 0.62); display: grid; place-items: center; padding: 16px; overflow: auto; } .am-scrim[hidden] { display: none; }
+.am-card { display: grid; grid-template-columns: 220px 1fr; width: min(880px, 100%); min-height: min(640px, calc(100vh - 32px)); max-height: calc(100vh - 32px); background: var(--panel); border: 1px solid var(--panel-line); border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); outline: none; animation: amPop 0.16s ease-out; }
+.am-side { padding: 24px 16px; border-right: 1px solid var(--panel-line); background: rgba(0, 0, 0, 0.14); } .am-side h2 { margin: 0 8px 4px; font-size: 24px; } .am-side p { margin: 0 8px 18px; color: var(--muted); font-size: 13px; }
+.am-tabs { display: grid; gap: 4px; } .am-tabs button { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 0; background: none; color: var(--muted); font: 600 14px/1 var(--body); cursor: pointer; text-align: left; } .am-tabs button.on { background: rgba(255, 255, 255, 0.08); color: var(--accent); }
+.am-main { position: relative; padding: 24px 28px; overflow: auto; } .am-main h3 { margin: 0 0 14px; font-size: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--panel-line); }
+.am-x { position: absolute; right: 14px; top: 12px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: none; color: var(--muted); font-size: 24px; cursor: pointer; } .am-x:hover { background: rgba(255, 255, 255, 0.08); color: var(--fg); }
+.am-row { display: grid; grid-template-columns: 150px 1fr; gap: 10px 16px; padding: 16px 0; border-bottom: 1px solid var(--panel-line); align-items: start; } .am-row > b { font-size: 13px; padding-top: 4px; }
+.am-val { display: grid; gap: 10px; min-width: 0; } .am-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.am-link { background: none; border: 0; color: var(--accent); font: 600 13px/1.2 var(--body); cursor: pointer; padding: 6px 0; } .am-link.red { color: #ef5b5b; } .am-link:hover { text-decoration: underline; }
+.am-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); font-size: 11px; margin-left: 8px; color: var(--muted); font-weight: 600; }
+.am-dev { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; padding: 4px 0 12px; } .am-dev .ic { width: 34px; height: 26px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); display: grid; place-items: center; color: var(--muted); } .am-dev div { font-size: 13px; display: grid; gap: 3px; overflow-wrap: anywhere; } .am-dev small { color: var(--muted); font-size: 12px; }
+.am-mini { position: relative; } .am-form { display: grid; gap: 8px; } .am-form .row { display: flex; gap: 8px; flex-wrap: wrap; } .am-note { color: var(--muted); font-size: 12px; margin: 0; }
+.pw-wrap { position: relative; } .pw-wrap input { width: 100%; padding-right: 44px; } .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 8px; } .pw-eye:hover { color: var(--fg); }
+.pw-msg { display: flex; align-items: flex-start; gap: 7px; min-height: 20px; margin-top: 8px; font-size: 13px; color: var(--muted); transition: opacity 0.16s ease, transform 0.16s ease, color 0.2s; } .pw-msg.swap { opacity: 0; transform: translateY(-5px); } .pw-msg.bad { color: #ff5d5d; } .pw-msg.good { color: var(--green, #4ade80); } .pw-msg.wait { color: var(--muted); } .pw-msg svg { flex: none; margin-top: 2px; }
+.pw-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; } .pw-bar i { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: background 0.25s; } .pw-bar.l1 i:nth-child(-n+1) { background: #ff5d5d; } .pw-bar.l2 i:nth-child(-n+2) { background: #fbbf24; } .pw-bar.l3 i:nth-child(-n+3) { background: #a3e635; } .pw-bar.l4 i { background: #4ade80; }
+@media (max-width: 700px) { .am-card { grid-template-columns: 1fr; max-height: calc(100vh - 20px); } .am-side { border-right: 0; border-bottom: 1px solid var(--panel-line); padding: 18px 16px 12px; } .am-tabs { grid-auto-flow: column; } .am-main { padding: 18px 16px; } .am-row { grid-template-columns: 1fr; } .log-game-btn { display: none; } }
 .hero-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; }
 .preset[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--on-accent); }
@@ -878,40 +936,66 @@ html { scroll-padding-top: 96px; }
 }
 </style>
 
-<main class="wrap gate" id="gate" hidden>
-  <header class="hero">
-    <div class="brand">
-      <img class="logo" src="data:image/webp;base64,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" width="92" height="92" alt="">
-      <div>
-        <h1><span class="h1-a">Ref</span><span class="h1-b" style="margin-left:0">Vault</span></h1>
-        <p class="tagline">Sign in to see your money on every device</p>
+<main class="rvg" id="gate" hidden>
+  <div class="rvg-land" id="rvg-land">
+    <header class="rvg-top"><div class="rvg-brand"><img class="rvg-mark" data-rvg-logo alt="" width="32" height="32"><span>RefVault</span></div>
+      <div class="rvg-nav"><button type="button" class="rvg-link" data-rvg="in">Sign in</button><button type="button" class="rvg-btn sm" data-rvg="up">Create account</button></div></header>
+    <section class="rvg-hero">
+      <div class="rvg-copy">
+        <span class="rvg-pill"><i></i>Built for referees, umpires and officials</span>
+        <h1>You don't pick payday.<br><em>You should know it's coming.</em></h1>
+        <p>RefVault tracks every game you work, what each assignor still owes you, what's overdue, and what each game really paid you after mileage and expenses.</p>
+        <div class="rvg-cta"><button type="button" class="rvg-btn" data-rvg="up">Start tracking free <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><button type="button" class="rvg-btn ghost" data-rvg="in">I have an account</button></div>
       </div>
-    </div>
-  </header>
-  <section class="panel gate-card" aria-labelledby="h-gate">
-    <h2 id="h-gate">Sign in</h2>
-    <form id="gate-form" novalidate class="fs">
-      <div class="grid">
-        <div class="field"><label for="gate-user">Email</label><input id="gate-user" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="120" placeholder="you@example.com"></div>
-        <div class="field"><label for="gate-pass">Password</label><input id="gate-pass" type="password" autocomplete="current-password" maxlength="72" placeholder="at least 8 characters"></div>
+      <div class="rvg-card" aria-label="Example of the Payment Center">
+        <div class="rvg-two"><div class="rvg-stat"><span>OWED TO YOU</span><b class="g">$1,245.00</b></div><div class="rvg-stat red"><span>OVERDUE</span><b>$180.00</b></div></div>
+        <div class="rvg-list">
+          <div><div><b>NorCal Premier &middot; U17</b><small>Sep 14</small></div><strong>$85.00</strong><span class="rvg-tag paid">Paid</span></div>
+          <div><div><b>CIF Varsity &middot; Center</b><small>Sep 21</small></div><strong>$110.00</strong><span class="rvg-tag pend">Pending</span></div>
+          <div><div><b>Bay Oaks Rec &middot; AR1</b><small>Aug 03</small></div><strong>$45.00</strong><span class="rvg-tag over">Overdue</span></div>
+        </div>
+        <div class="rvg-ytd"><span>Year net after mileage &amp; gear</span><b>$6,812.40</b></div>
+        <small class="rvg-eg">Example numbers</small>
       </div>
-      <div class="row">
-        <button class="btn" type="submit" id="gate-signin">Sign in</button>
-        <button class="btn ghost" type="button" id="gate-signup">Create account</button>
-      </div>
-    </form>
-    <form id="code-form" novalidate class="fs" hidden>
-      <p class="note" style="color:var(--fg)">Extra security is on for this account. We emailed a code to <b id="code-to"></b>.</p>
-      <div class="field"><label for="gate-code">Code from the email</label><input id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9]*"></div>
-      <div class="row"><button class="btn" type="submit">Verify</button><button class="btn ghost" type="button" id="code-resend">Send a new code</button><button class="btn ghost" type="button" id="code-cancel">Cancel</button></div>
-    </form>
-    <button class="mini" type="button" id="gate-forgot">Forgot password?</button>
-    <form id="reset-form" novalidate class="fs" hidden>
-      <div class="field"><label for="reset-pass">New password</label><input id="reset-pass" type="password" autocomplete="new-password" maxlength="72" placeholder="at least 8 characters"></div>
-      <div class="row"><button class="btn" type="submit" id="reset-save">Save new password</button></div>
-    </form>
-    <p class="msg" id="gate-msg" role="status"></p>
-  </section>
+    </section>
+    <section class="rvg-feats">
+      <article><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7l2-3h11"/><path d="M17 13h4"/></svg><h3>Who still owes you</h3><p>Every game logged with its fee and assignor. Your owed balance is always one glance away.</p></article>
+      <article><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2 2M5 4 3 6M19 4l2 2"/></svg><h3>Overdue flagged for you</h3><p>Pending games past your grace period turn overdue automatically, so you know who to chase.</p></article>
+      <article><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 16l1.5-5.5A2 2 0 0 1 8.4 9h7.2a2 2 0 0 1 1.9 1.5L19 16"/><path d="M3 16h18v3H3z"/><circle cx="7" cy="19" r="0.5"/><circle cx="17" cy="19" r="0.5"/></svg><h3>Mileage and gear counted</h3><p>Log your miles and drive time. RefVault works out what each game really paid you per hour.</p></article>
+      <article><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><h3>Your data, exportable</h3><p>Download your games, expenses and income as a backup or spreadsheet any time.</p></article>
+    </section>
+  </div>
+  <div class="rvg-auth" id="rvg-auth" hidden>
+    <aside class="rvg-side"><button type="button" class="rvg-brand" data-rvg="land" aria-label="Back to the start page"><img class="rvg-mark" data-rvg-logo alt="" width="32" height="32"><span>RefVault</span></button>
+      <div class="rvg-tag2"><h2>Every game. Every fee.<br>Every overdue assignor.</h2><p>Your officiating income, mileage and expenses, ready for tax time.</p></div></aside>
+    <section class="rvg-main"><button type="button" class="rvg-brand rvg-brand-m" data-rvg="land"><img class="rvg-mark" data-rvg-logo alt="" width="28" height="28"><span>RefVault</span></button>
+      <div class="rvg-form" aria-labelledby="h-gate">
+        <div class="rvg-formbody">
+          <h2 id="h-gate">Sign in</h2><p class="rvg-sub" id="gate-sub">Welcome back! Sign in to see your games and money.</p>
+          <form id="gate-form" novalidate class="fs">
+            <div class="field"><label for="gate-user">Email address</label><input id="gate-user" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="120" placeholder="you@example.com"></div>
+            <div class="field"><label for="gate-pass">Password</label><div class="pw-wrap"><input id="gate-pass" type="password" autocomplete="current-password" maxlength="72" placeholder="Your password"><button type="button" class="pw-eye" data-pw-eye="gate-pass" aria-label="Show password"><svg class="e-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+              <div class="pw-msg" id="gate-pw-msg" role="status" aria-live="polite"></div><div class="pw-bar l0" id="gate-pw-bar" hidden><i></i><i></i><i></i><i></i></div></div>
+            <button class="rvg-btn full" type="submit" id="gate-signin">Continue <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+          </form>
+          <form id="code-form" novalidate class="fs" hidden>
+            <p class="rvg-sub" style="margin:0">Extra security is on for this account. We emailed a code to <b id="code-to"></b>. <button type="button" class="rvg-text" id="code-cancel">Change</button></p>
+            <input id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9]*" class="sr" aria-label="Code from the email">
+            <div class="rvg-otp" id="rvg-otp" role="group" aria-label="6 digit code"><input inputmode="numeric" maxlength="1" aria-label="Digit 1"><input inputmode="numeric" maxlength="1" aria-label="Digit 2"><input inputmode="numeric" maxlength="1" aria-label="Digit 3"><input inputmode="numeric" maxlength="1" aria-label="Digit 4"><input inputmode="numeric" maxlength="1" aria-label="Digit 5"><input inputmode="numeric" maxlength="1" aria-label="Digit 6"></div>
+            <p class="rvg-resend">Didn't receive a code? <button type="button" class="rvg-text" id="code-resend">Resend</button></p>
+            <button class="rvg-btn full" type="submit">Continue <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+          </form>
+          <form id="reset-form" novalidate class="fs" hidden>
+            <div class="field"><label for="reset-pass">New password</label><div class="pw-wrap"><input id="reset-pass" type="password" autocomplete="new-password" maxlength="72" placeholder="At least 8 characters"><button type="button" class="pw-eye" data-pw-eye="reset-pass" aria-label="Show password"><svg class="e-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+              <div class="pw-msg" id="reset-pw-msg" role="status" aria-live="polite"></div><div class="pw-bar l0" id="reset-pw-bar"><i></i><i></i><i></i><i></i></div></div>
+            <button class="rvg-btn full" type="submit" id="reset-save">Save new password</button>
+          </form>
+          <button class="rvg-text" type="button" id="gate-forgot">Forgot password?</button>
+          <p class="msg" id="gate-msg" role="status"></p>
+        </div>
+        <div class="rvg-foot" id="gate-foot"><span id="gate-alt-t">Don't have an account?</span> <button type="button" class="rvg-text" id="gate-alt">Sign up</button></div>
+      </div></section>
+  </div>
 </main>
 <main class="lockscreen" id="lock" hidden aria-labelledby="h-lock">
   <h1 id="h-lock" class="sr">Enter your PIN</h1>
@@ -938,6 +1022,11 @@ html { scroll-padding-top: 96px; }
 <div id="toast" class="toast" role="alert" hidden></div>
 <div id="sr-route" class="sr" aria-live="polite"></div>
 <main class="wrap" id="main" tabindex="-1">
+  <div class="am-scrim" id="am" hidden><div class="am-card" id="am-card" role="dialog" aria-modal="true" aria-labelledby="am-title" tabindex="-1">
+    <aside class="am-side"><h2 id="am-title">Account</h2><p>Manage your account info.</p>
+      <nav class="am-tabs" aria-label="Account sections"><button type="button" class="on" data-am-tab="profile"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.2 18.2a7 7 0 0 1 11.6 0"/></svg>Profile</button><button type="button" data-am-tab="security"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/></svg>Security</button></nav></aside>
+    <section class="am-main"><button class="am-x" type="button" id="am-close" aria-label="Close">&times;</button><div id="am-body"></div></section>
+  </div></div>
   <div class="gd-scrim" id="gd" hidden><div class="gd-card" id="gd-card" role="dialog" aria-modal="true" aria-labelledby="gd-title" tabindex="-1"></div></div>
   <div class="nav-scrim" id="nav-scrim"></div>
   <nav class="nav" id="nav" aria-label="Main">
@@ -966,7 +1055,13 @@ html { scroll-padding-top: 96px; }
         <p class="tagline" id="tagline">Track <b>&bull;</b> Plan <b>&bull;</b> Earn</p>
       </div>
     </div>
-    <div class="hero-right"><button class="eye-btn top-eye" type="button" data-eye aria-pressed="false" aria-label="Hide money amounts"><svg class="e-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="e-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.5 10.5 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.2M9.9 9.9a3 3 0 004.2 4.2"/></svg></button><a class="rp-btn" href="#profile" id="rp-open" aria-label="Referee profile"><span id="rp-ini">R</span></a><input class="top-search" id="top-search" type="search" placeholder="Search games" aria-label="Search games" autocomplete="off"><button class="menu-btn" type="button" id="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    <div class="hero-right"><button class="eye-btn top-eye" type="button" data-eye aria-pressed="false" aria-label="Hide money amounts"><svg class="e-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="e-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.5 10.5 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.2M9.9 9.9a3 3 0 004.2 4.2"/></svg></button><a class="btn log-game-btn" href="#add-game" id="top-log">＋ Log game</a><div class="acct-wrap" id="acct-wrap"><button class="rp-btn" type="button" id="rp-open" aria-label="Account menu" aria-haspopup="menu" aria-expanded="false"><span id="rp-ini">R</span></button>
+      <div class="acct-menu" id="acct-menu" role="menu" hidden>
+        <div class="acct-head"><span class="am-av" id="acct-menu-av"></span><span class="acct-id"><b id="acct-menu-name">RefVault</b><small id="acct-menu-sub"></small></span></div>
+        <button type="button" role="menuitem" data-acct-go="open"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Account settings</button>
+        <button type="button" role="menuitem" data-acct-go="edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit referee profile</button>
+        <button type="button" role="menuitem" data-acct-go="out" id="acct-menu-out"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span id="acct-menu-out-t">Log out</span></button>
+      </div></div><input class="top-search" id="top-search" type="search" placeholder="Search games" aria-label="Search games" autocomplete="off"><button class="menu-btn" type="button" id="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
   </header>
 
   <div class="view" data-view="home">
@@ -6189,7 +6284,7 @@ html { scroll-padding-top: 96px; }
 
 
   /* Profile photo: resized on this device and saved straight away inside your settings so it syncs */
-  function phMsg(t, err) { var m = $("ph-msg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+  function phMsg(t, err) { var m = $("ph-msg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; if (typeof amMsg === "function" && $("am") && !$("am").hidden) { amMsg(t, err); if (!err && /saved|removed/i.test(t)) amRender(); } }
   function phSet(url, okMsg) {
     var o = { photo: url }, was = ui; ui = sanitizeUi(Object.assign(clone(ui), o)); draftUi = sanitizeUi(Object.assign(clone(draftUi), o)); applyUi(draftUi); updateUiState(); phMsg("Saving...");
     persistSplit().then(function (ok) { if (ok) phMsg(okMsg); else { phMsg("Applied here, but could not save to your account. Check your connection and try again.", true); } });
@@ -6356,10 +6451,40 @@ html { scroll-padding-top: 96px; }
   }
   function acctMsg(t, err) { ["acct-msg", "gate-msg"].forEach(function (id) { var m = $(id); m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }); }
   function showGate(on) { gateWanted = on; $("gate").hidden = !on || !!lockOn; $("main").hidden = on || !!lockOn; if (on) { try { window.scrollTo(0, 0); } catch (e) {} } }
+  /* Start page and sign-in screens */
+  var gateMode = "in", gatePw = null;
+  function gateView(v) {
+    var land = v === "land"; $("rvg-land").hidden = !land; $("rvg-auth").hidden = land; if (land) { try { window.scrollTo(0, 0); } catch (e) {} return; }
+    gateMode = v === "up" ? "up" : "in"; var up = gateMode === "up";
+    $("h-gate").textContent = up ? "Create your account" : "Sign in"; $("gate-sub").textContent = up ? "Welcome! Please fill in the details to get started." : "Welcome back! Sign in to see your games and money.";
+    $("gate-alt-t").textContent = up ? "Already have an account?" : "Don't have an account?"; $("gate-alt").textContent = up ? "Sign in" : "Sign up";
+    $("gate-pass").autocomplete = up ? "new-password" : "current-password"; $("gate-pass").placeholder = up ? "At least 8 characters" : "Your password";
+    $("gate-pw-bar").hidden = !up; if (!up) { $("gate-pw-msg").textContent = ""; $("gate-pw-msg").removeAttribute("data-sig"); $("gate-pw-msg").className = "pw-msg"; } else if (gatePw) gatePw.check();
+    $("gate-form").hidden = false; $("code-form").hidden = true; $("reset-form").hidden = true; $("gate-forgot").hidden = up; acctMsg("");
+    try { $("gate-user").focus({ preventScroll: true }); } catch (e) {}
+  }
+  document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-rvg]"); if (b) { e.preventDefault(); gateView(b.getAttribute("data-rvg")); } });
+  $("gate-alt").addEventListener("click", function () { gateView(gateMode === "up" ? "in" : "up"); });
+  [].forEach.call(document.querySelectorAll("[data-rvg-logo]"), function (im) { im.src = window.LOGO_DEF || $("logo").getAttribute("src"); });
+  gatePw = pwAttach($("gate-pass"), $("gate-pw-msg"), $("gate-pw-bar"), function () { return $("gate-user").value; });
+  $("gate-pass").addEventListener("input", function () { if (gateMode !== "up") { var m = $("gate-pw-msg"); m.textContent = ""; m.className = "pw-msg"; m.removeAttribute("data-sig"); } });
+  $("gate-user").addEventListener("input", function () { if (gateMode === "up" && $("gate-pass").value) gatePw.check(); });
+  /* six boxes for the emailed code feed the single code field the app already reads */
+  (function () {
+    var box = $("rvg-otp"), ins = [].slice.call(box.querySelectorAll("input")), real = $("gate-code");
+    function sync() { real.value = ins.map(function (i) { return i.value; }).join(""); }
+    ins.forEach(function (inp, i) {
+      inp.addEventListener("input", function () { inp.value = inp.value.replace(/\D/g, "").slice(-1); sync(); if (inp.value && i < ins.length - 1) ins[i + 1].focus(); });
+      inp.addEventListener("keydown", function (e) { if (e.key === "Backspace" && !inp.value && i > 0) { ins[i - 1].focus(); ins[i - 1].value = ""; sync(); } else if (e.key === "ArrowLeft" && i > 0) ins[i - 1].focus(); else if (e.key === "ArrowRight" && i < ins.length - 1) ins[i + 1].focus(); });
+      inp.addEventListener("paste", function (e) { var t = ((e.clipboardData || window.clipboardData).getData("text") || "").replace(/\D/g, "").slice(0, 6); if (!t) return; e.preventDefault(); ins.forEach(function (x, k) { x.value = t.charAt(k) || ""; }); sync(); (ins[Math.min(t.length, 5)]).focus(); });
+    });
+    window.otpClear = function () { ins.forEach(function (x) { x.value = ""; }); real.value = ""; };
+    window.otpFocus = function () { try { ins[0].focus(); } catch (e) {} };
+  })();
   function acctRender() {
     var on = !!(sbOn && sbSession);
     $("acct-out").hidden = on; $("acct-in").hidden = !on;
-    if (on) { showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
+    if (on) { devStart(); showGate(false); $("acct-who").textContent = "Signed in as " + sbSession.username + ". Every device signed in with this email shows the same data."; }
   }
   function sbStart() {
     var mine = { games: data.games.slice(), income: data.income.slice(), spending: data.spending.slice(), split: clone(split), start: start, ui: clone(ui), wishes: wishes.slice(), pay: clone(pay), assocs: clone(assocs), goal: goal, sgoals: sgoals.slice(), bag: bag.slice(), locker: locker.slice(), rp: clone(rp) };
@@ -6397,6 +6522,199 @@ html { scroll-padding-top: 96px; }
     sbSession = sess;
     sbStart().catch(function () {});
   }
+  /* ---------- Account center: menu, devices, password checks ---------- */
+  var PW_COMMON = "password,password1,password12,password123,passw0rd,p@ssw0rd,p@ssword,123456,1234567,12345678,123456789,1234567890,12345,111111,000000,123123,654321,qwerty,qwerty123,qwertyuiop,qwerty1,asdfgh,asdfghjkl,zxcvbnm,1q2w3e4r,1qaz2wsx,abc123,abcd1234,iloveyou,letmein,welcome,welcome1,admin,admin123,login,monkey,dragon,football,soccer,soccer123,referee,referee1,whistle,baseball,basketball,sunshine,princess,superman,batman,trustno1,master,shadow,michael,jordan,jennifer,hunter2,changeme,secret,summer,winter,spring,autumn,starwars,hello123,freedom,whatever,qazwsx,zaq12wsx,121212,696969,112233,987654321,refvault,refpay".split(",");
+  function pwLocal(pw, email) {
+    if (!pw) return { k: "idle", t: "Use 8 or more characters." };
+    if (pw.length < 8) return { k: "bad", t: "Your password must contain 8 or more characters." };
+    if (pw.length > 72) return { k: "bad", t: "Your password can be at most 72 characters." };
+    var low = pw.toLowerCase(), loc = String(email || "").toLowerCase().split("@")[0];
+    if (PW_COMMON.indexOf(low) >= 0 || PW_COMMON.some(function (c) { return c.length >= 6 && low.replace(/[0-9!@#$%^&*._-]+$/, "") === c; })) return { k: "bad", t: "That password is too common. Pick something harder to guess." };
+    if (/^(.)\1+$/.test(pw) || /^(0123456789|1234567890|abcdefghij|qwertyuiop|asdfghjkl)/i.test(pw) && pw.length <= 12) return { k: "bad", t: "Avoid repeated or keyboard-pattern passwords." };
+    if (loc.length >= 4 && low.indexOf(loc) >= 0) return { k: "bad", t: "Do not use your email name inside your password." };
+    return { k: "ok", t: "" };
+  }
+  function pwScore(pw) { var n = 0; if (pw.length >= 8) n++; if (pw.length >= 12) n++; if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) n++; if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) n++; else if (pw.length >= 16) n++; return Math.min(4, n); }
+  function pwLeak(pw) {
+    if (!(window.crypto && crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
+    return crypto.subtle.digest("SHA-1", new TextEncoder().encode(pw)).then(function (buf) {
+      var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("").toUpperCase(), head = hex.slice(0, 5), tail = hex.slice(5);
+      var ctl = window.AbortController ? new AbortController() : null, tm = ctl && setTimeout(function () { ctl.abort(); }, 4500);
+      return fetch("https://api.pwnedpasswords.com/range/" + head, { headers: { "Add-Padding": "true" }, signal: ctl ? ctl.signal : undefined }).then(function (r) { if (tm) clearTimeout(tm); return r.ok ? r.text() : null; }).then(function (t) {
+        if (t === null) return null; var n = 0; t.split("\n").forEach(function (l) { var p = l.trim().split(":"); if (p[0] === tail) n = parseInt(p[1], 10) || 0; }); return n;
+      });
+    }).catch(function () { return null; });
+  }
+  var PW_ICON = { bad: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.1"/></svg>', good: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>', wait: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" opacity=".35"/><path d="M12 3a9 9 0 0 1 9 9"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.9s" repeatCount="indefinite"/></path></svg>', idle: "" };
+  /* Live password checker: wires an input to an animated message line and a strength bar. */
+  function pwAttach(input, msgEl, barEl, emailFn) {
+    var st = { res: pwLocal("", ""), leak: undefined, seq: 0, timer: null, key: "" };
+    function show(k, t) {
+      var sig = k + "|" + t; if (msgEl.getAttribute("data-sig") === sig) return; msgEl.setAttribute("data-sig", sig);
+      msgEl.classList.add("swap");
+      setTimeout(function () { msgEl.className = "pw-msg " + (k === "idle" ? "" : k); msgEl.innerHTML = (PW_ICON[k] || "") + "<span></span>"; msgEl.lastChild.textContent = t; }, msgEl.textContent ? 150 : 0);
+    }
+    function run() {
+      var pw = input.value, email = emailFn ? emailFn() : "", r = pwLocal(pw, email), my = ++st.seq; st.res = r; st.leak = undefined;
+      if (barEl) barEl.className = "pw-bar l" + (r.k === "bad" || !pw ? (pw ? 1 : 0) : pwScore(pw));
+      clearTimeout(st.timer);
+      if (r.k !== "ok") { show(r.k, r.t); return; }
+      show("wait", "Checking if this password has leaked…");
+      st.timer = setTimeout(function () {
+        pwLeak(pw).then(function (n) {
+          if (my !== st.seq) return; st.leak = n;
+          if (n > 0) { st.res = { k: "bad", t: "This password appeared in a data breach " + n.toLocaleString("en-US") + (n === 1 ? " time" : " times") + ". Choose a different one." }; if (barEl) barEl.className = "pw-bar l1"; show("bad", st.res.t); }
+          else show("good", n === 0 ? "Looks good. This password was not found in known leaks." : "Looks good.");
+        });
+      }, 450);
+    }
+    input.addEventListener("input", run);
+    return {
+      check: run,
+      reset: function () { input.value = ""; st.seq++; clearTimeout(st.timer); msgEl.removeAttribute("data-sig"); msgEl.className = "pw-msg"; msgEl.textContent = ""; if (barEl) barEl.className = "pw-bar l0"; },
+      /* Resolves {ok, msg}: runs the full check, including the leak lookup, before a password is saved. */
+      final: function () {
+        var pw = input.value, r = pwLocal(pw, emailFn ? emailFn() : ""); if (r.k !== "ok") { run(); return Promise.resolve({ ok: false, msg: r.t || "Use 8 or more characters." }); }
+        return pwLeak(pw).then(function (n) { if (n > 0) { run(); return { ok: false, msg: "That password has appeared in a data breach. Choose a different one." }; } return { ok: true }; });
+      }
+    };
+  }
+  function pwField(id, label, ph) {
+    return '<div class="field"><label for="' + id + '">' + label + '</label><div class="pw-wrap"><input id="' + id + '" type="password" autocomplete="new-password" maxlength="72" placeholder="' + (ph || "") + '"><button type="button" class="pw-eye" data-pw-eye="' + id + '" aria-label="Show password"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="pw-bar l0" id="' + id + '-bar"><i></i><i></i><i></i><i></i></div><div class="pw-msg" id="' + id + '-msg" role="status" aria-live="polite"></div></div>';
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-pw-eye]"); if (!b) return;
+    var inp = $(b.getAttribute("data-pw-eye")); if (!inp) return; var show = inp.type === "password"; inp.type = show ? "text" : "password"; b.setAttribute("aria-label", show ? "Hide password" : "Show password"); b.style.color = show ? "var(--accent)" : "";
+  });
+
+  /* Devices: this browser reports itself so the owner can review where the account is used. */
+  function devId() { var k = "rf-devid-v1", v = ""; try { v = localStorage.getItem(k) || ""; } catch (e) {} if (!/^[A-Za-z0-9_-]{8,64}$/.test(v)) { v = ""; var a = new Uint8Array(18); try { crypto.getRandomValues(a); } catch (e) { for (var i = 0; i < 18; i++) a[i] = Math.floor(Math.random() * 256); } a.forEach(function (n) { v += "abcdefghijklmnopqrstuvwxyz0123456789"[n % 36]; }); try { localStorage.setItem(k, v); } catch (e) {} } return v; }
+  function devInfo() {
+    var ua = navigator.userAgent || "", os = /Windows/i.test(ua) ? "Windows" : /iPhone/i.test(ua) ? "iPhone" : /iPad/i.test(ua) ? "iPad" : /Android/i.test(ua) ? "Android" : /CrOS/i.test(ua) ? "ChromeOS" : /Mac OS X|Macintosh/i.test(ua) ? "macOS" : /Linux/i.test(ua) ? "Linux" : "Unknown device", br = "Browser", m;
+    if ((m = /Edg(?:e|A|iOS)?\/([\d.]+)/.exec(ua))) br = "Edge " + m[1]; else if ((m = /OPR\/([\d.]+)/.exec(ua))) br = "Opera " + m[1]; else if ((m = /SamsungBrowser\/([\d.]+)/.exec(ua))) br = "Samsung Internet " + m[1]; else if ((m = /(?:Chrome|CriOS)\/([\d.]+)/.exec(ua))) br = "Chrome " + m[1]; else if ((m = /(?:Firefox|FxiOS)\/([\d.]+)/.exec(ua))) br = "Firefox " + m[1]; else if ((m = /Version\/([\d.]+).*Safari/.exec(ua))) br = "Safari " + m[1];
+    return { os: os, browser: br };
+  }
+  var devPingT = null;
+  function devPing() {
+    if (!sbSession) return; var i = devInfo();
+    sbRequest("/functions/v1/session-log", "POST", { device_id: devId(), os: i.os, browser: i.browser }).then(function (j) { if (j && j.revoked) acctSignOut("This device was signed out from another device. Sign in again."); }, function () { /* offline */ });
+  }
+  function devStart() { devPing(); if (!devPingT) devPingT = setInterval(function () { if (document.visibilityState === "visible") devPing(); }, 5 * 60 * 1000); }
+  function devWhen(iso) {
+    var d = new Date(iso); if (isNaN(d)) return ""; var t = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }), n = new Date(), dd = Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+    return (dd === 0 ? "Today" : dd === 1 ? "Yesterday" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" })) + " at " + t;
+  }
+  var DEV_IC = { phone: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>', pc: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>' };
+
+  /* The account menu and the account window */
+  var amTab = "profile", amDev = null, amOpenForm = "", amFocus = null;
+  function acctEmail() { var u = sbSession && sbSession.username || ""; return u.indexOf("@") > 0 ? u : ""; }
+  function acctMenuFill() {
+    var em = acctEmail(), nm = sbSession ? (em || sbSession.username) : "This device";
+    $("acct-menu-name").textContent = nm; $("acct-menu-sub").textContent = sbSession ? "Signed in" : "Not signed in";
+    var av = $("acct-menu-av"), ph = ui.photo; av.style.backgroundImage = ph ? 'url("' + ph + '")' : ""; av.textContent = ph ? "" : String(nm || "R").charAt(0).toUpperCase();
+    $("acct-menu-out-t").textContent = sbSession ? "Log out" : "Sign in";
+  }
+  function acctMenu(open) {
+    var m = $("acct-menu"), b = $("rp-open"); if (!m) return; if (open) acctMenuFill(); m.hidden = !open; b.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) { var f = m.querySelector("button"); if (f) f.focus({ preventScroll: true }); }
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target; if (!t.closest) return;
+    if (t.closest("#rp-open")) { e.preventDefault(); acctMenu($("acct-menu").hidden); return; }
+    var g = t.closest("[data-acct-go]");
+    if (g) {
+      var w = g.getAttribute("data-acct-go"); acctMenu(false);
+      if (w === "open") amOpen("profile"); else if (w === "edit") location.hash = "#profile";
+      else if (w === "out") { if (sbSession) acctSignOut("You are logged out. Sign in to continue."); else showGate(true); }
+      return;
+    }
+    if (!$("acct-menu").hidden && !t.closest("#acct-menu")) acctMenu(false);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!$("am").hidden) { amClose(); return; } if (!$("acct-menu").hidden) { acctMenu(false); $("rp-open").focus(); }
+  });
+  function amOpen(tab) {
+    amTab = tab || "profile"; amOpenForm = ""; amFocus = document.activeElement; $("am").hidden = false; document.body.classList.add("menu-open"); amRender();
+    if (sbSession) amLoadDevices(); try { $("am-card").focus({ preventScroll: true }); } catch (e) {}
+  }
+  function amClose() { $("am").hidden = true; document.body.classList.remove("menu-open"); if (amFocus && amFocus.focus) try { amFocus.focus(); } catch (e) {} }
+  function amMsg(t, err) { var m = $("am-msg"); if (!m) return; m.textContent = t || ""; m.className = "msg" + (err ? " err" : ""); }
+  function amLoadDevices() {
+    amDev = null; if (amTab === "security") amRender();
+    sbRequest("/rest/v1/login_sessions?select=id,device_id,os,browser,ip,place,created_at,last_seen&revoked=eq.false&order=last_seen.desc&limit=20", "GET").then(function (rows) { amDev = Array.isArray(rows) ? rows : []; }, function () { amDev = false; }).then(function () { if (!$("am").hidden && amTab === "security") amRender(); });
+    devPing();
+  }
+  var amPw = null, amPwEmail = null;
+  function amRender() {
+    var body = $("am-body"); if (!body) return; var em = acctEmail(), signed = !!sbSession;
+    [].forEach.call(document.querySelectorAll("[data-am-tab]"), function (b) { b.classList.toggle("on", b.getAttribute("data-am-tab") === amTab); });
+    var h = "";
+    if (amTab === "profile") {
+      h = '<h3>Profile details</h3><div class="am-row"><b>Profile</b><div class="am-val"><div class="am-line"><span class="am-av" id="am-av" style="width:48px;height:48px">' + (ui.photo ? "" : esc(String(em || (sbSession && sbSession.username) || "R").charAt(0).toUpperCase())) + '</span><span><button type="button" class="am-link" data-am-act="photo">' + (ui.photo ? "Change photo" : "Add photo") + '</button>' + (ui.photo ? ' <button type="button" class="am-link red" data-am-act="photo-off">Remove</button>' : "") + "</span></div></div></div>" +
+        '<div class="am-row"><b>Email address</b><div class="am-val">' + (signed ? '<div class="am-line"><span>' + esc(em || sbSession.username) + '<span class="am-badge">Primary</span></span>' + (em ? '<button type="button" class="am-link" data-am-act="email">Change email</button>' : "") + "</div>" +
+        (amOpenForm === "email" ? '<form class="am-form" id="am-email-form" novalidate><div class="field"><label for="am-email-new">New email address</label><input id="am-email-new" type="email" autocomplete="email" maxlength="120"></div><div class="row"><button class="btn" type="submit">Save email</button><button class="btn ghost" type="button" data-am-act="cancel">Cancel</button></div></form>' : "") : '<p class="am-note">You are not signed in. Your data is saved on this device only.</p><button type="button" class="btn" data-am-act="signin">Sign in</button>') + "</div></div>" +
+        '<div class="am-row"><b>Referee profile</b><div class="am-val"><div class="am-line"><span>Level, home field, favorite stats</span><button type="button" class="am-link" data-am-act="edit">Edit referee profile</button></div></div></div><p class="msg" id="am-msg" role="status"></p>';
+    } else if (!signed) {
+      h = '<h3>Security</h3><p class="am-note">Sign in to see your password, devices and account options.</p><p><button type="button" class="btn" data-am-act="signin">Sign in</button></p>';
+    } else {
+      var me = devId(), list = "";
+      if (amDev === null) list = '<p class="am-note">Loading devices…</p>';
+      else if (amDev === false) list = '<p class="am-note">Could not load your devices. Check your connection.</p>';
+      else if (!amDev.length) list = '<p class="am-note">This device will appear in a moment.</p>';
+      else list = amDev.map(function (d) {
+        var here = d.device_id === me, ph = /iPhone|iPad|Android/.test(d.os || "");
+        return '<div class="am-dev"><span class="ic">' + (ph ? DEV_IC.phone : DEV_IC.pc) + "</span><div><span><b>" + esc(d.os || "Device") + "</b>" + (here ? '<span class="am-badge">This device</span>' : "") + "</span><span>" + esc(d.browser || "") + "</span><span>" + esc((d.ip || "IP unknown") + (d.place ? " (" + d.place + ")" : "")) + "</span><small>" + esc(devWhen(d.last_seen)) + "</small></div>" + (here ? "<span></span>" : '<button type="button" class="am-link red" data-am-dev="' + esc(d.id) + '">Sign out</button>') + "</div>";
+      }).join("") + (amDev.length > 1 ? '<button type="button" class="am-link red" data-am-act="others">Sign out all other devices</button>' : "");
+      h = '<h3>Security</h3><div class="am-row"><b>Password</b><div class="am-val"><div class="am-line"><span>••••••••••</span><button type="button" class="am-link" data-am-act="pw">Update password</button></div>' +
+        (amOpenForm === "pw" ? '<form class="am-form" id="am-pw-form" novalidate>' + pwField("am-pw", "New password", "At least 8 characters") + '<div class="row"><button class="btn" type="submit">Save password</button><button class="btn ghost" type="button" data-am-act="cancel">Cancel</button></div></form>' : "") + "</div></div>" +
+        '<div class="am-row"><b>Active devices</b><div class="am-val">' + list + "</div></div>" +
+        '<div class="am-row"><b>Delete account</b><div class="am-val"><div class="am-line"><span class="am-note">Erases your synced games, income and settings from the server.</span><button type="button" class="am-link red" data-am-act="del">Delete account</button></div>' +
+        (amOpenForm === "del" ? '<form class="am-form" id="am-del-form" novalidate><div class="field"><label for="am-del-t">Type DELETE to confirm</label><input id="am-del-t" type="text" autocomplete="off" maxlength="10"></div><p class="am-note">This cannot be undone. Copies saved on this device stay here until you clear them.</p><div class="row"><button class="btn red" type="submit">Permanently delete</button><button class="btn ghost" type="button" data-am-act="cancel">Cancel</button></div></form>' : "") + '</div></div><p class="msg" id="am-msg" role="status"></p>';
+    }
+    body.innerHTML = h;
+    var av = $("am-av"); if (av && ui.photo) av.style.backgroundImage = 'url("' + ui.photo + '")';
+    if (amOpenForm === "pw" && $("am-pw")) { amPw = pwAttach($("am-pw"), $("am-pw-msg"), $("am-pw-bar"), acctEmail); $("am-pw").focus(); }
+    if (amOpenForm === "email" && $("am-email-new")) $("am-email-new").focus();
+    if (amOpenForm === "del" && $("am-del-t")) $("am-del-t").focus();
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target; if (!t.closest || $("am").hidden) return;
+    if (t === $("am") || t.closest("#am-close")) { amClose(); return; }
+    var tab = t.closest("[data-am-tab]"); if (tab) { amTab = tab.getAttribute("data-am-tab"); amOpenForm = ""; amRender(); if (amTab === "security" && sbSession) amLoadDevices(); return; }
+    var dv = t.closest("[data-am-dev]");
+    if (dv) { var id = dv.getAttribute("data-am-dev"); dv.disabled = true; sbRequest("/rest/v1/login_sessions?id=eq." + encodeURIComponent(id), "PATCH", { revoked: true }, { Prefer: "return=minimal" }).then(function () { amLoadDevices(); amMsg("That device will be signed out the next time it connects."); }, function () { dv.disabled = false; amMsg("Could not sign that device out.", true); }); return; }
+    var a = t.closest("[data-am-act]"); if (!a) return; var act = a.getAttribute("data-am-act");
+    if (act === "photo") { $("ph-file").click(); }
+    else if (act === "photo-off") { phSet("", "Photo removed."); }
+    else if (act === "signin") { amClose(); showGate(true); }
+    else if (act === "edit") { amClose(); location.hash = "#profile"; }
+    else if (act === "email" || act === "pw" || act === "del") { amOpenForm = act; amRender(); }
+    else if (act === "cancel") { amOpenForm = ""; amRender(); }
+    else if (act === "others") {
+      a.disabled = true; var me = devId();
+      sbRequest("/auth/v1/logout?scope=others", "POST").catch(function () {}).then(function () { return sbRequest("/rest/v1/login_sessions?device_id=neq." + encodeURIComponent(me), "PATCH", { revoked: true }, { Prefer: "return=minimal" }); }).then(function () { amLoadDevices(); amMsg("Signed out of all other devices."); }, function () { a.disabled = false; amMsg("Could not sign out the other devices.", true); });
+    }
+  });
+  document.addEventListener("submit", function (e) {
+    var f = e.target; if (!f || !f.id) return;
+    if (f.id === "am-email-form") {
+      e.preventDefault(); var v = cleanUser($("am-email-new").value); if (!emailOk(v)) { amMsg("Enter a valid email address.", true); return; }
+      amMsg("Saving…"); sbRequest("/auth/v1/user", "PUT", { email: v }).then(function (j) {
+        if (j && j.email && cleanUser(j.email) === v) { sbSession.username = v; saveSession(sbSession); amOpenForm = ""; amRender(); amMsg("Email changed to " + v + "."); } else { amOpenForm = ""; amRender(); amMsg("We sent a confirmation link to " + v + ". The change finishes when you open it."); }
+      }, function (er) { amMsg(authError(er, "in"), true); });
+    } else if (f.id === "am-pw-form") {
+      e.preventDefault(); if (!amPw) return; var sub = f.querySelector('[type="submit"]'); sub.disabled = true; amMsg("Checking your new password…");
+      amPw.final().then(function (r) {
+        if (!r.ok) { amMsg(r.msg, true); sub.disabled = false; return; }
+        return sbRequest("/auth/v1/user", "PUT", { password: $("am-pw").value }).then(function () { amOpenForm = ""; amRender(); amMsg("Password updated."); }, function (er) { sub.disabled = false; amMsg(String(er && er.message || "Could not update the password."), true); });
+      });
+    } else if (f.id === "am-del-form") {
+      e.preventDefault(); if ($("am-del-t").value.trim() !== "DELETE") { amMsg("Type DELETE exactly to confirm.", true); return; }
+      amMsg("Deleting your account…"); sbRequest("/functions/v1/account-delete", "POST", { confirm: "DELETE" }).then(function () { acctSignOut("Your account was deleted."); }, function (er) { amMsg(String(er && er.message || "Could not delete the account."), true); });
+    }
+  });
   function acctSignOut(note) {
     saveSession(null); sbSession = null; sbOn = false; store = null;
     if (sbTimer) clearInterval(sbTimer);
@@ -6415,7 +6733,7 @@ html { scroll-padding-top: 96px; }
     if (/signup.*disabled|disabled/i.test(m)) return "Sign-ups are turned off in Supabase.";
     return (mode === "up" ? "Could not create the account: " : "Could not sign in: ") + m;
   }
-  function setAuthBusy(b) { ["gate-signin", "gate-signup"].forEach(function (id) { $(id).disabled = b; }); }
+  function setAuthBusy(b) { $("gate-signin").disabled = b; }
   function acctAuth(mode, pre) {
     pre = pre || "gate";
     var u = cleanUser($(pre + "-user").value), pw = $(pre + "-pass").value;
@@ -6441,8 +6759,12 @@ html { scroll-padding-top: 96px; }
       acctMsg(sbOn ? "Signed in, but the first sync failed. It will keep trying." : authError(e, mode), !sbOn);
     }).then(function () { setAuthBusy(false); acctRender(); });
   }
-  $("gate-form").addEventListener("submit", function (e) { e.preventDefault(); acctAuth("in", "gate"); });
-  $("gate-signup").addEventListener("click", function () { acctAuth("up", "gate"); });
+  $("gate-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (gateMode !== "up") { acctAuth("in", "gate"); return; }
+    var btn = $("gate-signin"); btn.disabled = true; acctMsg("Checking your password…");
+    gatePw.final().then(function (r) { if (!r.ok) { acctMsg(r.msg, true); btn.disabled = false; return; } acctMsg(""); btn.disabled = false; acctAuth("up", "gate"); });
+  });
   $("acct-signout").addEventListener("click", function () { acctSignOut("You are locked out. Sign in to continue."); });
   $("acct-sync").addEventListener("click", function () {
     acctMsg("Syncing…");
@@ -6465,16 +6787,22 @@ html { scroll-padding-top: 96px; }
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     if (!q.access_token) return;
     recovery = { access_token: q.access_token, refresh_token: q.refresh_token || "" };
-    $("gate-form").hidden = true; $("gate-forgot").hidden = true; $("reset-form").hidden = false;
-    $("h-gate").textContent = "Set a new password";
+    gateView("in"); $("gate-form").hidden = true; $("gate-forgot").hidden = true; $("gate-foot").hidden = true; $("reset-form").hidden = false;
+    $("h-gate").textContent = "Set a new password"; $("gate-sub").textContent = "Choose a new password for your account.";
   })();
   $("reset-form").addEventListener("submit", function (e) {
     e.preventDefault();
     var pw = $("reset-pass").value;
-    if (pw.length < 8) { acctMsg("Password must be at least 8 characters.", true); return; }
     if (!recovery) return;
-    $("reset-save").disabled = true; acctMsg("Saving…");
-    fetch(SB_URL + "/auth/v1/user", { method: "PUT", headers: { apikey: SB_KEY, "Content-Type": "application/json", Authorization: "Bearer " + recovery.access_token }, body: JSON.stringify({ password: pw }) })
+    $("reset-save").disabled = true; acctMsg("Checking your new password…");
+    resetPw.final().then(function (chk) {
+      if (!chk.ok) { acctMsg(chk.msg, true); $("reset-save").disabled = false; return; }
+      acctMsg("Saving…");
+      return resetSave(pw);
+    });
+  });
+  function resetSave(pw) {
+    return fetch(SB_URL + "/auth/v1/user", { method: "PUT", headers: { apikey: SB_KEY, "Content-Type": "application/json", Authorization: "Bearer " + recovery.access_token }, body: JSON.stringify({ password: pw }) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.msg || j.message || j.error_description || "Could not save the password."); return j; }); })
       .then(function (user) {
         sbSession = null;
@@ -6483,7 +6811,8 @@ html { scroll-padding-top: 96px; }
         return sbStart().then(function () { acctMsg("Password changed. You are signed in.", false); });
       }).catch(function (err) { acctMsg(String(err && err.message || err), true); })
       .then(function () { $("reset-save").disabled = false; acctRender(); });
-  });
+  }
+  var resetPw = pwAttach($("reset-pass"), $("reset-pw-msg"), $("reset-pw-bar"), function () { return ""; });
   (function () {
     if (!loadSession() && !framed()) showGate(true);
   })();
@@ -6859,14 +7188,14 @@ html { scroll-padding-top: 96px; }
       if (!sc || sc.mode !== "email") return j;
       return new Promise(function (resolve, reject) {
         codeWait = { resolve: resolve, reject: reject, email: email, at: 0, sess: j };
-        $("gate-form").hidden = true; $("gate-forgot").hidden = true; $("code-form").hidden = false; $("gate-code").value = "";
+        $("gate-form").hidden = true; $("gate-forgot").hidden = true; $("gate-foot").hidden = true; $("code-form").hidden = false; $("h-gate").textContent = "Verify your email"; $("gate-sub").hidden = true; otpClear();
         $("code-to").textContent = email;
         sendNew();
-        try { $("gate-code").focus(); } catch (e) {}
+        otpFocus();
       });
     });
   }
-  function codeBack() { codeWait = null; $("code-form").hidden = true; $("gate-form").hidden = false; $("gate-forgot").hidden = false; }
+  function codeBack() { codeWait = null; $("code-form").hidden = true; $("gate-form").hidden = false; $("gate-foot").hidden = false; $("gate-sub").hidden = false; gateView(gateMode); }
   function sendNew() {
     if (!codeWait) return;
     var w = Math.ceil((codeWait.at + 45000 - Date.now()) / 1000);
