@@ -939,6 +939,21 @@ html { scroll-padding-top: 96px; }
   #print-root .r { text-align: right; }
   #print-root tr { break-inside: avoid; }
 }
+
+/* Add game: card layout */
+.gm { gap: 16px; } .gm-bar { display: none; }
+.gm-card { background: var(--panel); border: 1px solid var(--panel-line); border-radius: 18px; padding: 16px 18px; display: grid; gap: 12px; } .gm-hi { border-color: rgba(255, 138, 31, 0.3); }
+.gm-h { display: flex; align-items: center; justify-content: space-between; } .gm-h span { font: 700 12px/1 var(--body); letter-spacing: 0.16em; color: var(--muted); }
+.gm-link { background: none; border: 0; color: var(--blue); font: 600 14px/1 var(--body); cursor: pointer; padding: 6px 0; }
+.gm-when { margin: 0; font: 700 clamp(18px, 4.6vw, 24px)/1.25 var(--display); } .gm-when:empty { display: none; }
+.gm-team { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; } .gm-team .field { margin: 0; } .gm-shirt { display: grid; place-items: center; }
+.gm-team.home { color: #3b82f6; } .gm-team.away { color: #ef5b5b; } .gm-team.home label, .gm-team.away label { color: inherit; opacity: 0.85; }
+.gm-team.home input { background: rgba(37, 99, 235, 0.14); border-color: rgba(59, 130, 246, 0.4); color: #6aa5ff; font-weight: 600; } .gm-team.away input { background: rgba(220, 38, 38, 0.13); border-color: rgba(239, 91, 91, 0.4); color: #ff7b7b; font-weight: 600; }
+.gm-sec { margin: 10px 4px -4px; font-size: 22px; }
+@media (max-width: 959px) {
+  .gm-bar { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; margin: 0 -4px; padding: 12px 6px; background: var(--bg); border-bottom: 1px solid var(--panel-line); } .gm-bar b { font-size: 17px; } .gm-b { background: none; border: 0; color: var(--orange); font: 600 16px/1 var(--body); padding: 6px 4px; cursor: pointer; }
+  [data-page="add-game"] > h2, [data-page="add-game"] > .page-sub { display: none; }
+}
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -1786,13 +1801,9 @@ html { scroll-padding-top: 96px; }
     <section class="panel" data-page="add-game" hidden aria-labelledby="h-game">
       <h2 id="h-game">Add a game</h2>
       <p class="page-sub" id="game-sub">Log an assignment: who, where, what you earn and how far you drove.</p>
-      <form id="form-game" novalidate class="fs">
-        <div class="grid">
-          <div class="field"><label for="g-assoc">League / Association</label><select id="g-assoc"></select></div>
-          <div class="field"><label for="g-date">Date</label><input id="g-date" type="date"></div>
-          <div class="field"><label for="g-time">Time (optional)</label><input id="g-time" type="time"></div>
-          <div class="field"><label for="g-count">Number of games</label><input id="g-count" type="number" inputmode="numeric" min="1" max="30" step="1" value="1"></div>
-          <div class="field"><label for="g-role">Role</label>
+      <form id="form-game" novalidate class="fs gm">
+        <div class="gm-bar"><button type="button" class="gm-b" id="gm-cancel">Cancel</button><b id="gm-title">Add a game</b><button type="button" class="gm-b" id="gm-save">Save</button></div>
+        <section class="gm-card gm-hi"><div class="gm-h"><span>GAME</span></div><div class="grid"><div class="field"><label for="g-assoc">League / Association</label><select id="g-assoc"></select></div><div class="field"><label for="g-role">Role</label>
             <select id="g-role">
               <option>Center</option>
               <option>AR1</option>
@@ -1800,33 +1811,18 @@ html { scroll-padding-top: 96px; }
               <option>4th Official</option>
               <option>Other</option>
             </select>
-          </div>
-        </div>
-        <div class="grid">
-          <div class="field"><label for="g-match">Game name (optional)</label><input id="g-match" type="text" maxlength="80" placeholder="U14 Boys" autocomplete="off"></div>
-          <div class="field"><label for="g-field">Field</label><input id="g-field" type="text" maxlength="40" placeholder="Field 3" autocomplete="off"></div>
-          <div class="field"><label for="g-assignor">Assignor</label><input id="g-assignor" type="text" maxlength="40" list="assignor-list" placeholder="Who assigned it" autocomplete="off"><datalist id="assignor-list"></datalist></div>
-        </div>
-        <div class="grid">
-          <div class="field"><label for="g-tourn">Tournament (optional)</label><input id="g-tourn" type="text" maxlength="60" list="tourn-list" placeholder="e.g. Fall Classic" autocomplete="off"><datalist id="tourn-list"></datalist></div>
-          <div class="field"><label for="g-home">Home team</label><input id="g-home" type="text" maxlength="40" placeholder="e.g. U14 Blue" autocomplete="off"></div>
-          <div class="field"><label for="g-away">Away team</label><input id="g-away" type="text" maxlength="40" placeholder="e.g. U14 Red" autocomplete="off"></div>
-          <div class="field"><label for="g-loc">Location</label><input id="g-loc" type="text" maxlength="80" list="loc-list" placeholder="Park, venue or address" autocomplete="off"><datalist id="loc-list"></datalist></div>
-        </div>
-        <div class="grid">
-          <div class="field"><label for="g-fee">Pay (total for all games)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
-          <div class="field"><label for="g-exp">Expenses (total)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div>
-          <div class="field"><label for="g-miles">Miles driven (round trip)</label><input id="g-miles" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"></div>
-          <div class="field"><label for="g-drive">Drive time, minutes (optional)</label><input id="g-drive" type="number" inputmode="numeric" min="0" step="1" placeholder="Estimated from miles"></div>
-          <div class="field"><label for="g-hrs">Time at the field, hours (optional)</label><input id="g-hrs" type="number" inputmode="decimal" min="0" step="0.25" placeholder="1.5 per game"></div>
-          <div class="field"><label for="g-mrate">Cost per mile ($)</label><input id="g-mrate" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.30"></div>
-          <div class="field"><label for="g-status">Status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Not paid yet</option><option value="partial">Partly paid</option><option value="cancelled">Cancelled</option></select></div>
-          <div class="field" id="g-rcvd-w" hidden><label for="g-rcvd">Received so far ($)</label><input id="g-rcvd" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
-          <div class="field" id="g-paidon-w" hidden><label for="g-paidon">Date paid</label><input id="g-paidon" type="date"></div>
-        </div>
-        <div class="field"><label for="g-notes">Notes</label><textarea id="g-notes" rows="3" maxlength="300" placeholder="Assignor, who you worked with, anything to remember"></textarea></div>
-        <div class="field"><label for="g-recap">After the game</label><textarea id="g-recap" rows="3" maxlength="500" placeholder="How it went: cards, incidents, what to improve, who you worked with"></textarea></div>
-        <div class="row"><button class="btn" id="g-submit" type="submit">Add game</button><a class="btn ghost" id="g-cancel" href="#home">Done</a></div>
+          </div><div class="field"><label for="g-match">Game name (optional)</label><input id="g-match" type="text" maxlength="80" placeholder="U14 Boys" autocomplete="off"></div><div class="field"><label for="g-tourn">Tournament (optional)</label><input id="g-tourn" type="text" maxlength="60" list="tourn-list" placeholder="e.g. Fall Classic" autocomplete="off"><datalist id="tourn-list"></datalist></div><div class="field"><label for="g-assignor">Assignor</label><input id="g-assignor" type="text" maxlength="40" list="assignor-list" placeholder="Who assigned it" autocomplete="off"><datalist id="assignor-list"></datalist></div></div></section>
+        <section class="gm-card"><div class="gm-h"><span>TEAMS</span><button type="button" class="gm-link" id="gm-swap">⇅ Swap</button></div>
+          <div class="gm-team home"><i class="gm-shirt"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path fill="currentColor" d="M8.5 3L2 6.5l2 4.2 2.5-1.2V21h11V9.5l2.5 1.2 2-4.2L15.5 3c-.5 1.6-1.9 2.5-3.5 2.5S9 4.6 8.5 3z"/></svg></i><div class="field"><label for="g-home">Home team</label><input id="g-home" type="text" maxlength="40" placeholder="e.g. U14 Blue" autocomplete="off"></div></div>
+          <div class="gm-team away"><i class="gm-shirt"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path fill="currentColor" d="M8.5 3L2 6.5l2 4.2 2.5-1.2V21h11V9.5l2.5 1.2 2-4.2L15.5 3c-.5 1.6-1.9 2.5-3.5 2.5S9 4.6 8.5 3z"/></svg></i><div class="field"><label for="g-away">Away team</label><input id="g-away" type="text" maxlength="40" placeholder="e.g. U14 Red" autocomplete="off"></div></div></section>
+        <section class="gm-card"><div class="gm-h"><span>KICK-OFF</span></div><p class="gm-when" id="gm-when"></p><div class="grid"><div class="field"><label for="g-date">Date</label><input id="g-date" type="date"></div><div class="field"><label for="g-time">Time (optional)</label><input id="g-time" type="time"></div><div class="field"><label for="g-count">Number of games</label><input id="g-count" type="number" inputmode="numeric" min="1" max="30" step="1" value="1"></div></div></section>
+        <h3 class="gm-sec">Where</h3>
+        <section class="gm-card"><div class="grid"><div class="field"><label for="g-loc">Location</label><input id="g-loc" type="text" maxlength="80" list="loc-list" placeholder="Park, venue or address" autocomplete="off"><datalist id="loc-list"></datalist></div><div class="field"><label for="g-field">Field</label><input id="g-field" type="text" maxlength="40" placeholder="Field 3" autocomplete="off"></div></div></section>
+        <h3 class="gm-sec">Pay and travel</h3>
+        <section class="gm-card"><div class="grid"><div class="field"><label for="g-fee">Pay (total for all games)</label><div class="money-wrap"><input id="g-fee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div><div class="field"><label for="g-exp">Expenses (total)</label><div class="money-wrap"><input id="g-exp" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div></div><div class="field"><label for="g-miles">Miles driven (round trip)</label><input id="g-miles" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"></div><div class="field"><label for="g-drive">Drive time, minutes (optional)</label><input id="g-drive" type="number" inputmode="numeric" min="0" step="1" placeholder="Estimated from miles"></div><div class="field"><label for="g-hrs">Time at the field, hours (optional)</label><input id="g-hrs" type="number" inputmode="decimal" min="0" step="0.25" placeholder="1.5 per game"></div><div class="field"><label for="g-mrate">Cost per mile ($)</label><input id="g-mrate" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.30"></div><div class="field"><label for="g-status">Status</label><select id="g-status"><option value="paid">Paid</option><option value="pending">Not paid yet</option><option value="partial">Partly paid</option><option value="cancelled">Cancelled</option></select></div><div class="field" id="g-rcvd-w" hidden><label for="g-rcvd">Received so far ($)</label><input id="g-rcvd" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div><div class="field" id="g-paidon-w" hidden><label for="g-paidon">Date paid</label><input id="g-paidon" type="date"></div></div></section>
+        <h3 class="gm-sec">Notes</h3>
+        <section class="gm-card"><div class="field"><label for="g-notes">Notes</label><textarea id="g-notes" rows="3" maxlength="300" placeholder="Assignor, who you worked with, anything to remember"></textarea></div><div class="field"><label for="g-recap">After the game</label><textarea id="g-recap" rows="3" maxlength="500" placeholder="How it went: cards, incidents, what to improve, who you worked with"></textarea></div></section>
+        <div class="row gm-row"><button class="btn" id="g-submit" type="submit">Add game</button><a class="btn ghost" id="g-cancel" href="#home">Done</a></div>
         <p class="msg" data-msg role="status"></p>
       </form>
     </section>
@@ -5463,12 +5459,20 @@ html { scroll-padding-top: 96px; }
     sel.value = val || sel.value;
   }
   function gameFormMode(editing) {
-    $("h-game").textContent = editing ? "Edit game" : "Add a game";
+    $("h-game").textContent = editing ? "Edit game" : "Add a game"; $("gm-title").textContent = $("h-game").textContent;
     $("g-submit").textContent = editing ? "Save changes" : "Add game";
     $("g-cancel").textContent = editing ? "Cancel" : "Done";
     $("g-cancel").setAttribute("href", editing ? "#games" : "#home");
     $("game-sub").textContent = editing ? "Change anything about this assignment, then save." : "Log an assignment: who, where, what you earn and how far you drove.";
   }
+
+  /* Add game: card layout helpers */
+  function gmWhen() { var d = $("g-date").value, t = $("g-time").value, el = $("gm-when"); if (!d) { el.textContent = ""; return; } var x = new Date(d + "T" + (t || "12:00")); if (isNaN(x)) { el.textContent = ""; return; } el.textContent = x.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) + (t ? " at " + x.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""); }
+  ["g-date", "g-time"].forEach(function (id) { $(id).addEventListener("input", gmWhen); $(id).addEventListener("change", gmWhen); });
+  $("gm-swap").addEventListener("click", function () { var a = $("g-home"), b = $("g-away"), t = a.value; a.value = b.value; b.value = t; });
+  $("gm-save").addEventListener("click", function () { $("g-submit").click(); });
+  $("gm-cancel").addEventListener("click", function () { $("g-cancel").click(); });
+  window.addEventListener("hashchange", function () { setTimeout(gmWhen, 0); }); setInterval(gmWhen, 1500);
   function resetGameForm() {
     editGameId = null; avAck = ""; gameFormMode(false); $("g-count").value = "1";
     ["g-match", "g-field", "g-assignor", "g-tourn", "g-home", "g-away", "g-loc", "g-recap", "g-fee", "g-exp", "g-notes", "g-time", "g-miles", "g-drive", "g-hrs"].forEach(function (id) { $(id).value = ""; }); $("g-mrate").value = mcRate();
