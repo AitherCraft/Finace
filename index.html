@@ -1058,6 +1058,15 @@ nav a[data-nav], .side a { border-radius: 14px; }
 @media (min-width: 960px) { .hero-right .log-game-btn { min-height: 46px; height: 46px; padding: 0 20px; } }
 #top-log { display: inline-flex !important; flex-direction: row; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
 @media (max-width: 959px) { #top-log { gap: 0; } }
+
+@media (min-width: 960px) {
+  .st-hub { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; } .st-hub .st-prof { grid-column: 1 / 2; } .st-hub .st-stat { grid-column: 2 / 5; }
+  .st-hub .st-tiles { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); } .st-tiles > * { min-height: 104px; }
+  .st-hub .st-list { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; border: 0; background: none; overflow: visible; border-radius: 0; }
+  .st-list button, .st-list button:first-child { border: 1px solid var(--panel-line); border-radius: 18px; background: var(--panel); padding: 18px; }
+  .st-list button:hover, .st-tiles > *:hover, .st-prof:hover { border-color: var(--blue); }
+}
+body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) { max-width: none; width: 100%; margin: 0; }
 </style>
 
 <main class="rvg" id="gate" hidden>
