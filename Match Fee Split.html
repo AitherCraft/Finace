@@ -1106,6 +1106,8 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
 .ai-apply h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .ai-apply ul { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 6px; }
 .ai-apply .ai-acts button.pri { background: var(--accent, #2f8cff); color: #fff; border-color: transparent; }
+.ai-gb.w { grid-template-columns: 96px 1fr; } .ai-gb.w span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-apply .same { color: var(--muted); }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -4795,6 +4797,9 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
   function aicKind(k) {
     var m = aiChat[k]; if (!m || m.role === "user") return "";
     var q = ""; for (var x = k - 1; x >= 0; x--) if (aiChat[x].role === "user") { q = aiChat[x].text; break; }
+    var uq = q.toLowerCase();
+    if (!/\b(my|i|me|mine|i'm|i've|i'd|i'll|our)\b|this month|this week|this season|how much (do|can|should)|can i /.test(uq)) return "";
+    if (/\btax|\birs\b|1099|deduct|write.?off|\blegal\b|insurance|\bw-?2\b/.test(uq) && !/\b(my|i've)\b.*\b(budget|spent|saved|bucket|goal|wish|bag)\b/.test(uq)) return "";
     q = (q + " " + m.text).toLowerCase();
     if (/wish|afford|buy|cheaper|purchase/.test(q)) return "wish";
     if (/invest|investing|investment|stock|index fund|roth|etf/.test(q)) return "b:invest";
@@ -4819,10 +4824,10 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
         var ws = wishes.slice(0, 2).map(function (w) { var ok = wishReadyList.some(function (r) { return r.id === w.id; }); return aicTile(ok ? AI_IC.ok : AI_IC.no, fmt(toCents(w.amount)), w.what + (ok ? " (can afford)" : " (not yet)")); });
         if (!ws.length) ws = [aicTile(AI_IC.wal, fmt(C.safe), "Safe to spend now")];
         h = '<div class="ai-tiles">' + ws.join("") + ring + "</div>";
-        acts = aicBtn("graph", AI_BTN_IC.graph, "Show budget graph") + aicBtn("goals", AI_BTN_IC.save, "Save for it") + aicBtn("ask", AI_BTN_IC.find, "Find cheaper options", wishes.length ? "Find cheaper options for " + wishes[0].what + ". Keep it short." : "How can I spend less on gear?");
+        acts = aicBtn("goals", AI_BTN_IC.save, "Save for it") + aicBtn("ask", AI_BTN_IC.find, "Find cheaper options", wishes.length ? "Find cheaper options for " + wishes[0].what + ". Keep it short." : "How can I spend less on gear?");
       } else if (kind === "budget") {
         h = '<div class="ai-tiles">' + aicTile(AI_IC.ok, fmt(C.safe), "Safe to spend") + aicTile(AI_IC.wal, fmt(C.mtd), "Spent this month") + ring + "</div>";
-        acts = aicBtn("graph", AI_BTN_IC.graph, "Show budget graph") + aicBtn("goals", AI_BTN_IC.save, "Save for it") + aicBtn("ask", AI_BTN_IC.find, "Ways to spend less", "Give me three specific ways to spend less this month based on my numbers.");
+        acts = aicBtn("goals", AI_BTN_IC.save, "Save for it") + aicBtn("ask", AI_BTN_IC.find, "Ways to spend less", "Give me three specific ways to spend less this month based on my numbers.");
       } else if (kind.indexOf("b:") === 0) {
         var bk = kind.slice(2), bi = 0, bn = bk; BUCKETS.forEach(function (x, n) { if (x.k === bk) { bi = n; bn = x.name; } });
         var binfo = allTimeInfo(), btot = BUCKETS.reduce(function (t, x) { return t + (Number(split[x.k]) || 0); }, 0) || 100, bshare = Math.round(C.monthly * (Number(split[bk]) || 0) / btot);
@@ -4832,7 +4837,7 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
         var bring = '<div class="ai-tile ring">' + aicRing(bpct) + "<span>of your " + fmt(bshare) + " " + esc(bl) + " share used</span></div>";
         var bgoals = sgoals.filter(function (g) { return g.type === bk && sgProgress(g) < 100; });
         h = '<div class="ai-tiles">' + aicTile(bleft >= 0 ? AI_IC.ok : AI_IC.no, fmt(Math.max(0, bleft)), "Available in " + bn) + aicTile(AI_IC.wal, fmt(bmtd), "Used this month") + bring + "</div>" + (bgoals.length ? '<p class="ai-note">Goal: ' + bgoals.slice(0, 2).map(function (g) { return esc(g.name) + " " + sgProgress(g) + "%"; }).join(", ") + "</p>" : "");
-        acts = aicBtn("graph", AI_BTN_IC.graph, "Show budget graph") + aicBtn("goals", AI_BTN_IC.save, bk === "donate" ? "See goals" : "Set a goal") + aicBtn("ask", AI_BTN_IC.find, bk === "save" ? "Grow my savings" : bk === "invest" ? "Investing tips" : "Giving plan", bk === "save" ? "Give me three practical ways to build my savings faster based on my numbers." : bk === "invest" ? "How should I think about investing the money in my Invest bucket? Keep it short." : "How much should I give and how can I plan my giving? Keep it short.");
+        acts = aicBtn("goals", AI_BTN_IC.save, bk === "donate" ? "See goals" : "Set a goal") + aicBtn("ask", AI_BTN_IC.find, bk === "save" ? "Grow my savings" : bk === "invest" ? "Investing tips" : "Giving plan", bk === "save" ? "Give me three practical ways to build my savings faster based on my numbers." : bk === "invest" ? "How should I think about investing the money in my Invest bucket? Keep it short." : "How much should I give and how can I plan my giving? Keep it short.");
       } else if (kind === "gear") {
         var bs = bagStats();
         h = '<div class="ai-tiles">' + aicTile(AI_IC.wal, String(bs.total), "Items in your bag") + aicTile(bs.low.length ? AI_IC.no : AI_IC.ok, String(bs.low.length), "Running low") + aicTile(bs.missing.length ? AI_IC.no : AI_IC.ok, String(bs.missing.length), "Missing") + "</div>" + (bs.low.length ? '<p class="ai-note">Low: ' + bs.low.map(function (b) { return esc(b.name) + " (" + b.qty + ")"; }).join(", ") + "</p>" : "");
@@ -4843,16 +4848,33 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
         acts = aicBtn("go:reports", AI_BTN_IC.graph, "Open reports") + aicBtn("go:owed", AI_BTN_IC.go, "Payment Center") + aicBtn("ask", AI_BTN_IC.find, "Season recap", "Give me a short recap of my season so far.");
       }
     } catch (e) { return ""; }
-    return '<div class="ai-card">' + h + '<div class="ai-graph" hidden></div><div class="ai-acts">' + acts + "</div></div>";
+    var gh = ""; try { gh = aicGraphHtml(kind); } catch (e2) { gh = ""; }
+    return '<div class="ai-card">' + h + (gh ? '<div class="ai-graph">' + gh + "</div>" : "") + '<div class="ai-acts">' + acts + "</div></div>";
   }
-  function aicGraph(box) {
-    var info = allTimeInfo(), rows = BUCKETS.map(function (b, i) { var tot = Math.max(1, info.a.out[i]), used = Math.max(0, info.used[b.k]), pc = Math.round(used / tot * 100); return '<div class="ai-gb"><span>' + esc(b.name) + '</span><div><i style="width:' + Math.min(100, pc) + "%;background:" + (pc > 100 ? "var(--red)" : "var(--c-" + b.k + ")") + '"></i></div><em>' + fmt(used) + " of " + fmt(info.a.out[i]) + "</em></div>"; }).join("");
-    box.innerHTML = '<h4>Where your money went</h4>' + rows; box.hidden = !box.hidden;
+  function aicGbRow(label, pc, text, color, wide) { return '<div class="ai-gb' + (wide ? " w" : "") + '"><span>' + esc(label) + '</span><div><i style="width:' + Math.max(0, Math.min(100, pc)) + "%;background:" + color + '"></i></div><em>' + esc(text) + "</em></div>"; }
+  function aicGraphHtml(kind) {
+    var info = allTimeInfo(), rows = "", title = "";
+    if (kind === "wish") {
+      var C = bmCalc(), left = Math.max(0, C.safe); title = "Your wish list vs what you can spend now";
+      var ws = wishes.slice(0, 5); if (!ws.length) return "";
+      rows = ws.map(function (w) { var amt = toCents(w.amount), pc = amt > 0 ? Math.round(left / amt * 100) : 100; return aicGbRow(w.what, pc, fmt(amt) + " (" + Math.min(100, pc) + "% covered)", pc >= 100 ? "var(--green)" : "var(--c-spend)", true); }).join("");
+    } else if (kind === "gear") {
+      title = "Gear stock"; var items = bag.filter(function (b) { return b.min > 0; }).sort(function (x, y) { return x.qty / x.min - y.qty / y.min; }).slice(0, 6);
+      if (!items.length) return "";
+      rows = items.map(function (b) { var pc = Math.round(b.qty / (b.min * 2) * 100); return aicGbRow(b.name, pc, b.qty + " on hand, low at " + b.min, bagLow(b) ? "var(--red)" : "var(--green)", true); }).join("");
+    } else if (kind === "earn") {
+      title = "Earned per month"; var now = new Date(), vals = [], mx = 1;
+      for (var n = 5; n >= 0; n--) { var d0 = new Date(now.getFullYear(), now.getMonth() - n, 1), d1 = new Date(d0.getFullYear(), d0.getMonth() + 1, 0), v = Math.max(0, totalsFor([ymd(d0), ymd(d1)]).net); vals.push([d0.toLocaleDateString("en-US", { month: "short" }), v]); if (v > mx) mx = v; }
+      rows = vals.map(function (x) { return aicGbRow(x[0], Math.round(x[1] / mx * 100), fmt(Math.round(x[1])), "var(--accent, #2f8cff)"); }).join("");
+    } else {
+      title = kind.indexOf("b:") === 0 ? "Where your money went" : "Where your money went";
+      rows = BUCKETS.map(function (b, i) { var tot = Math.max(1, info.a.out[i]), used = Math.max(0, info.used[b.k]), pc = Math.round(used / tot * 100); return aicGbRow(b.name, pc, fmt(used) + " of " + fmt(info.a.out[i]), pc > 100 ? "var(--red)" : "var(--c-" + b.k + ")"); }).join("");
+    }
+    return "<h4>" + title + "</h4>" + rows;
   }
   document.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("[data-aia]"); if (!b) return; var a = b.getAttribute("data-aia");
-    if (a === "graph") { var box = b.closest(".ai-card").querySelector(".ai-graph"); if (box.hidden || !box.innerHTML) { box.hidden = true; aicGraph(box); } else box.hidden = true; }
-    else if (a === "goals") location.hash = "#goals"; else if (a === "ask") aicSend(b.getAttribute("data-arg") || ""); else if (a.indexOf("go:") === 0) location.hash = "#" + a.slice(3);
+    if (a === "goals") location.hash = "#goals"; else if (a === "ask") aicSend(b.getAttribute("data-arg") || ""); else if (a.indexOf("go:") === 0) location.hash = "#" + a.slice(3);
   });
   function aicRender() {
     var log = $("aic-log"); if (!log) return;
@@ -4907,9 +4929,21 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
 
 
   /* AI can change settings, but only after the person taps Apply */
+  // The AI may name only the buckets that change plus one to balance; everything else stays at your current number.
+  function aicSplitFull(a) {
+    var out = {}, given = a.split || {}, sum = 0, ch = [];
+    for (var i = 0; i < BUCKETS.length; i++) { var k = BUCKETS[i].k; if (given[k] !== undefined && given[k] !== null) { var v = Math.round(Number(given[k])); if (!(v >= 0 && v <= 100)) return null; out[k] = v; ch.push(k); } else out[k] = Math.round(Number(split[k]) || 0); }
+    for (var j = 0; j < BUCKETS.length; j++) sum += out[BUCKETS[j].k];
+    if (sum !== 100) {
+      var bal = a.balance && BMAP[a.balance] && ch.indexOf(a.balance) < 0 ? a.balance : (ch.indexOf("spend") < 0 ? "spend" : ""); if (!bal) return null;
+      out[bal] += 100 - sum; if (out[bal] < 0 || out[bal] > 100) return null;
+    }
+    var t = 0; for (var q = 0; q < BUCKETS.length; q++) t += out[BUCKETS[q].k];
+    return t === 100 ? out : null;
+  }
   function aicActLine(a) {
     var pc = function (k) { return Number(split[k]) || 0; };
-    if (a.type === "set_split") return "Percentages: " + BUCKETS.map(function (b) { return b.name + " " + pc(b.k) + "% to " + a.split[b.k] + "%"; }).join(", ");
+    if (a.type === "set_split") { var rs = aicSplitFull(a); return rs ? "Percentages: " + BUCKETS.map(function (b) { return b.name + " " + (pc(b.k) === rs[b.k] ? rs[b.k] + "% (same)" : pc(b.k) + "% to " + rs[b.k] + "%"); }).join(", ") : "Percentages: could not work out a valid split"; }
     if (a.type === "set_goal") return "Monthly earnings goal: " + (goal ? fmt(toCents(goal)) : "none") + " to " + fmt(toCents(a.amount));
     if (a.type === "add_goal") return "Add goal: " + a.name + " (" + fmt(toCents(a.target)) + ")";
     if (a.type === "add_wish") return "Add to wish list: " + a.what + " (" + fmt(toCents(a.amount)) + ")";
@@ -4929,8 +4963,7 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
   }
   function aicDo(a) {
     if (a.type === "set_split") {
-      var sum = 0, ns = {}; for (var i = 0; i < BUCKETS.length; i++) { var v = Math.round(Number(a.split && a.split[BUCKETS[i].k])); if (!(v >= 0 && v <= 100)) return false; ns[BUCKETS[i].k] = v; sum += v; }
-      if (sum !== 100) return false; split = ns; render(); fillSplitInputs(); return true;
+      var ns = aicSplitFull(a); if (!ns) return false; split = ns; render(); fillSplitInputs(); return true;
     }
     if (a.type === "set_goal") { var g = sanitizeGoal(Number(a.amount)); if (g === null) return false; goal = g; render(); return true; }
     if (a.type === "add_goal") {
