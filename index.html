@@ -1099,6 +1099,10 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
 .st-sec .msg:empty { display: none; }
 .st-sec .lay-row, .st-sec .pay-line { margin-bottom: 10px; }
 .st-sec .list { display: grid; gap: 10px; padding: 0; }
+.gai-panel { border-color: rgba(47,140,255,.4); }
+.gai-panel .sg-s { margin-top: 12px; padding: 14px 16px; border: 1px solid var(--panel-line); border-radius: 16px; background: rgba(5,12,28,.45); display: grid; gap: 8px; }
+.gai-panel .gai-m { border-color: rgba(47,140,255,.55); }
+.gai-panel .sg-s .mini { justify-self: start; }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -1627,6 +1631,13 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
       <div class="field"><label for="goal-amt">Goal per month</label><div class="money-wrap"><input id="goal-amt" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
       <div class="row"><button class="btn" id="save-goal" type="button">Save goal</button></div>
       <p class="msg" id="goal-msg" role="status"></p>
+    </section>
+    <section class="panel gai-panel" aria-labelledby="h-gai">
+      <div class="panel-head"><h2 id="h-gai">AI goal suggestions</h2><span class="chip">AI</span></div>
+      <p class="note">Let the AI look at what you earn, your pay per game and your percentages, then suggest a monthly earnings goal and other goals that fit.</p>
+      <div class="row"><button class="btn" id="gai-go" type="button">Suggest my goals</button></div>
+      <p class="msg" id="gai-msg" role="status"></p>
+      <div id="gai-out"></div>
     </section>
     <section class="panel" aria-labelledby="h-sg">
       <div class="panel-head"><h2 id="h-sg">Your goals</h2></div>
@@ -4877,6 +4888,51 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
     if (e.target.closest && e.target.closest("#aic-clear")) { aiChat = []; try { localStorage.removeItem(AIC_KEY); } catch (x) { /* ok */ } $("aic-msg").textContent = ""; aicRender(); }
   });
   aicRender();
+
+  /* AI goal suggestions (monthly earnings goal plus other goals) */
+  var gaiData = null, gaiBusy = false;
+  function gaiFacts() {
+    var d = function (c) { return Math.round(c) / 100; }, mr = periodRange("month"), mo = sgMonthly();
+    return {
+      today: todayStr(), monthEarnedSoFar: d(Math.max(0, totalsFor(mr).net)), monthlyGoal: goal || 0, monthlyEarningsEstimate: d(mo),
+      averagePayPerGame: d(aiAvgGame()), gamesPlayedTotal: rpStats().played, perWeekPace: d(allTimeInfo().perWeek), split: split,
+      monthlyCapacity: { save: d(sgCapacity("save", mo)), invest: d(sgCapacity("invest", mo)), equip: d(sgCapacity("equip", mo)) },
+      season: (function () { try { var S = seasonInfo(); return S.none ? null : { inSeason: !S.off, seasonCompare: aiSeasonCmp() }; } catch (e) { return null; } })(),
+      currentGoals: sgoals.slice(0, 12).map(function (g) { return { name: g.name, type: g.type, target: g.target, done: sgProgress(g) }; })
+    };
+  }
+  function gaiMsg(t, err) { var m = $("gai-msg"); if (m) { m.className = "msg" + (err ? " err" : ""); m.textContent = t || ""; } }
+  function gaiDeadline(months) { var dt = new Date(); dt.setDate(dt.getDate() + Math.round(months * 30.4)); return ymd(dt); }
+  function gaiDraw() {
+    var box = $("gai-out"); if (!box) return;
+    if (!gaiData) { box.innerHTML = ""; return; }
+    var h = "";
+    if (gaiData.monthly) h += '<div class="sg-s gai-m"><div class="wish-top"><strong>Monthly earnings goal</strong><span class="wish-amt">' + fmt(gaiData.monthly.amount * 100) + ' a month</span></div><p class="note">' + esc(gaiData.monthly.why) + '</p>' + (goal === gaiData.monthly.amount ? '<p class="note sg-ok">This is your current goal.</p>' : '<button class="mini" type="button" data-gai-m="1">Use this goal</button>') + "</div>";
+    gaiData.goals.forEach(function (x, i) {
+      var T = SG_TYPES[x.type], have = sgoals.some(function (g) { return g.name === x.name; });
+      h += '<div class="sg-s"><div class="wish-top"><strong>' + esc(x.name) + ' <span class="chip">' + T.name + '</span></strong><span class="wish-amt">' + (T.unit ? x.target + " " + T.unit : fmt(Math.round(x.target * 100))) + '</span></div><p class="note">' + esc(x.why) + " Aim for " + esc(mdDate(gaiDeadline(x.months))) + '.</p>' + (have ? '<p class="note sg-ok">Added.</p>' : '<button class="mini" type="button" data-gai-g="' + i + '">Add this goal</button>') + "</div>";
+    });
+    box.innerHTML = h;
+  }
+  function gaiAsk() {
+    if (gaiBusy) return;
+    if (!sbSession) { gaiMsg("Sign in to use AI.", true); return; }
+    gaiBusy = true; $("gai-go").disabled = true; gaiMsg("Thinking...", false);
+    var f; try { f = gaiFacts(); } catch (x) { f = { today: todayStr() }; }
+    aiCall({ mode: "goals", facts: f }).then(function (j) {
+      gaiData = { monthly: j.monthly || null, goals: (j.goals || []).filter(function (x) { return SG_TYPES[x.type]; }) };
+      gaiDraw(); gaiMsg("Written by AI from your numbers. Double-check anything important.", false);
+    }, function (err) { gaiMsg(String(err.message || err), true); }).then(function () { gaiBusy = false; $("gai-go").disabled = false; });
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("#gai-go, [data-gai-m], [data-gai-g]"); if (!t) return;
+    if (t.id === "gai-go") return gaiAsk();
+    if (!gaiData) return;
+    if (t.hasAttribute("data-gai-m")) { if (gaiData.monthly) { $("goal-amt").value = gaiData.monthly.amount; $("save-goal").click(); setTimeout(gaiDraw, 400); } return; }
+    var x = gaiData.goals[+t.getAttribute("data-gai-g")]; if (!x) return;
+    if (sgoals.length >= 20) return gaiMsg("That is the most goals you can keep. Delete one first.", true);
+    sgSave(sanitizeSGoals(sgoals.concat([{ id: uid("sg"), name: x.name, type: x.type, target: x.target, saved: 0, deadline: gaiDeadline(x.months), created: Date.now() }])), "Added " + x.name + ".").then(function () { sgSig = ""; renderSGoals(); gaiDraw(); });
+  });
   /* Availability planner: days off, open weekends, double-booking checks and best days to accept games */
   var DOWN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], DOWL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], avAck = "";
   function avOff(ds) {
