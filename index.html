@@ -1103,6 +1103,9 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
 .gai-panel .sg-s { margin-top: 12px; padding: 14px 16px; border: 1px solid var(--panel-line); border-radius: 16px; background: rgba(5,12,28,.45); display: grid; gap: 8px; }
 .gai-panel .gai-m { border-color: rgba(47,140,255,.55); }
 .gai-panel .sg-s .mini { justify-self: start; }
+.ai-apply h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ai-apply ul { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 6px; }
+.ai-apply .ai-acts button.pri { background: var(--accent, #2f8cff); color: #fff; border-color: transparent; }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -4857,7 +4860,7 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
     log.innerHTML = aiChat.map(function (m, k) {
       if (m.role === "user") return '<div class="ai-row u"><div class="ai-m u">' + esc(m.text) + '</div><span class="ai-av u">' + AI_USER + "</span></div>";
       var streaming = aicStr && k === last, t = streaming ? aicStr.full.slice(0, aicStr.n) : m.text;
-      return '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a"><div class="ai-t' + (streaming ? " typing" : "") + '"' + (streaming ? ' id="ai-stream"' : "") + ">" + esc(t) + "</div>" + (streaming ? "" : aicCard(k)) + "</div></div>";
+      return '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a"><div class="ai-t' + (streaming ? " typing" : "") + '"' + (streaming ? ' id="ai-stream"' : "") + ">" + esc(t) + "</div>" + (streaming ? "" : (m.actions && m.actions.length || m.applied ? aicActs(m, k) : aicCard(k))) + "</div></div>";
     }).join("") + (aicBusy ? '<div class="ai-row a"><span class="ai-av">' + AI_BOT + '</span><div class="ai-m a"><span class="ai-dots"><i></i><i></i><i></i></span></div></div>' : "") +
       (aiChat.length && !aicBusy && !aicStr && aiChat[last].role !== "user" && !aicKind(last) ? '<div class="ai-follow">' + AI_FOLLOW.map(function (q) { return '<button type="button" data-aiq="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") + "</div>" : "");
     $("aic-chips").innerHTML = aiChat.length ? "" : AIC_Q.map(function (q) { return '<button type="button" data-aiq="' + esc(q) + '">' + esc(q) + "</button>"; }).join("");
@@ -4889,7 +4892,7 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
     aiChat.push({ role: "user", text: text.slice(0, 1000) }); aiChat = aiChat.slice(-30); aicBusy = true; $("aic-in").value = ""; $("aic-in").style.height = "auto"; aicRender();
     var facts; try { facts = aiFacts(); } catch (x) { facts = {}; }
     var reply = "";
-    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { reply = String(j.reply || ""); aiChat.push({ role: "model", text: reply }); try { hist.unshift({ id: uid("h"), t: Date.now(), a: "asked", k: "ai", e: { id: uid("q"), q: text.slice(0, 300), a: String(j.reply).slice(0, 1000) }, prev: null }); hist = hist.slice(0, 300); histSave(); renderHistory(); } catch (x) { /* history is best effort */ } }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
+    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { reply = String(j.reply || ""); aiChat.push({ role: "model", text: reply, actions: Array.isArray(j.actions) ? j.actions.slice(0, 4) : [] }); try { hist.unshift({ id: uid("h"), t: Date.now(), a: "asked", k: "ai", e: { id: uid("q"), q: text.slice(0, 300), a: String(j.reply).slice(0, 1000) }, prev: null }); hist = hist.slice(0, 300); histSave(); renderHistory(); } catch (x) { /* history is best effort */ } }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
       aicBusy = false; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* full */ } if (reply) aicStream(reply); else aicRender();
     });
   }
@@ -4902,6 +4905,58 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
   });
   aicRender();
 
+
+  /* AI can change settings, but only after the person taps Apply */
+  function aicActLine(a) {
+    var pc = function (k) { return Number(split[k]) || 0; };
+    if (a.type === "set_split") return "Percentages: " + BUCKETS.map(function (b) { return b.name + " " + pc(b.k) + "% to " + a.split[b.k] + "%"; }).join(", ");
+    if (a.type === "set_goal") return "Monthly earnings goal: " + (goal ? fmt(toCents(goal)) : "none") + " to " + fmt(toCents(a.amount));
+    if (a.type === "add_goal") return "Add goal: " + a.name + " (" + fmt(toCents(a.target)) + ")";
+    if (a.type === "add_wish") return "Add to wish list: " + a.what + " (" + fmt(toCents(a.amount)) + ")";
+    if (a.type === "remove_wish") return "Remove from wish list: " + a.what;
+    return "";
+  }
+  function aicActs(m, k) {
+    if (m.applied) return '<div class="ai-card ai-apply done"><p class="ai-note">' + esc(m.applied) + "</p></div>";
+    var lines = m.actions.map(function (a) { return "<li>" + esc(aicActLine(a)) + "</li>"; }).join("");
+    return '<div class="ai-card ai-apply"><h4>Proposed changes</h4><ul>' + lines + '</ul><div class="ai-acts"><button class="ai-btn pri" type="button" data-aiapply="' + k + '">Apply</button><button class="ai-btn" type="button" data-aiskip="' + k + '">Not now</button></div></div>';
+  }
+  function aicDo(a) {
+    if (a.type === "set_split") {
+      var sum = 0, ns = {}; for (var i = 0; i < BUCKETS.length; i++) { var v = Math.round(Number(a.split && a.split[BUCKETS[i].k])); if (!(v >= 0 && v <= 100)) return false; ns[BUCKETS[i].k] = v; sum += v; }
+      if (sum !== 100) return false; split = ns; render(); fillSplitInputs(); return true;
+    }
+    if (a.type === "set_goal") { var g = sanitizeGoal(Number(a.amount)); if (g === null) return false; goal = g; render(); return true; }
+    if (a.type === "add_goal") {
+      if (sgoals.length >= 20 || !SG_TYPES[a.goalType]) return false;
+      var dt = new Date(); dt.setDate(dt.getDate() + Math.round((Number(a.months) || 3) * 30.4));
+      sgoals = sanitizeSGoals(sgoals.concat([{ id: uid("sg"), name: String(a.name).slice(0, 60), type: a.goalType, target: Number(a.target), saved: 0, deadline: ymd(dt), created: Date.now() }])); sgSig = ""; try { renderSGoals(); } catch (e) { /* page not drawn */ } return true;
+    }
+    if (a.type === "add_wish") {
+      var amt = Number(a.amount); if (!(amt > 0) || wishes.length >= 50) return false;
+      wishes.push({ id: uid("w"), what: String(a.what).slice(0, 80), amount: Math.round(amt * 100) / 100, bucket: BMAP[a.bucket] ? a.bucket : "spend", created: Date.now() }); try { renderWishes(); } catch (e) { /* ok */ } return true;
+    }
+    if (a.type === "remove_wish") {
+      var q = String(a.what).toLowerCase(), hit = wishes.filter(function (w) { return w.what.toLowerCase() === q; })[0] || wishes.filter(function (w) { return w.what.toLowerCase().indexOf(q) >= 0 || q.indexOf(w.what.toLowerCase()) >= 0; })[0];
+      if (!hit) return false; wishes = wishes.filter(function (w) { return w !== hit; }); try { renderWishes(); } catch (e) { /* ok */ } return true;
+    }
+    return false;
+  }
+  document.addEventListener("click", function (e) {
+    var ap = e.target.closest && e.target.closest("[data-aiapply], [data-aiskip]"); if (!ap) return;
+    var skip = ap.hasAttribute("data-aiskip"), m = aiChat[+ap.getAttribute(skip ? "data-aiskip" : "data-aiapply")];
+    if (!m || !m.actions || !m.actions.length) return;
+    if (skip) { m.actions = []; m.applied = "No changes made."; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* ok */ } aicRender(); return; }
+    var backup = { split: split, goal: goal, sgoals: sgoals, wishes: wishes }, done = 0, bad = 0;
+    m.actions.forEach(function (a) { try { if (aicDo(a)) done++; else bad++; } catch (x) { bad++; } });
+    var finish = function (ok) {
+      if (!ok) { split = backup.split; goal = backup.goal; sgoals = backup.sgoals; wishes = backup.wishes; try { render(); fillSplitInputs(); renderWishes(); renderSGoals(); } catch (x) { /* ok */ } m.applied = "Could not save the changes. Nothing was changed."; }
+      else m.applied = done ? "Done. " + done + (done === 1 ? " change" : " changes") + " saved." + (bad ? " " + bad + " could not be applied." : "") : "Nothing was changed. That did not match your data.";
+      m.actions = []; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* ok */ } aicRender();
+    };
+    if (!done) return finish(true);
+    persistSplit().then(finish);
+  });
   /* AI goal suggestions (monthly earnings goal plus other goals) */
   var gaiData = null, gaiBusy = false;
   function gaiFacts() {
