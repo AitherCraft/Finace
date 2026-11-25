@@ -1054,6 +1054,10 @@ nav a[data-nav], .side a { border-radius: 14px; }
 .wxf { display: flex; align-items: center; gap: 12px; padding: 14px 16px; } .wxf > div { flex: 1; min-width: 0; } .wxf b { display: block; font-size: 16px; } .wxf small { color: var(--muted); font-size: 12px; } .wxf-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 14px; border: 1.5px solid rgba(47, 140, 255, 0.7); background: rgba(5, 12, 28, 0.6); color: var(--fg); font: 700 14px/1 var(--body); cursor: pointer; } .wxf-btn.spin svg { animation: wxSpin 0.8s linear infinite; } @keyframes wxSpin { to { transform: rotate(360deg); } }
 @media (max-width: 720px) { .wxc { grid-template-columns: 1fr 1fr; } .wxc-main { grid-column: 1 / -1; } .wxc-col:nth-of-type(1) { border-left: 0; padding-left: 0; } .wxs-d { padding: 10px 2px; } .wxs-d em { font-size: 11px; } .wxs-d span { font-size: 22px; } .wxs-d b { font-size: 12px; } }
 @media (max-width: 720px) { .wxs-days { display: flex; overflow-x: auto; scrollbar-width: none; } .wxs-days::-webkit-scrollbar { display: none; } .wxs-d { flex: 0 0 82px; } .wxs-d em { font-size: 12px; white-space: nowrap; } .wxs-d span { font-size: 26px; } .wxs-d b { font-size: 13px; } }
+.log-game-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; } .log-game-btn .lg-t { white-space: nowrap; }
+@media (min-width: 960px) { .hero-right .log-game-btn { min-height: 46px; height: 46px; padding: 0 20px; } }
+#top-log { display: inline-flex !important; flex-direction: row; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+@media (max-width: 959px) { #top-log { gap: 0; } }
 </style>
 
 <main class="rvg" id="gate" hidden>
