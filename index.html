@@ -4892,7 +4892,7 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
     aiChat.push({ role: "user", text: text.slice(0, 1000) }); aiChat = aiChat.slice(-30); aicBusy = true; $("aic-in").value = ""; $("aic-in").style.height = "auto"; aicRender();
     var facts; try { facts = aiFacts(); } catch (x) { facts = {}; }
     var reply = "";
-    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { reply = String(j.reply || ""); aiChat.push({ role: "model", text: reply, actions: Array.isArray(j.actions) ? j.actions.slice(0, 4) : [] }); try { hist.unshift({ id: uid("h"), t: Date.now(), a: "asked", k: "ai", e: { id: uid("q"), q: text.slice(0, 300), a: String(j.reply).slice(0, 1000) }, prev: null }); hist = hist.slice(0, 300); histSave(); renderHistory(); } catch (x) { /* history is best effort */ } }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
+    aiCall({ mode: "chat", facts: facts, messages: aiChat.slice(-12) }).then(function (j) { reply = String(j.reply || ""); aiChat.push({ role: "model", text: reply, actions: Array.isArray(j.actions) ? j.actions.slice(0, 5) : [] }); try { hist.unshift({ id: uid("h"), t: Date.now(), a: "asked", k: "ai", e: { id: uid("q"), q: text.slice(0, 300), a: String(j.reply).slice(0, 1000) }, prev: null }); hist = hist.slice(0, 300); histSave(); renderHistory(); } catch (x) { /* history is best effort */ } }, function (err) { msg.textContent = String(err.message || err); msg.className = "msg err"; aiChat.pop(); $("aic-in").value = text; }).then(function () {
       aicBusy = false; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* full */ } if (reply) aicStream(reply); else aicRender();
     });
   }
@@ -4914,6 +4914,12 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
     if (a.type === "add_goal") return "Add goal: " + a.name + " (" + fmt(toCents(a.target)) + ")";
     if (a.type === "add_wish") return "Add to wish list: " + a.what + " (" + fmt(toCents(a.amount)) + ")";
     if (a.type === "remove_wish") return "Remove from wish list: " + a.what;
+    if (a.type === "add_game") return "Add game: " + (a.match ? a.match + ", " : "") + a.date + (a.time ? " " + a.time : "") + ", " + fmt(toCents(a.fee)) + (a.count > 1 ? " for " + a.count + " games" : "") + " (" + (a.status || "pending") + ")";
+    if (a.type === "add_income") return "Add income: " + (a.source ? a.source + " " : "") + fmt(toCents(a.amount)) + " on " + a.date;
+    if (a.type === "add_spending") return "Add spending: " + (a.note ? a.note + " " : "") + fmt(toCents(a.amount)) + " from " + (BMAP[a.bucket] ? BMAP[a.bucket].name : "Spend") + " on " + a.date;
+    if (a.type === "mark_paid") return "Mark game paid: " + (a.match ? a.match + ", " : "") + a.date;
+    if (a.type === "add_gear") return "Add to gear bag: " + a.name + " (" + a.qty + ")";
+    if (a.type === "set_gear_qty") return "Set " + a.name + " in gear bag to " + a.qty;
     return "";
   }
   function aicActs(m, k) {
@@ -4942,20 +4948,53 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
     }
     return false;
   }
+  var AI_ROLES = ["Center", "AR1", "AR2", "4th Official", "Other"];
+  function aicDoAsync(a) {
+    var dOk = function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(String(x || "")); }, no = Promise.resolve(false);
+    if (a.type === "add_game") {
+      var fee = Number(a.fee), cnt = a.count === undefined ? 1 : Number(a.count);
+      if (!dOk(a.date) || !isFinite(fee) || fee < 0 || !(cnt >= 1 && cnt <= 30) || Math.floor(cnt) !== cnt) return no;
+      var st = a.status === "paid" || a.status === "cancelled" ? a.status : a.status === "pending" ? "pending" : (a.date <= todayStr() ? "paid" : "pending");
+      var ex = Number(a.expenses);
+      var f = { id: uid("g"), created: Date.now(), count: cnt, date: a.date, time: /^\d{2}:\d{2}$/.test(String(a.time || "")) ? a.time : "", role: AI_ROLES.indexOf(a.role) >= 0 ? a.role : "Center", assoc: "",
+        match: String(a.match || "").slice(0, 80), tourn: "", home: "", away: "", loc: String(a.loc || "").slice(0, 80), recap: "", field: "", assignor: "", fee: Math.round(fee * 100) / 100, expenses: isFinite(ex) && ex > 0 ? Math.round(ex * 100) / 100 : 0,
+        notes: "", miles: Math.max(0, Number(a.miles) || 0), drive: 0, hrs: 0, paid: st === "paid", cancelled: st === "cancelled", rcvd: 0, paidOn: st === "paid" ? a.date : "" };
+      return addEntry("games", f);
+    }
+    if (a.type === "add_income") { var am = Number(a.amount); if (!dOk(a.date) || !(am > 0)) return no; return addEntry("income", { id: uid("i"), date: a.date, source: String(a.source || "").slice(0, 80), amount: Math.round(am * 100) / 100, created: Date.now() }); }
+    if (a.type === "add_spending") { var sm = Number(a.amount); if (!dOk(a.date) || !(sm > 0)) return no; return addEntry("spending", { id: uid("s"), date: a.date, bucket: BMAP[a.bucket] ? a.bucket : "spend", note: String(a.note || "").slice(0, 80), amount: Math.round(sm * 100) / 100, created: Date.now() }); }
+    if (a.type === "mark_paid") {
+      var q = String(a.match || "").toLowerCase(), hits = data.games.filter(function (g) { return g.date === a.date && g.paid === false && !g.cancelled && (!q || String(g.match || "").toLowerCase().indexOf(q) >= 0); });
+      if (hits.length !== 1) return no; setPaid(hits[0].id, true); return Promise.resolve(true);
+    }
+    if (a.type === "add_gear") { if (bag.length >= 60) return no; return bagSave(sanitizeBag(bag.concat([{ name: a.name, qty: a.qty, min: a.min || 0 }])), ""); }
+    if (a.type === "set_gear_qty") {
+      var n = String(a.name).toLowerCase(), it = bag.filter(function (b) { return b.name.toLowerCase() === n; })[0] || bag.filter(function (b) { return b.name.toLowerCase().indexOf(n) >= 0; })[0];
+      if (!it) return no; return bagSave(bag.map(function (b) { return b === it ? Object.assign({}, b, { qty: Math.max(0, Math.min(999, Math.round(Number(a.qty)) || 0)) }) : b; }), "");
+    }
+    return null;
+  }
   document.addEventListener("click", function (e) {
     var ap = e.target.closest && e.target.closest("[data-aiapply], [data-aiskip]"); if (!ap) return;
     var skip = ap.hasAttribute("data-aiskip"), m = aiChat[+ap.getAttribute(skip ? "data-aiskip" : "data-aiapply")];
     if (!m || !m.actions || !m.actions.length) return;
     if (skip) { m.actions = []; m.applied = "No changes made."; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* ok */ } aicRender(); return; }
-    var backup = { split: split, goal: goal, sgoals: sgoals, wishes: wishes }, done = 0, bad = 0;
-    m.actions.forEach(function (a) { try { if (aicDo(a)) done++; else bad++; } catch (x) { bad++; } });
+    var backup = { split: split, goal: goal, sgoals: sgoals, wishes: wishes }, done = 0, bad = 0, acts = m.actions.slice(), syncd = 0;
+    m.actions = []; ap.disabled = true;
     var finish = function (ok) {
       if (!ok) { split = backup.split; goal = backup.goal; sgoals = backup.sgoals; wishes = backup.wishes; try { render(); fillSplitInputs(); renderWishes(); renderSGoals(); } catch (x) { /* ok */ } m.applied = "Could not save the changes. Nothing was changed."; }
       else m.applied = done ? "Done. " + done + (done === 1 ? " change" : " changes") + " saved." + (bad ? " " + bad + " could not be applied." : "") : "Nothing was changed. That did not match your data.";
-      m.actions = []; try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* ok */ } aicRender();
+      try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* ok */ } aicRender();
     };
-    if (!done) return finish(true);
-    persistSplit().then(finish);
+    var chain = Promise.resolve();
+    acts.forEach(function (a) {
+      chain = chain.then(function () {
+        var r; try { r = aicDoAsync(a); } catch (x) { r = Promise.resolve(false); }
+        if (r === null) { var ok; try { ok = aicDo(a); } catch (x) { ok = false; } if (ok) { done++; syncd++; } else bad++; return; }
+        return Promise.resolve(r).then(function (ok) { if (ok) done++; else bad++; }, function () { bad++; });
+      });
+    });
+    chain.then(function () { return syncd ? persistSplit() : true; }).then(finish);
   });
   /* AI goal suggestions (monthly earnings goal plus other goals) */
   var gaiData = null, gaiBusy = false;
