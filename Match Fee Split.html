@@ -4794,7 +4794,10 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
     var q = ""; for (var x = k - 1; x >= 0; x--) if (aiChat[x].role === "user") { q = aiChat[x].text; break; }
     q = (q + " " + m.text).toLowerCase();
     if (/wish|afford|buy|cheaper|purchase/.test(q)) return "wish";
-    if (/budget|spend|save|saving|safe/.test(q)) return "budget";
+    if (/invest|investing|investment|stock|index fund|roth|etf/.test(q)) return "b:invest";
+    if (/\bsave\b|saving|savings|emergency fund/.test(q)) return "b:save";
+    if (/donat|\bgive\b|giving|charity|tithe|church/.test(q)) return "b:donate";
+    if (/budget|spend|safe/.test(q)) return "budget";
     if (/equipment|gear|bag|restock|flag|whistle|jersey/.test(q)) return "gear";
     if (/season|earn|income|pace|paid|owed/.test(q)) return "earn";
     return "";
@@ -4817,6 +4820,16 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
       } else if (kind === "budget") {
         h = '<div class="ai-tiles">' + aicTile(AI_IC.ok, fmt(C.safe), "Safe to spend") + aicTile(AI_IC.wal, fmt(C.mtd), "Spent this month") + ring + "</div>";
         acts = aicBtn("graph", AI_BTN_IC.graph, "Show budget graph") + aicBtn("goals", AI_BTN_IC.save, "Save for it") + aicBtn("ask", AI_BTN_IC.find, "Ways to spend less", "Give me three specific ways to spend less this month based on my numbers.");
+      } else if (kind.indexOf("b:") === 0) {
+        var bk = kind.slice(2), bi = 0, bn = bk; BUCKETS.forEach(function (x, n) { if (x.k === bk) { bi = n; bn = x.name; } });
+        var binfo = allTimeInfo(), btot = BUCKETS.reduce(function (t, x) { return t + (Number(split[x.k]) || 0); }, 0) || 100, bshare = Math.round(C.monthly * (Number(split[bk]) || 0) / btot);
+        var bleft = binfo.a.out[bi] - binfo.used[bk], bmr = periodRange("month"), bmtd = 0;
+        data.spending.forEach(function (x) { if (x.date && x.date >= bmr[0] && x.date <= bmr[1] && (x.bucket || "spend") === bk) bmtd += toCents(x.amount); });
+        var bpct = bshare > 0 ? Math.round(bmtd / bshare * 100) : 0, bl = bn.toLowerCase();
+        var bring = '<div class="ai-tile ring">' + aicRing(bpct) + "<span>of your " + fmt(bshare) + " " + esc(bl) + " share used</span></div>";
+        var bgoals = sgoals.filter(function (g) { return g.type === bk && sgProgress(g) < 100; });
+        h = '<div class="ai-tiles">' + aicTile(bleft >= 0 ? AI_IC.ok : AI_IC.no, fmt(Math.max(0, bleft)), "Available in " + bn) + aicTile(AI_IC.wal, fmt(bmtd), "Used this month") + bring + "</div>" + (bgoals.length ? '<p class="ai-note">Goal: ' + bgoals.slice(0, 2).map(function (g) { return esc(g.name) + " " + sgProgress(g) + "%"; }).join(", ") + "</p>" : "");
+        acts = aicBtn("graph", AI_BTN_IC.graph, "Show budget graph") + aicBtn("goals", AI_BTN_IC.save, bk === "donate" ? "See goals" : "Set a goal") + aicBtn("ask", AI_BTN_IC.find, bk === "save" ? "Grow my savings" : bk === "invest" ? "Investing tips" : "Giving plan", bk === "save" ? "Give me three practical ways to build my savings faster based on my numbers." : bk === "invest" ? "How should I think about investing the money in my Invest bucket? Keep it short." : "How much should I give and how can I plan my giving? Keep it short.");
       } else if (kind === "gear") {
         var bs = bagStats();
         h = '<div class="ai-tiles">' + aicTile(AI_IC.wal, String(bs.total), "Items in your bag") + aicTile(bs.low.length ? AI_IC.no : AI_IC.ok, String(bs.low.length), "Running low") + aicTile(bs.missing.length ? AI_IC.no : AI_IC.ok, String(bs.missing.length), "Missing") + "</div>" + (bs.low.length ? '<p class="ai-note">Low: ' + bs.low.map(function (b) { return esc(b.name) + " (" + b.qty + ")"; }).join(", ") + "</p>" : "");
