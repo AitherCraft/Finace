@@ -1108,6 +1108,8 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
 .ai-apply .ai-acts button.pri { background: var(--accent, #2f8cff); color: #fff; border-color: transparent; }
 .ai-gb.w { grid-template-columns: 96px 1fr; } .ai-gb.w span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ai-apply .same { color: var(--muted); }
+/* Hidden amounts keep the size of the text they replace (rules like .pc-hero span were shrinking them) */
+html.mh .mny { font: inherit; color: inherit; letter-spacing: inherit; line-height: inherit; text-transform: inherit; }
 </style>
 
 <main class="rvg" id="gate" hidden>
