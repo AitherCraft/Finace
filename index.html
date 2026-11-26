@@ -1110,6 +1110,11 @@ body[data-stview="sec"] .pages:has(> [data-page="app-settings"]:not([hidden])) {
 .ai-apply .same { color: var(--muted); }
 /* Hidden amounts keep the size of the text they replace (rules like .pc-hero span were shrinking them) */
 html.mh .mny { font: inherit; color: inherit; letter-spacing: inherit; line-height: inherit; text-transform: inherit; }
+.ai-bbtns { display: inline-flex; gap: 8px; flex: none; align-items: center; } .ai-hbtn { display: inline-grid; place-items: center; width: 38px; padding: 0; }
+.aih-view { display: none; } .view.aih .aih-view { display: block; } .view.aih .ai-hero, .view.aih .ai-panel { display: none; }
+.aih-top { display: grid; gap: 12px; margin-bottom: 14px; justify-items: start; } .aih-top h2 { margin: 0; } .aih-list { display: grid; gap: 10px; }
+.aih-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid var(--panel-line); border-radius: 16px; background: rgba(5, 12, 28, 0.45); }
+.aih-open { all: unset; cursor: pointer; display: grid; gap: 4px; min-width: 0; } .aih-open b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; } .aih-open span { color: var(--muted); font-size: 12px; }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -1443,8 +1448,12 @@ html.mh .mny { font: inherit; color: inherit; letter-spacing: inherit; line-heig
       <div class="ai-top"><svg class="ai-bot" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="abg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe6ff"/><stop offset="1" stop-color="#5a9bff"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="#0a1f4d"/><rect x="14" y="16" width="36" height="30" rx="14" fill="url(#abg)"/><rect x="19" y="24" width="26" height="14" rx="7" fill="#07142e"/><circle cx="26" cy="31" r="3.4" fill="#4cc3ff"/><circle cx="38" cy="31" r="3.4" fill="#4cc3ff"/><rect x="8" y="26" width="6" height="12" rx="3" fill="#7fb4ff"/><rect x="50" y="26" width="6" height="12" rx="3" fill="#7fb4ff"/><path d="M24 52c2-6 14-6 16 0" stroke="#7fb4ff" stroke-width="5" stroke-linecap="round" fill="none"/></svg><div class="ai-ht"><h2 id="h-ai">RefVault <em>AI</em></h2><p>Your personal referee assistant. Ask about your money, gear, schedules and more.</p></div><span class="ai-on" id="ai-on"><i></i>Online</span></div>
       <div class="ai-topics"><button type="button" data-aiq="Help me with my budget. How much can I safely spend?"><b>$</b>Budget Help</button><button type="button" data-aiq="Is any of my referee equipment running low or due for replacement?"><b>⚽</b>Equipment Advice</button><button type="button" data-aiq="Give me scheduling tips based on my games and availability."><b>📅</b>Schedule Tips</button><button type="button" data-aiq="What should I know about being a referee that I should be asking?"><b>?</b>General Questions</button></div>
     </section>
+    <section class="panel aih-view" aria-label="Chat history">
+      <div class="aih-top"><button class="btn small ghost" type="button" id="aih-back">&larr; Back to AI</button><h2>Chat history</h2></div>
+      <div id="aih-list" class="aih-list"></div>
+    </section>
     <section class="panel ai-panel" aria-labelledby="h-ai">
-      <div class="ai-bar"><span class="note">It can see your totals and goals, not your email. AI can be wrong, so double-check anything important.</span><button class="mini" type="button" id="aic-clear">New chat</button></div>
+      <div class="ai-bar"><span class="note">It can see your totals and goals, not your email. AI can be wrong, so double-check anything important.</span><span class="ai-bbtns"><button class="mini ai-hbtn" type="button" id="aic-hist" aria-label="Chat history" title="Chat history"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.4L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></button><button class="mini" type="button" id="aic-clear">New chat</button></span></div>
       <div class="ai-chips" id="aic-chips"></div>
       <div class="ai-log" id="aic-log" aria-live="polite"></div>
       <form class="ai-form" id="aic-form" novalidate><span class="ai-sp" aria-hidden="true">✦</span><textarea id="aic-in" rows="1" maxlength="1000" placeholder="Ask a question..." aria-label="Your question"></textarea><button class="ai-go" type="submit" id="aic-send" aria-label="Send"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M3 11.5L21 3l-7 18-2.5-7.5z"/></svg></button></form>
@@ -4923,9 +4932,41 @@ html.mh .mny { font: inherit; color: inherit; letter-spacing: inherit; line-heig
   document.addEventListener("submit", function (e) { if (e.target.id === "aic-form") { e.preventDefault(); aicSend($("aic-in").value); } });
   document.addEventListener("keydown", function (e) { if (e.target.id === "aic-in" && e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); aicSend(e.target.value); } });
   document.addEventListener("input", function (e) { if (e.target.id === "aic-in") { e.target.style.height = "auto"; e.target.style.height = Math.min(140, e.target.scrollHeight) + "px"; } });
+  /* Past chats: saved on this device when you start a new chat */
+  var AIH_KEY = "rf-aihist-v1", aiHist = [];
+  try { aiHist = JSON.parse(localStorage.getItem(AIH_KEY) || "[]").filter(function (h) { return h && h.id && Array.isArray(h.msgs); }).slice(0, 20); } catch (e) { aiHist = []; }
+  function aihSave() { try { localStorage.setItem(AIH_KEY, JSON.stringify(aiHist)); } catch (e) { /* full */ } }
+  function aihArchive() {
+    var u = aiChat.filter(function (m) { return m.role === "user"; }); if (!u.length) return;
+    aiHist.unshift({ id: uid("ah"), ts: Date.now(), title: u[0].text.slice(0, 70), msgs: aiChat.map(function (m) { return { role: m.role, text: m.text }; }) });
+    aiHist = aiHist.slice(0, 20); aihSave();
+  }
+  function aihShow(on) {
+    var v = document.querySelector('[data-view="ai"]'); if (!v) return;
+    v.classList.toggle("aih", !!on); if (on) aihRender(); try { window.scrollTo(0, 0); } catch (e) { /* ok */ }
+  }
+  function aihRender() {
+    var box = $("aih-list"); if (!box) return;
+    box.innerHTML = aiHist.length ? aiHist.map(function (h) {
+      var n = h.msgs.filter(function (m) { return m.role === "user"; }).length, d = new Date(h.ts).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ", " + new Date(h.ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      return '<div class="aih-row"><button type="button" class="aih-open" data-aih-open="' + esc(h.id) + '"><b>' + esc(h.title || "Chat") + "</b><span>" + esc(d) + " &middot; " + n + (n === 1 ? " question" : " questions") + '</span></button><button type="button" class="mini" data-aih-del="' + esc(h.id) + '" aria-label="Delete this chat">Delete</button></div>';
+    }).join("") : '<p class="note">No past chats yet. When you tap New chat, the chat you were in is saved here.</p>';
+  }
+  window.addEventListener("hashchange", function () { aihShow(false); });
   document.addEventListener("click", function (e) {
     var q = e.target.closest && e.target.closest("[data-aiq]"); if (q) { aicSend(q.getAttribute("data-aiq")); return; }
-    if (e.target.closest && e.target.closest("#aic-clear")) { aiChat = []; try { localStorage.removeItem(AIC_KEY); } catch (x) { /* ok */ } $("aic-msg").textContent = ""; aicRender(); }
+    if (e.target.closest && e.target.closest("#aic-hist")) return aihShow(true);
+    if (e.target.closest && e.target.closest("#aih-back")) return aihShow(false);
+    var op = e.target.closest && e.target.closest("[data-aih-open]");
+    if (op) {
+      var h = aiHist.filter(function (x) { return x.id === op.getAttribute("data-aih-open"); })[0]; if (!h) return;
+      aiHist = aiHist.filter(function (x) { return x !== h; }); aihArchive();
+      aiChat = h.msgs.slice(-30).map(function (m) { return { role: m.role, text: m.text }; }); aihSave(); try { localStorage.setItem(AIC_KEY, JSON.stringify(aiChat)); } catch (x) { /* ok */ }
+      aihShow(false); aicRender(); return;
+    }
+    var dl = e.target.closest && e.target.closest("[data-aih-del]");
+    if (dl) { aiHist = aiHist.filter(function (x) { return x.id !== dl.getAttribute("data-aih-del"); }); aihSave(); aihRender(); return; }
+    if (e.target.closest && e.target.closest("#aic-clear")) { aihArchive(); aiChat = []; try { localStorage.removeItem(AIC_KEY); } catch (x) { /* ok */ } $("aic-msg").textContent = ""; aicRender(); }
   });
   aicRender();
 
