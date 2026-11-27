@@ -1115,6 +1115,7 @@ html body .mny { font: inherit; color: inherit; letter-spacing: inherit; line-he
 .aih-top { display: grid; gap: 12px; margin-bottom: 14px; justify-items: start; } .aih-top h2 { margin: 0; } .aih-list { display: grid; gap: 10px; }
 .aih-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid var(--panel-line); border-radius: 16px; background: rgba(5, 12, 28, 0.45); }
 .aih-open { all: unset; cursor: pointer; display: grid; gap: 4px; min-width: 0; } .aih-open b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; } .aih-open span { color: var(--muted); font-size: 12px; }
+@media (max-width: 560px) { .as-form { display: grid !important; grid-template-columns: 1fr !important; } .as-form .mini { width: 100%; } }
 </style>
 
 <main class="rvg" id="gate" hidden>
@@ -1574,8 +1575,8 @@ html body .mny { font: inherit; color: inherit; letter-spacing: inherit; line-he
     <section class="panel" id="aw-card" aria-labelledby="h-aw" hidden><div class="panel-head"><h2 id="h-aw">Season awards</h2><span class="chip" id="aw-chip"></span></div>
       <div class="field"><label for="aw-season">Season</label><select id="aw-season"></select></div><div id="aw-body"></div></section>
     <section class="panel" id="as-card" aria-labelledby="h-as" hidden><div class="panel-head"><h2 id="h-as">Assignor analytics</h2><span class="chip" id="as-chip"></span></div><div id="as-body"></div>
-      <form id="as-form" class="as-form" novalidate><input id="as-name" type="text" maxlength="40" list="assignor-list" placeholder="Assignor name" autocomplete="off" aria-label="Assignor who offered a game you turned down"><button class="mini" type="submit">Log declined offer</button></form><p class="msg" id="as-msg" role="status"></p>
-      <p class="note">Accepted is every game you logged from that assignor. Tap Declined + each time you turn down an offer. Payment speed is days from the game to getting paid. Hourly counts driving time and mileage.</p></section>
+      <form id="as-form" class="as-form" novalidate><input id="as-name" type="text" maxlength="40" list="assignor-list" placeholder="Assignor name" autocomplete="off" aria-label="Assignor who offered a game you declined"><button class="mini" type="submit">Log an offer I declined</button></form><p class="msg" id="as-msg" role="status"></p>
+      <p class="note">Assignors offer you games, and you choose whether to accept or decline each one. Accepted is every game you logged from that assignor. Tap I declined + each time you turn down an offer from them. Your accept rate is the share of their offers you said yes to. Payment speed is days from the game to getting paid. Hourly counts driving time and mileage.</p></section>
     <section class="panel" id="xi-card" aria-labelledby="h-xi" hidden><div class="panel-head"><h2 id="h-xi">Expense insights</h2><span class="chip" id="xi-chip"></span></div><div id="xi-body"></div></section>
     <section class="panel" id="fc-card" aria-labelledby="h-fc" hidden>
       <div class="panel-head"><h2 id="h-fc">Income forecast</h2><span class="chip" id="fc-chip"></span></div>
@@ -4236,8 +4237,8 @@ html body .mny { font: inherit; color: inherit; letter-spacing: inherit; line-he
     $("as-body").innerHTML = top + L.map(function (a, i) {
       var st = function (lb, v) { return "<div><span>" + lb + "</span><b>" + v + "</b></div>"; };
       return '<div class="as-row"><h3><span>' + (a.entries && i < 3 ? ["🥇", "🥈", "🥉"][i] + " " : "") + esc(a.name) + "</span><em>" + a.games + (a.games === 1 ? " game" : " games") + (a.cx ? " · " + a.cx + " cancelled" : "") + "</em></h3>" +
-        (a.entries ? '<div class="as-grid">' + st("Avg pay / game", fmt(Math.round(a.avgPay))) + st("Paid in", a.speed === null ? "No data" : a.speed + (a.speed === 1 ? " day" : " days")) + st("Hourly", fmt(Math.round(a.hourly))) + st("Total kept", fmt(a.net)) + st("Unpaid", a.unpaid ? fmt(a.owed) : "None") + st("Accept rate", a.rate === null ? "-" : a.rate + "%") + "</div>" : '<p class="note">No games logged from this assignor yet.</p>') +
-        '<div class="as-acc"><span>Accepted ' + a.entries + " · Declined " + a.dec + '</span><span><button type="button" class="mini" data-as-dec="-1" data-as-name="' + esc(a.name) + '" aria-label="Remove a declined offer from ' + esc(a.name) + '"' + (a.dec ? "" : " disabled") + '>−</button> <button type="button" class="mini" data-as-dec="1" data-as-name="' + esc(a.name) + '">Declined +</button></span></div></div>';
+        (a.entries ? '<div class="as-grid">' + st("Avg pay / game", fmt(Math.round(a.avgPay))) + st("Paid in", a.speed === null ? "No data" : a.speed + (a.speed === 1 ? " day" : " days")) + st("Hourly", fmt(Math.round(a.hourly))) + st("Total kept", fmt(a.net)) + st("Unpaid", a.unpaid ? fmt(a.owed) : "None") + st("Your accept rate", a.rate === null ? "-" : a.rate + "%") + "</div>" : '<p class="note">No games logged from this assignor yet.</p>') +
+        '<div class="as-acc"><span>You accepted ' + a.entries + " · You declined " + a.dec + '</span><span><button type="button" class="mini" data-as-dec="-1" data-as-name="' + esc(a.name) + '" aria-label="Remove an offer you declined from ' + esc(a.name) + '"' + (a.dec ? "" : " disabled") + '>−</button> <button type="button" class="mini" data-as-dec="1" data-as-name="' + esc(a.name) + '">I declined +</button></span></div></div>';
     }).join("");
   }
   function asBump(name, delta) {
